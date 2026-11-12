@@ -13,6 +13,10 @@ Requirement 10 supersedes the `documentElement` filter, opacity and animation me
 
 Requirement 12 supersedes the synchronous behaviour that Requirement 8 criteria 2 and 3 and Requirement 7 criteria 7 and 8 describe for the Entry_Point: once Requirement 12 is implemented, `startPoltergeist` returns a Promise, invalid rules cause that Promise to reject instead of a synchronous throw, `stop` returns a Promise, and `pagehide` issues a best-effort final write. Those criteria remain EXISTING and describe the current synchronous implementation until then. Requirement 8 criterion 1 and Requirement 11 criterion 6 (validation, with the supplied `effects` registry, before anything is created) continue to hold.
 
+Verification modes: a criterion is either jsdom-verified (structural: DOM shape, attributes, inline styles, timers, verified by jsdom tests) or browser-verified (marked BROWSER-VERIFIED: needs real layout and computed styles, verified in real Chrome with a Playwright test or Playwright MCP, because jsdom performs neither). Criteria are jsdom-verified unless marked otherwise.
+
+Ordering note: the tasks for Requirements 9, 10, 11 and 13 MUST be ordered before the tasks for Requirement 12, because the first app (`app1-doomscroll`) depends on them. The tasks phase MUST reflect this ordering.
+
 No code is changed by this spec phase.
 
 ## Glossary
@@ -225,10 +229,12 @@ No code is changed by this spec phase.
 10. WHEN the Flicker_Effect undoes with any `durationMs`, THE Flicker_Effect SHALL remove the Flicker_Overlay and its `style[data-poltergeist="flicker"]` element within the same call.
 11. WHILE a Fog_Overlay, a Flicker_Overlay and the Block_Overlay all exist, THE Block_Overlay `z-index` (2147483647) SHALL be greater than the `z-index` of the Fog_Overlay and of the Flicker_Overlay.
 12. THE Fog_Effect, THE Flicker_Effect and THE Block_Effect SHALL NOT set any inline style property on `documentElement` or on `body`, so that the `style` attribute of each equals its pre-apply value after apply, update and undo.
-13. WHILE the Fog_Effect, the Flicker_Effect and the Block_Effect are all active, THE Block_Overlay SHALL have a computed `filter` of `none`, a computed `backdrop-filter` of `none`, and a computed `opacity` equal to its own configured opacity, and the Block_Overlay `parentElement` SHALL be `documentElement`.
-14. WHILE any of the Fog_Effect, the Flicker_Effect or the Block_Effect is active, THE page SHALL keep every `position: fixed` element at the same bounding-client-rect position as before the effect was applied, because the effects set no `filter`, `opacity`, `transform` or `animation` on an ancestor of page content.
+13. (BROWSER-VERIFIED) WHILE the Fog_Effect, the Flicker_Effect and the Block_Effect are all active, THE Block_Overlay SHALL have a computed `filter` of `none`, a computed `backdrop-filter` of `none`, and a computed `opacity` equal to its own configured opacity, and the Block_Overlay `parentElement` SHALL be `documentElement`.
+14. (BROWSER-VERIFIED) WHILE any of the Fog_Effect, the Flicker_Effect or the Block_Effect is active, THE page SHALL keep every `position: fixed` element at the same bounding-client-rect position as before the effect was applied, because the effects set no `filter`, `opacity`, `transform` or `animation` on an ancestor of page content.
 15. IF `document.body` is absent when the Fog_Effect or Flicker_Effect applies, THEN THE effect SHALL append its overlay to `documentElement`, return a Handle, and throw no error.
 16. THE Block_Effect SHALL append the Block_Overlay as a direct child of `documentElement`, whether or not `body` exists.
+
+Note: Criteria 13 and 14 are BROWSER-VERIFIED. They MUST be verified in real Chrome with a Playwright test or Playwright MCP, because jsdom does not perform layout or compute visual styles (`backdrop-filter`, computed `opacity`, `getBoundingClientRect`). All other criteria of this requirement are structural (jsdom-verified) and are verified with jsdom tests.
 
 ### Requirement 11: Registry-derived effect types in the validator - NEW
 **User Story:** As an extension developer, I want custom effects to pass validation, so that I can register effects beyond the four built-ins.
@@ -254,55 +260,56 @@ No code is changed by this spec phase.
 1. THE Storage_Adapter contract SHALL consist of two functions: `get(key)`, returning a Promise that resolves to the value previously stored under `key` or to `undefined` when no value is stored, and `set(key, value)`, returning a Promise that resolves once `value` has been written under `key`.
 2. IF a Storage_Adapter `get` or `set` call rejects or throws, THEN THE Meter_Store SHALL treat that operation as failed.
 3. THE Meter_Store SHALL receive its Storage_Adapter by injection and SHALL perform all persistence solely through that Storage_Adapter.
-4. THE skeleton SHALL contain no source file under `skeleton/` that references the global `chrome`, as verified by an automated test that scans every source file in `skeleton/` (excluding `skeleton/test/`) for the identifier `chrome`.
+4. THE skeleton SHALL contain no source file under `skeleton/` that references the global `chrome`, as verified by an automated test that scans the full text, including comments, of every `.js` file under `skeleton/` excluding `skeleton/test/` for the token `chrome.` (the lowercase identifier `chrome` followed by a dot). The scan SHALL be case-sensitive, so that text such as "Chrome match pattern" (capital C) in `match.js` does not fail it.
 5. THE Storage_Adapter implementations for `chrome.storage.local` and for `localStorage` SHALL be supplied by the host or SHALL reside outside the engine core in `skeleton/`, so that the Meter_Store works with any object satisfying the Storage_Adapter contract.
+6. THE usage example in the `index.js` doc comment SHALL be updated to omit any `chrome.runtime` reference and any other `chrome.` reference, showing the asynchronous `startPoltergeist` called with `await`, a host-supplied Storage_Adapter, and rules passed in directly, so that the scan in criterion 4 passes against `index.js` comments as well as code.
 
 **Keys, record and baseline**
 
-6. THE Meter_Store SHALL derive the site key from the page's hostname, lowercased, excluding port, path, query, and fragment, so that all pages on the same hostname share one meter record.
-7. THE Meter_Store SHALL persist one record per site key, of the form `{ date, timeOnSite, scrollDistance }`, under a Storage_Adapter key that is a deterministic function of the site key.
-8. THE Meter_Store SHALL store the local calendar date (in YYYY-MM-DD form, based on the device's local time zone) in the `date` field of every written record.
-9. THE Meter_Store SHALL track a baseline, being the `timeOnSite` and `scrollDistance` values at the last successful write (or the values seeded at load if no write has succeeded yet).
-10. THE Meter_Store SHALL NOT persist `timeSinceActive`; after a load, `timeSinceActive` SHALL be 0.
+7. THE Meter_Store SHALL derive the site key from the page's hostname, lowercased, excluding port, path, query, and fragment, so that all pages on the same hostname share one meter record.
+8. THE Meter_Store SHALL persist one record per site key, of the form `{ date, timeOnSite, scrollDistance }`, under a Storage_Adapter key that is a deterministic function of the site key.
+9. THE Meter_Store SHALL store the local calendar date (in YYYY-MM-DD form, based on the device's local time zone) in the `date` field of every written record.
+10. THE Meter_Store SHALL track a baseline, being the `timeOnSite` and `scrollDistance` values at the last successful write (or the values seeded at load if no write has succeeded yet).
+11. THE Meter_Store SHALL NOT persist `timeSinceActive`; after a load, `timeSinceActive` SHALL be 0.
 
 **Load**
 
-11. WHEN the Entry_Point starts with a Storage_Adapter, THE Meter_Store SHALL read the record for the current site key through `get`, and SHALL pass its `timeOnSite` and `scrollDistance` as `initialMeters` to the Meter_Set and set the baseline to those values before the Engine's first Tick.
-12. WHEN the stored `date` differs from the current local calendar date at load time, THE Meter_Store SHALL discard the stored values and start `timeOnSite` and `scrollDistance` from 0.
-13. WHEN no record exists for the site key at load time, THE Meter_Store SHALL start `timeOnSite` and `scrollDistance` from 0.
-14. IF the stored record for the site key is malformed (not an object, `date` missing or not a string, or `timeOnSite` or `scrollDistance` not a non-negative finite number), THEN THE Meter_Store SHALL discard the record, start both meters from 0, and report the failure through `onError` exactly once.
+12. WHEN the Entry_Point starts with a Storage_Adapter, THE Meter_Store SHALL read the record for the current site key through `get`, and SHALL pass its `timeOnSite` and `scrollDistance` as `initialMeters` to the Meter_Set and set the baseline to those values before the Engine's first Tick.
+13. WHEN the stored `date` differs from the current local calendar date at load time, THE Meter_Store SHALL discard the stored values and start `timeOnSite` and `scrollDistance` from 0.
+14. WHEN no record exists for the site key at load time, THE Meter_Store SHALL start `timeOnSite` and `scrollDistance` from 0.
+15. IF the stored record for the site key is malformed (not an object, `date` missing or not a string, or `timeOnSite` or `scrollDistance` not a non-negative finite number), THEN THE Meter_Store SHALL discard the record, start both meters from 0, and report the failure through `onError` exactly once.
 
 **Delta writes**
 
-15. WHEN the Meter_Store performs a write, THE Meter_Store SHALL (a) capture the current `timeOnSite` and `scrollDistance`, (b) read the current stored record through `get`, (c) compute for each of the two meters the delta as the captured value minus the baseline, (d) write through `set` a record whose `date` is the current local calendar date and whose values are the stored values plus the deltas, and (e) only after `set` resolves, advance the baseline to the captured values.
-16. IF the stored record read in a write is absent, is malformed, or has a `date` that differs from the current local calendar date at write time, THEN THE Meter_Store SHALL discard the stored values and write the deltas onto 0 (daily reset).
-17. IF the delta of a meter is negative, THEN THE Meter_Store SHALL add 0 for that meter instead of the delta and SHALL leave that meter's baseline unchanged.
-18. IF both deltas are 0, THEN THE Meter_Store SHALL skip the `set` call and SHALL leave the baseline unchanged.
-19. IF a `get` or `set` call fails during a write, THEN THE Meter_Store SHALL leave the baseline unchanged, so that the same delta is included in the next write and no delta is lost or counted twice, and SHALL report the failure through `onError` exactly once for that failed operation.
-20. THE Meter_Store SHALL NOT start a write while an earlier write from the same Meter_Store is still in progress, so that one tab never counts the same delta twice.
-21. THE Meter_Store read-modify-write SHALL be best-effort and not atomic across tabs, because the Storage_Adapter provides no transaction; the accepted limitation is that two tabs whose writes interleave between `get` and `set` MAY lose one tab's delta for that write.
+16. WHEN the Meter_Store performs a write, THE Meter_Store SHALL (a) capture the current `timeOnSite` and `scrollDistance`, (b) read the current stored record through `get`, (c) compute for each of the two meters the delta as the captured value minus the baseline, (d) write through `set` a record whose `date` is the current local calendar date and whose values are the stored values plus the deltas, and (e) only after `set` resolves, advance the baseline to the captured values.
+17. IF the stored record read in a write is absent, is malformed, or has a `date` that differs from the current local calendar date at write time, THEN THE Meter_Store SHALL discard the stored values and write the deltas onto 0 (daily reset).
+18. IF the delta of a meter is negative, THEN THE Meter_Store SHALL add 0 for that meter instead of the delta and SHALL leave that meter's baseline unchanged.
+19. IF both deltas are 0, THEN THE Meter_Store SHALL skip the `set` call and SHALL leave the baseline unchanged.
+20. IF a `get` or `set` call fails during a write, THEN THE Meter_Store SHALL leave the baseline unchanged, so that the same delta is included in the next write and no delta is lost or counted twice, and SHALL report the failure through `onError` exactly once for that failed operation.
+21. THE Meter_Store SHALL NOT start a write while an earlier write from the same Meter_Store is still in progress, so that one tab never counts the same delta twice.
+22. THE Meter_Store read-modify-write SHALL be best-effort and not atomic across tabs, because the Storage_Adapter provides no transaction; the accepted limitation is that two tabs whose writes interleave between `get` and `set` MAY lose one tab's delta for that write.
 
 **Lifecycle**
 
-22. WHILE the Engine is running with a Storage_Adapter, THE Meter_Store SHALL perform a write every 5 seconds (±500 ms).
-23. WHEN the explicit `stop` is called or `pagehide` fires, THE Entry_Point SHALL issue a final Meter_Store write, capturing the meter values synchronously before the Engine stops, and SHALL cancel the 5 second write interval.
-24. WHEN `pagehide` fires, THE Entry_Point SHALL issue the final write without awaiting its completion (best effort, because `pagehide` handlers cannot await) and SHALL then stop the Engine and dispose the Meter_Set synchronously.
-25. WHEN the explicit `stop` returned by `startPoltergeist` is called, THE Entry_Point SHALL return a Promise that resolves after the final write has settled (resolved or failed), and SHALL stop the Engine without waiting for that Promise.
-26. WHEN `stop` is called more than once, THE Entry_Point SHALL issue the final write only once.
+23. WHILE the Engine is running with a Storage_Adapter, THE Meter_Store SHALL perform a write every 5 seconds (±500 ms).
+24. WHEN the explicit `stop` is called or `pagehide` fires, THE Entry_Point SHALL issue a final Meter_Store write, capturing the meter values synchronously before the Engine stops, and SHALL cancel the 5 second write interval.
+25. WHEN `pagehide` fires, THE Entry_Point SHALL issue the final write without awaiting its completion (best effort, because `pagehide` handlers cannot await) and SHALL then stop the Engine and dispose the Meter_Set synchronously.
+26. WHEN the explicit `stop` returned by `startPoltergeist` is called, THE Entry_Point SHALL return a Promise that resolves after the final write has settled (resolved or failed), and SHALL stop the Engine without waiting for that Promise.
+27. WHEN `stop` is called more than once, THE Entry_Point SHALL issue the final write only once.
 
 **Async entry point**
 
-27. THE Entry_Point `startPoltergeist` SHALL be asynchronous and return a Promise.
-28. WHEN the meters have been loaded from the Storage_Adapter, THE Promise SHALL resolve to an object with exactly the properties `engine`, `meters` and `stop`, and the Engine's first Tick SHALL run after the load completes and not before.
-29. IF the rules document is invalid, THEN THE Promise SHALL reject with an Error whose message begins "Invalid Poltergeist rules:" followed by the validation errors, and THE Entry_Point SHALL NOT read the Storage_Adapter, create an Engine or start one.
-30. WHERE no Storage_Adapter is supplied, THE Entry_Point SHALL start the Meter_Set from `initialMeters` (or 0 for each omitted meter) and SHALL perform no persistence.
-31. IF the Storage_Adapter `get` rejects or throws during load, THEN THE Entry_Point SHALL still resolve with meters starting from 0 and SHALL report the failure through `onError` exactly once.
-32. WHEN `startPoltergeist` is called with an `effects` option, THE Entry_Point SHALL continue to pass that same registry to `validateRules` before any other step (Requirement 11 criterion 6 remains in force).
+28. THE Entry_Point `startPoltergeist` SHALL be asynchronous and return a Promise.
+29. WHEN the meters have been loaded from the Storage_Adapter, THE Promise SHALL resolve to an object with exactly the properties `engine`, `meters` and `stop`, and the Engine's first Tick SHALL run after the load completes and not before.
+30. IF the rules document is invalid, THEN THE Promise SHALL reject with an Error whose message begins "Invalid Poltergeist rules:" followed by the validation errors, and THE Entry_Point SHALL NOT read the Storage_Adapter, create an Engine or start one.
+31. WHERE no Storage_Adapter is supplied, THE Entry_Point SHALL start the Meter_Set from `initialMeters` (or 0 for each omitted meter) and SHALL perform no persistence.
+32. IF the Storage_Adapter `get` rejects or throws during load, THEN THE Entry_Point SHALL still resolve with meters starting from 0 and SHALL report the failure through `onError` exactly once.
+33. WHEN `startPoltergeist` is called with an `effects` option, THE Entry_Point SHALL continue to pass that same registry to `validateRules` before any other step (Requirement 11 criterion 6 remains in force).
 
 **Properties**
 
-33. FOR ALL non-negative finite stored values S and non-negative finite deltas D on one tab, loading S on the same local calendar date, adding D to the meters and then writing SHALL produce a stored record equal to S plus D for each of `timeOnSite` and `scrollDistance` (round-trip property for a single tab), and a subsequent load SHALL seed the Meter_Set with those values.
-34. FOR ALL non-negative finite deltas D1 and D2 written by two tabs on the same site and the same local calendar date, with their writes not interleaved, the stored record SHALL equal the initial stored values plus D1 plus D2 for each meter (accumulation property).
+34. FOR ALL non-negative finite stored values S and non-negative finite deltas D on one tab, loading S on the same local calendar date, adding D to the meters and then writing SHALL produce a stored record equal to S plus D for each of `timeOnSite` and `scrollDistance` (round-trip property for a single tab), and a subsequent load SHALL seed the Meter_Set with those values.
+35. FOR ALL non-negative finite deltas D1 and D2 written by two tabs on the same site and the same local calendar date, with their writes not interleaved, the stored record SHALL equal the initial stored values plus D1 plus D2 for each meter (accumulation property).
 
 ### Requirement 13: Pruning detached nodes in the Rot_Effect - NEW
 **User Story:** As a developer, I want the Rot_Effect to drop references to removed text, so that long-running pages do not leak memory.
@@ -321,7 +328,7 @@ No code is changed by this spec phase.
 
 #### Acceptance Criteria
 
-1. THE test suite SHALL run all effect tests in a jsdom environment.
+1. THE test suite SHALL run all effect restoration tests in this requirement in a jsdom environment.
 2. FOR EACH built-in Effect, THE test suite SHALL capture a snapshot consisting of the serialized document HTML, the inline `style` attribute of `documentElement` and the inline `style` attribute of `body` before `apply`, and SHALL assert that the snapshot taken after `undo` with `durationMs` 0 is strictly equal to the snapshot taken before `apply`.
 3. FOR EACH built-in Effect, THE test suite SHALL call `apply` at least 3 times on the same target with at least 3 distinct intensity values within the range 0 to 1, call `undo` with `durationMs` 0, and assert that the snapshot defined in criterion 2 is strictly equal to the pre-`apply` snapshot.
 4. FOR EACH built-in Effect that supports fade (Fog_Effect and Block_Effect), THE test suite SHALL call `undo` with a `durationMs` greater than 0 under fake timers, advance the timers by exactly `durationMs`, and assert that the snapshot defined in criterion 2 is strictly equal to the pre-`apply` snapshot.
@@ -330,3 +337,4 @@ No code is changed by this spec phase.
 7. WHEN `undo` is called a second time on the same Handle, THE test suite SHALL assert that the snapshot defined in criterion 2 is unchanged from the snapshot taken after the first `undo` call and that the second call throws no error.
 8. THE test suite SHALL assert that Rot_Effect restores the snapshot defined in criterion 2 in each of these three scenarios: the page contains text nodes with pre-existing text, the page contains elements that Rot_Effect is specified to skip, and the page rewrites the content of a text node after `apply` and before `undo`.
 9. WHEN multiple Effects are applied together to the same page, THE test suite SHALL assert that the snapshot defined in criterion 2 equals the pre-`apply` snapshot after undoing them in each of the following orders: the order applied, the reverse order, and at least one interleaved order.
+10. THE jsdom tests of this requirement SHALL NOT be taken to cover Requirement 10 criteria 13 and 14; those BROWSER-VERIFIED criteria SHALL be covered by a Playwright test (or Playwright MCP run) in real Chrome.
