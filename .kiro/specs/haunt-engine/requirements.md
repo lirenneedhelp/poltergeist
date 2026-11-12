@@ -9,6 +9,10 @@ This document has two parts:
 - **Part A (Requirements 1 to 8) documents EXISTING, already-implemented behaviour.** Each requirement is tagged `EXISTING` in its heading and is derived from the code in `skeleton/` and its tests. The tasks phase marks tasks for these requirements as complete (`[x]`).
 - **Part B (Requirements 9 to 14) specifies NEW work for six known issues.** Each requirement is tagged `NEW` in its heading and is not yet implemented. The tasks phase leaves tasks for these requirements unchecked (`[ ]`).
 
+Requirement 10 supersedes the `documentElement` filter, opacity and animation mechanism that Requirement 6 criteria 1 to 7 describe for the Fog_Effect and Flicker_Effect, and the `body` placement of the Block_Overlay in Requirement 6 criterion 13. Those Requirement 6 criteria remain EXISTING and describe the current implementation until Requirement 10 is implemented.
+
+Requirement 12 supersedes the synchronous behaviour that Requirement 8 criteria 2 and 3 and Requirement 7 criteria 7 and 8 describe for the Entry_Point: once Requirement 12 is implemented, `startPoltergeist` returns a Promise, invalid rules cause that Promise to reject instead of a synchronous throw, `stop` returns a Promise, and `pagehide` issues a best-effort final write. Those criteria remain EXISTING and describe the current synchronous implementation until then. Requirement 8 criterion 1 and Requirement 11 criterion 6 (validation, with the supplied `effects` registry, before anything is created) continue to hold.
+
 No code is changed by this spec phase.
 
 ## Glossary
@@ -32,8 +36,12 @@ No code is changed by this spec phase.
 - **Fade**: An undo that transitions the visual effect over `durationMs` milliseconds before restoring the page.
 - **Fog_Effect**, **Flicker_Effect**, **Rot_Effect**, **Block_Effect**: The four built-in Effects.
 - **Block_Overlay**: The `div[data-poltergeist="block"]` element created by the Block_Effect.
-- **Entry_Point**: The `startPoltergeist` function in `index.js`.
-- **Meter_Store**: The new component that persists per-site meter values in `chrome.storage`.
+- **Fog_Overlay**: The fixed, non-interactive `div[data-poltergeist="fog"]` element, a child of `documentElement`, created by the Fog_Effect after Requirement 10; it applies `backdrop-filter` blur and grayscale.
+- **Flicker_Overlay**: The fixed, non-interactive `div[data-poltergeist="flicker"]` element, a child of `documentElement`, created by the Flicker_Effect after Requirement 10; it is a black layer with animated opacity.
+- **Entry_Point**: The `startPoltergeist` function in `index.js`. It is synchronous today (Requirement 8) and becomes asynchronous, returning a Promise, once Requirement 12 is built.
+- **Meter_Store**: The new component that persists per-site meter values through an injected Storage_Adapter, writing deltas since its baseline.
+- **Storage_Adapter**: An injected object with async `get(key)` (resolves to the stored value or `undefined`) and async `set(key, value)` (resolves once written). The host supplies it: an adapter over `chrome.storage.local` in extensions, over `localStorage` in the demo site.
+- **Baseline**: The `timeOnSite` and `scrollDistance` values at the Meter_Store's last successful write, used to compute the delta for the next write.
 - **Scroll_Container**: Any scrollable element in the document, including elements inside the page body, other than the window itself.
 - **Detached_Node**: A text node no longer contained in the document.
 
@@ -200,18 +208,27 @@ No code is changed by this spec phase.
 6. WHEN both the window and a Scroll_Container scroll, THE Meter_Set SHALL sum the distances of both into `scrollDistance`.
 7. WHEN a `scroll` event fires and the target's current scroll position equals its previously recorded position, THE Meter_Set SHALL add 0 to `scrollDistance`.
 
-### Requirement 10: Block overlay isolation from fog and flicker - NEW
-**User Story:** As a rule author, I want the block overlay to stay crisp and fully opaque when combined with fog and flicker, so that its message remains readable.
+### Requirement 10: Fog and flicker as overlays below the Block_Overlay - NEW
+**User Story:** As a rule author, I want fog and flicker rendered as separate fixed overlays beneath the block overlay, so that the block message stays crisp and opaque and page layout, including fixed-position elements, is unaffected.
 
 #### Acceptance Criteria
 
-1. WHEN the Fog_Effect applies and `document.body` exists, THE Fog_Effect SHALL set the inline `filter` style on `document.body` and SHALL leave the inline `filter` style of `documentElement` unchanged.
-2. WHEN the Flicker_Effect applies and `document.body` exists, THE Flicker_Effect SHALL set the inline `opacity` and `animation` styles on `document.body` and SHALL leave the inline `opacity` and `animation` styles of `documentElement` unchanged.
-3. WHEN the Block_Effect creates the Block_Overlay, THE Block_Effect SHALL append the Block_Overlay as a direct child of `documentElement` and SHALL NOT append it to `document.body`.
-4. WHEN the Fog_Effect or Flicker_Effect undoes, THE effect SHALL restore each inline style value on `document.body` that it modified to the value recorded immediately before apply, including restoring an empty value if none was set.
-5. IF `document.body` is absent when the Fog_Effect or Flicker_Effect applies, THEN THE effect SHALL return a Handle without modifying any inline style on `documentElement` or elsewhere in the page and without throwing an error.
-6. WHEN `apply` is called again after `document.body` exists for an effect that previously returned a Handle without attaching, THE effect SHALL apply its styles to `document.body`.
-7. WHILE the Fog_Effect and the Flicker_Effect are both active, THE Block_Overlay SHALL have a computed `filter` of `none` and a computed `opacity` equal to its own configured opacity, and the Block_Overlay's ancestors SHALL NOT include `document.body`.
+1. WHEN the Fog_Effect applies and no Fog_Overlay exists for its Handle, THE Fog_Effect SHALL create one `div[data-poltergeist="fog"]` as a direct child of `documentElement`, with `position: fixed`, `top`, `right`, `bottom` and `left` of 0, `pointer-events: none` and `z-index` 2147483645.
+2. WHEN the Flicker_Effect applies and no Flicker_Overlay exists for its Handle, THE Flicker_Effect SHALL create one `div[data-poltergeist="flicker"]` as a direct child of `documentElement`, with `position: fixed`, `top`, `right`, `bottom` and `left` of 0, a black background, `pointer-events: none` and `z-index` 2147483646.
+3. WHEN the Fog_Effect applies with Intensity `i`, THE Fog_Overlay SHALL have a `backdrop-filter` of `blur(B px) grayscale(G)`, where B equals `maxBlur * i` pixels (default `maxBlur` 6) and G equals `maxGrayscale * i` (default `maxGrayscale` 1).
+4. WHEN the Fog_Effect applies at two Intensities `i1 < i2`, THE Fog_Overlay blur radius and grayscale amount at `i2` SHALL each be greater than or equal to those at `i1`, and SHALL both be 0 when `i` is 0.
+5. WHEN the Flicker_Effect applies while `env.reducedMotion` is false, THE Flicker_Overlay SHALL run an infinite opacity animation with a period of `periodMs` milliseconds (default 1400), defined by a `pg-flicker` keyframes rule in a `<style data-poltergeist="flicker">` element, whose peak opacity is `maxDepth * intensity` (default `maxDepth` 0.6) and whose minimum opacity is 0.
+6. WHILE `env.reducedMotion` is true, THE Flicker_Overlay SHALL have a static `opacity` of `maxDepth * intensity * 0.5` and no `animation`.
+7. WHEN `apply` is called with a live Handle, THE Fog_Effect and THE Flicker_Effect SHALL update the existing overlay in place, leaving the count of `div[data-poltergeist="fog"]`, `div[data-poltergeist="flicker"]` and `style[data-poltergeist="flicker"]` elements in the document unchanged and the overlay element identity unchanged.
+8. WHEN the Fog_Effect undoes with `durationMs` equal to 0, THE Fog_Effect SHALL remove the Fog_Overlay from the document within the same call.
+9. WHEN the Fog_Effect undoes with `durationMs` greater than 0, THE Fog_Effect SHALL transition the Fog_Overlay `backdrop-filter` to `blur(0px) grayscale(0)` over `durationMs` milliseconds, and SHALL remove the Fog_Overlay when `durationMs` milliseconds have elapsed.
+10. WHEN the Flicker_Effect undoes with any `durationMs`, THE Flicker_Effect SHALL remove the Flicker_Overlay and its `style[data-poltergeist="flicker"]` element within the same call.
+11. WHILE a Fog_Overlay, a Flicker_Overlay and the Block_Overlay all exist, THE Block_Overlay `z-index` (2147483647) SHALL be greater than the `z-index` of the Fog_Overlay and of the Flicker_Overlay.
+12. THE Fog_Effect, THE Flicker_Effect and THE Block_Effect SHALL NOT set any inline style property on `documentElement` or on `body`, so that the `style` attribute of each equals its pre-apply value after apply, update and undo.
+13. WHILE the Fog_Effect, the Flicker_Effect and the Block_Effect are all active, THE Block_Overlay SHALL have a computed `filter` of `none`, a computed `backdrop-filter` of `none`, and a computed `opacity` equal to its own configured opacity, and the Block_Overlay `parentElement` SHALL be `documentElement`.
+14. WHILE any of the Fog_Effect, the Flicker_Effect or the Block_Effect is active, THE page SHALL keep every `position: fixed` element at the same bounding-client-rect position as before the effect was applied, because the effects set no `filter`, `opacity`, `transform` or `animation` on an ancestor of page content.
+15. IF `document.body` is absent when the Fog_Effect or Flicker_Effect applies, THEN THE effect SHALL append its overlay to `documentElement`, return a Handle, and throw no error.
+16. THE Block_Effect SHALL append the Block_Overlay as a direct child of `documentElement`, whether or not `body` exists.
 
 ### Requirement 11: Registry-derived effect types in the validator - NEW
 **User Story:** As an extension developer, I want custom effects to pass validation, so that I can register effects beyond the four built-ins.
@@ -227,21 +244,65 @@ No code is changed by this spec phase.
 7. THE Rule_Schema SHALL describe `effect.type` as a string without an enumerated list of values, and THE schema-sync test SHALL fail if the keys of `builtinEffects` differ from the default allowed types used by the Rule_Validator.
 8. THE Rule_Validator SHALL export the `EFFECT_TYPES` constant, and its contents SHALL equal the set of `builtinEffects` keys (`fog`, `flicker`, `rot`, `block`).
 
-### Requirement 12: Persisted per-site meters with daily reset - NEW
-**User Story:** As a user, I want my meters to survive page reloads, so that reloading cannot reset an ongoing haunt.
+### Requirement 12: Persisted per-site meters with daily reset via an injected Storage_Adapter - NEW
+**User Story:** As a user, I want my meters to survive page reloads and to accumulate across tabs on the same site, so that reloading or opening a second tab cannot reset an ongoing haunt.
 
 #### Acceptance Criteria
 
-1. WHEN the Entry_Point starts, THE Meter_Store SHALL load the stored `timeOnSite` and `scrollDistance` for the current site key from `chrome.storage` and pass them as `initialMeters` to the Engine before the Engine's first evaluation tick.
-2. THE Meter_Store SHALL derive the site key from the page's hostname, lowercased, excluding port, path, query, and fragment, so that all pages on the same hostname share one meter record.
-3. WHILE the Engine is running, THE Meter_Store SHALL write the current `timeOnSite` and `scrollDistance` values for the site key to `chrome.storage` every 5 seconds (±500 ms).
-4. WHEN `stop` is called or `pagehide` fires, THE Meter_Store SHALL issue a write of the current meter values before the Engine stops, and SHALL cancel the 5 second write interval.
-5. THE Meter_Store SHALL store the local calendar date (in YYYY-MM-DD form, based on the device's local time zone) alongside each site's meter values in every write.
-6. WHEN the stored date differs from the current local calendar date at load time, THE Meter_Store SHALL discard the stored values and start `timeOnSite` and `scrollDistance` from 0.
-7. IF `chrome.storage` is unavailable or a read or write fails, THEN THE Meter_Store SHALL continue with the current in-memory meter values, SHALL start from 0 when a read fails, and SHALL report the failure through `onError` exactly once per failed operation.
-8. THE Meter_Store SHALL NOT persist `timeSinceActive`; after a load, `timeSinceActive` SHALL be 0.
-9. FOR ALL stored meter records with non-negative finite `timeOnSite` and `scrollDistance`, saving and then loading on the same local calendar date SHALL produce `timeOnSite` and `scrollDistance` values equal to the saved values (round-trip property).
-10. IF the stored record for the site key is malformed (missing date, or `timeOnSite` or `scrollDistance` is not a non-negative finite number), THEN THE Meter_Store SHALL discard the record, start both meters from 0, and report the failure through `onError`.
+**Storage_Adapter contract and injection**
+
+1. THE Storage_Adapter contract SHALL consist of two functions: `get(key)`, returning a Promise that resolves to the value previously stored under `key` or to `undefined` when no value is stored, and `set(key, value)`, returning a Promise that resolves once `value` has been written under `key`.
+2. IF a Storage_Adapter `get` or `set` call rejects or throws, THEN THE Meter_Store SHALL treat that operation as failed.
+3. THE Meter_Store SHALL receive its Storage_Adapter by injection and SHALL perform all persistence solely through that Storage_Adapter.
+4. THE skeleton SHALL contain no source file under `skeleton/` that references the global `chrome`, as verified by an automated test that scans every source file in `skeleton/` (excluding `skeleton/test/`) for the identifier `chrome`.
+5. THE Storage_Adapter implementations for `chrome.storage.local` and for `localStorage` SHALL be supplied by the host or SHALL reside outside the engine core in `skeleton/`, so that the Meter_Store works with any object satisfying the Storage_Adapter contract.
+
+**Keys, record and baseline**
+
+6. THE Meter_Store SHALL derive the site key from the page's hostname, lowercased, excluding port, path, query, and fragment, so that all pages on the same hostname share one meter record.
+7. THE Meter_Store SHALL persist one record per site key, of the form `{ date, timeOnSite, scrollDistance }`, under a Storage_Adapter key that is a deterministic function of the site key.
+8. THE Meter_Store SHALL store the local calendar date (in YYYY-MM-DD form, based on the device's local time zone) in the `date` field of every written record.
+9. THE Meter_Store SHALL track a baseline, being the `timeOnSite` and `scrollDistance` values at the last successful write (or the values seeded at load if no write has succeeded yet).
+10. THE Meter_Store SHALL NOT persist `timeSinceActive`; after a load, `timeSinceActive` SHALL be 0.
+
+**Load**
+
+11. WHEN the Entry_Point starts with a Storage_Adapter, THE Meter_Store SHALL read the record for the current site key through `get`, and SHALL pass its `timeOnSite` and `scrollDistance` as `initialMeters` to the Meter_Set and set the baseline to those values before the Engine's first Tick.
+12. WHEN the stored `date` differs from the current local calendar date at load time, THE Meter_Store SHALL discard the stored values and start `timeOnSite` and `scrollDistance` from 0.
+13. WHEN no record exists for the site key at load time, THE Meter_Store SHALL start `timeOnSite` and `scrollDistance` from 0.
+14. IF the stored record for the site key is malformed (not an object, `date` missing or not a string, or `timeOnSite` or `scrollDistance` not a non-negative finite number), THEN THE Meter_Store SHALL discard the record, start both meters from 0, and report the failure through `onError` exactly once.
+
+**Delta writes**
+
+15. WHEN the Meter_Store performs a write, THE Meter_Store SHALL (a) capture the current `timeOnSite` and `scrollDistance`, (b) read the current stored record through `get`, (c) compute for each of the two meters the delta as the captured value minus the baseline, (d) write through `set` a record whose `date` is the current local calendar date and whose values are the stored values plus the deltas, and (e) only after `set` resolves, advance the baseline to the captured values.
+16. IF the stored record read in a write is absent, is malformed, or has a `date` that differs from the current local calendar date at write time, THEN THE Meter_Store SHALL discard the stored values and write the deltas onto 0 (daily reset).
+17. IF the delta of a meter is negative, THEN THE Meter_Store SHALL add 0 for that meter instead of the delta and SHALL leave that meter's baseline unchanged.
+18. IF both deltas are 0, THEN THE Meter_Store SHALL skip the `set` call and SHALL leave the baseline unchanged.
+19. IF a `get` or `set` call fails during a write, THEN THE Meter_Store SHALL leave the baseline unchanged, so that the same delta is included in the next write and no delta is lost or counted twice, and SHALL report the failure through `onError` exactly once for that failed operation.
+20. THE Meter_Store SHALL NOT start a write while an earlier write from the same Meter_Store is still in progress, so that one tab never counts the same delta twice.
+21. THE Meter_Store read-modify-write SHALL be best-effort and not atomic across tabs, because the Storage_Adapter provides no transaction; the accepted limitation is that two tabs whose writes interleave between `get` and `set` MAY lose one tab's delta for that write.
+
+**Lifecycle**
+
+22. WHILE the Engine is running with a Storage_Adapter, THE Meter_Store SHALL perform a write every 5 seconds (±500 ms).
+23. WHEN the explicit `stop` is called or `pagehide` fires, THE Entry_Point SHALL issue a final Meter_Store write, capturing the meter values synchronously before the Engine stops, and SHALL cancel the 5 second write interval.
+24. WHEN `pagehide` fires, THE Entry_Point SHALL issue the final write without awaiting its completion (best effort, because `pagehide` handlers cannot await) and SHALL then stop the Engine and dispose the Meter_Set synchronously.
+25. WHEN the explicit `stop` returned by `startPoltergeist` is called, THE Entry_Point SHALL return a Promise that resolves after the final write has settled (resolved or failed), and SHALL stop the Engine without waiting for that Promise.
+26. WHEN `stop` is called more than once, THE Entry_Point SHALL issue the final write only once.
+
+**Async entry point**
+
+27. THE Entry_Point `startPoltergeist` SHALL be asynchronous and return a Promise.
+28. WHEN the meters have been loaded from the Storage_Adapter, THE Promise SHALL resolve to an object with exactly the properties `engine`, `meters` and `stop`, and the Engine's first Tick SHALL run after the load completes and not before.
+29. IF the rules document is invalid, THEN THE Promise SHALL reject with an Error whose message begins "Invalid Poltergeist rules:" followed by the validation errors, and THE Entry_Point SHALL NOT read the Storage_Adapter, create an Engine or start one.
+30. WHERE no Storage_Adapter is supplied, THE Entry_Point SHALL start the Meter_Set from `initialMeters` (or 0 for each omitted meter) and SHALL perform no persistence.
+31. IF the Storage_Adapter `get` rejects or throws during load, THEN THE Entry_Point SHALL still resolve with meters starting from 0 and SHALL report the failure through `onError` exactly once.
+32. WHEN `startPoltergeist` is called with an `effects` option, THE Entry_Point SHALL continue to pass that same registry to `validateRules` before any other step (Requirement 11 criterion 6 remains in force).
+
+**Properties**
+
+33. FOR ALL non-negative finite stored values S and non-negative finite deltas D on one tab, loading S on the same local calendar date, adding D to the meters and then writing SHALL produce a stored record equal to S plus D for each of `timeOnSite` and `scrollDistance` (round-trip property for a single tab), and a subsequent load SHALL seed the Meter_Set with those values.
+34. FOR ALL non-negative finite deltas D1 and D2 written by two tabs on the same site and the same local calendar date, with their writes not interleaved, the stored record SHALL equal the initial stored values plus D1 plus D2 for each meter (accumulation property).
 
 ### Requirement 13: Pruning detached nodes in the Rot_Effect - NEW
 **User Story:** As a developer, I want the Rot_Effect to drop references to removed text, so that long-running pages do not leak memory.
