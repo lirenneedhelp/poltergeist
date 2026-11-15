@@ -48,8 +48,8 @@ Workspace rules that apply to every task:
     - Synchronous `startPoltergeist` and its re-exports.
     - _Requirements: 7.7, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
-- [ ] 3. Scroll tracking in inner containers (Requirement 9)
-  - [ ] 3.1 Add capture-phase container scroll tracking to `skeleton/meters.js`
+- [x] 3. Scroll tracking in inner containers (Requirement 9)
+  - [x] 3.1 Add capture-phase container scroll tracking to `skeleton/meters.js`
     - Register a document `scroll` listener with `{ capture: true, passive: true }` alongside the window listener.
     - Keep `lastWindowScrollY`, initialized at creation. Add a `WeakMap` of per-element `scrollTop` baselines.
     - Normalize targets. `document`, `document.scrollingElement` and the element representing the viewport use the shared viewport position. Other elements with a numeric `scrollTop` use their own entry. Unrecognized targets are ignored without throwing.

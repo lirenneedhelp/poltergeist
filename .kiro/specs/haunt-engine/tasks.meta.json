@@ -19,6 +19,25 @@
         "chatSessionId": "sess_10e7f4c5-7fc1-4086-9b0b-99c9c3aab87e",
         "timestamp": 1794761392762
       }
+    ],
+    "3.1 Add capture-phase container scroll tracking to `skeleton/meters.js`": [
+      {
+        "executionId": "401f10fa-2600-4d9e-90ce-8c821acc8c5e",
+        "chatSessionId": "sess_846a9d2a-0a6a-4b04-9a06-b91ffec13c83",
+        "timestamp": 1794762061245
+      },
+      {
+        "executionId": "401f10fa-2600-4d9e-90ce-8c821acc8c5e",
+        "chatSessionId": "sess_846a9d2a-0a6a-4b04-9a06-b91ffec13c83",
+        "timestamp": 1794762158584
+      }
+    ],
+    "3. Scroll tracking in inner containers (Requirement 9)": [
+      {
+        "executionId": "401f10fa-2600-4d9e-90ce-8c821acc8c5e",
+        "chatSessionId": "sess_846a9d2a-0a6a-4b04-9a06-b91ffec13c83",
+        "timestamp": 1794762158649
+      }
     ]
   }
 }

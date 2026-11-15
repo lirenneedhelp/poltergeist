@@ -18,18 +18,33 @@ export function createMeters({ window, document, now = () => performance.now(), 
   let scrollDistance = initial.scrollDistance ?? 0; // px
   let lastTick = now();
   let lastActiveAt = lastTick;
-  let lastScrollY = scrollY();
+  let lastWindowScrollY = scrollY();
+  const containerTops = new WeakMap(); // element -> last seen scrollTop
 
-  const onScroll = () => {
+  const syncViewport = () => {
     const y = scrollY();
-    scrollDistance += Math.abs(y - lastScrollY);
-    lastScrollY = y;
+    scrollDistance += Math.abs(y - lastWindowScrollY);
+    lastWindowScrollY = y;
+  };
+  const isViewport = (t) =>
+    t === document || t === window || t === document.scrollingElement || t === document.documentElement;
+
+  const onScroll = () => syncViewport();
+  const onCaptureScroll = (event) => {
+    const target = event && event.target;
+    if (!target) return;
+    if (isViewport(target)) return syncViewport();
+    const top = target.scrollTop;
+    if (typeof top !== 'number' || Number.isNaN(top)) return;
+    if (containerTops.has(target)) scrollDistance += Math.abs(top - containerTops.get(target));
+    containerTops.set(target, top);
   };
   const onVisibility = () => {
     if (isVisible()) lastActiveAt = now();
   };
 
   window.addEventListener('scroll', onScroll, { passive: true });
+  document.addEventListener('scroll', onCaptureScroll, { capture: true, passive: true });
   document.addEventListener('visibilitychange', onVisibility);
 
   return {
@@ -52,6 +67,7 @@ export function createMeters({ window, document, now = () => performance.now(), 
     },
     dispose() {
       window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('scroll', onCaptureScroll, { capture: true });
       document.removeEventListener('visibilitychange', onVisibility);
     },
   };
