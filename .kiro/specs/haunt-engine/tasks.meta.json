@@ -74,6 +74,18 @@
         "chatSessionId": "sess_7fba8ea2-3d5a-4f33-9fd2-46a32a9ae6b6",
         "timestamp": 1794763685959
       }
+    ],
+    "4.3 Rewrite `skeleton/effects/flicker.js` as a fixed sibling overlay": [
+      {
+        "executionId": "fd12b19f-d13f-4e02-80ad-971e8b790f4a",
+        "chatSessionId": "sess_9c1dae41-091c-4625-8974-b45c5796ceba",
+        "timestamp": 1794763963039
+      },
+      {
+        "executionId": "fd12b19f-d13f-4e02-80ad-971e8b790f4a",
+        "chatSessionId": "sess_9c1dae41-091c-4625-8974-b45c5796ceba",
+        "timestamp": 1794764004458
+      }
     ]
   }
 }

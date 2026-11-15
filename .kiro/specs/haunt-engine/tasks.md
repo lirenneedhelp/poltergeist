@@ -77,7 +77,7 @@ Workspace rules that apply to every task:
     - Write no inline style on `documentElement` or `body`. Work when `body` is absent.
     - Keep the exports `{apply, undo, description}`.
     - _Requirements: 10.1, 10.3, 10.4, 10.7, 10.8, 10.9, 10.12, 10.15, 6.20, 5.7, 5.8, 5.9, 5.10_
-  - [ ] 4.3 Rewrite `skeleton/effects/flicker.js` as a fixed sibling overlay
+  - [x] 4.3 Rewrite `skeleton/effects/flicker.js` as a fixed sibling overlay
     - Create one black `div[data-poltergeist="flicker"]` as a direct child of `documentElement` with the geometry above, `pointer-events: none` and `z-index: 2147483646`. Create one `style[data-poltergeist="flicker"]` with a `pg-flicker` keyframes rule.
     - Without reduced motion: infinite opacity animation with period `periodMs` (default 1400), minimum opacity 0 and peak `maxDepth * i` (default 0.6).
     - With reduced motion (read `env.reducedMotion` on every apply): no animation and static opacity `maxDepth * i * 0.5`.
