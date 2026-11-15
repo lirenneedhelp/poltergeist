@@ -1,17 +1,35 @@
-import { clamp01, teardown } from './util.js';
+import { clamp01, teardown, handleState, LIVE } from './util.js';
 
 export const description = 'Page blurs and loses colour; both scale with intensity.';
 
 const DEFAULTS = { maxBlur: 6, maxGrayscale: 1 };
+const Z_INDEX = '2147483645';
+
+const filterFor = (blur, gray) => `blur(${blur}px) grayscale(${gray})`;
 
 export function apply(env, params = {}, intensity, handle) {
   const p = { ...DEFAULTS, ...params };
   const i = clamp01(intensity);
   if (!handle || handle.dead) {
-    const el = env.document.documentElement;
-    handle = { env, el, prev: { filter: el.style.filter, transition: el.style.transition }, dead: false, fading: false, timer: null };
+    const doc = env.document;
+    const el = doc.createElement('div');
+    el.setAttribute('data-poltergeist', 'fog');
+    const s = el.style;
+    s.position = 'fixed';
+    s.top = '0';
+    s.right = '0';
+    s.bottom = '0';
+    s.left = '0';
+    s.pointerEvents = 'none';
+    s.zIndex = Z_INDEX;
+    doc.documentElement.appendChild(el);
+    handle = { env, el, dead: false, fading: false, timer: null };
   }
-  handle.el.style.filter = `blur(${(p.maxBlur * i).toFixed(2)}px) grayscale(${(p.maxGrayscale * i).toFixed(3)})`;
+  if (handleState(handle) === LIVE) {
+    const value = filterFor(+(p.maxBlur * i).toFixed(2), +(p.maxGrayscale * i).toFixed(3));
+    handle.el.style.backdropFilter = value;
+    handle.el.style.webkitBackdropFilter = value;
+  }
   return handle;
 }
 
@@ -20,12 +38,13 @@ export function undo(handle, { durationMs = 0 } = {}) {
     handle,
     durationMs,
     () => {
-      handle.el.style.transition = `filter ${durationMs}ms linear`;
-      handle.el.style.filter = 'blur(0px) grayscale(0)';
+      const s = handle.el.style;
+      s.transition = `backdrop-filter ${durationMs}ms linear, -webkit-backdrop-filter ${durationMs}ms linear`;
+      s.backdropFilter = 'blur(0px) grayscale(0)';
+      s.webkitBackdropFilter = 'blur(0px) grayscale(0)';
     },
     () => {
-      handle.el.style.filter = handle.prev.filter;
-      handle.el.style.transition = handle.prev.transition;
+      handle.el.remove();
     },
   );
 }

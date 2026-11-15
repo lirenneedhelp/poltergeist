@@ -70,7 +70,7 @@ Workspace rules that apply to every task:
     - Zero-duration teardown cancels a pending fade timer and finishes once.
     - Finish runs at most once, and missing or dead Handles are ignored.
     - _Requirements: 5.7, 5.8, 5.9, 5.10, 5.11_
-  - [ ] 4.2 Rewrite `skeleton/effects/fog.js` as a fixed sibling overlay
+  - [x] 4.2 Rewrite `skeleton/effects/fog.js` as a fixed sibling overlay
     - Create one `div[data-poltergeist="fog"]` as a direct child of `documentElement`. Use `position: fixed`, `top/right/bottom/left: 0`, `pointer-events: none` and `z-index: 2147483645`.
     - Set `backdrop-filter: blur(B px) grayscale(G)` with `B = maxBlur * i` (default 6) and `G = maxGrayscale * i` (default 1), clamping `i` to [0, 1].
     - Update the same overlay in place on a live Handle. Zero-duration undo removes it immediately. Positive-duration undo transitions to `blur(0px) grayscale(0)` and removes it after `durationMs`.

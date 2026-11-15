@@ -62,6 +62,18 @@
         "chatSessionId": "sess_3916561b-facd-46cf-8fb0-936cc14452b5",
         "timestamp": 1794762903947
       }
+    ],
+    "4.2 Rewrite `skeleton/effects/fog.js` as a fixed sibling overlay": [
+      {
+        "executionId": "71b1b27c-3866-48b9-aaae-4ac8cb65aa61",
+        "chatSessionId": "sess_7fba8ea2-3d5a-4f33-9fd2-46a32a9ae6b6",
+        "timestamp": 1794763619111
+      },
+      {
+        "executionId": "71b1b27c-3866-48b9-aaae-4ac8cb65aa61",
+        "chatSessionId": "sess_7fba8ea2-3d5a-4f33-9fd2-46a32a9ae6b6",
+        "timestamp": 1794763685959
+      }
     ]
   }
 }
