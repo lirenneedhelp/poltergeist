@@ -83,7 +83,7 @@ Workspace rules that apply to every task:
     - With reduced motion (read `env.reducedMotion` on every apply): no animation and static opacity `maxDepth * i * 0.5`.
     - Update in place. Undo removes the overlay and style element synchronously for any duration. Write no root or body inline styles. Work when `body` is absent.
     - _Requirements: 10.2, 10.5, 10.6, 10.7, 10.10, 10.12, 10.15, 6.20_
-  - [ ] 4.4 Update `skeleton/effects/block.js` to append to `documentElement`
+  - [x] 4.4 Update `skeleton/effects/block.js` to append to `documentElement`
     - Always append the overlay as a direct child of `documentElement`, whether or not `body` exists.
     - Keep `z-index: 2147483647`, `role="status"`, `opacity = maxOpacity * i`, the message text and threshold-based `pointer-events` (`auto` when `i >= blockAt`, otherwise `none`).
     - Keep fade undo (disable pointer events, fade opacity, then remove) and immediate undo.

@@ -16,7 +16,7 @@ export function apply(env, params = {}, intensity, handle) {
       'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;' +
       'background:#000;color:#fff;font:600 1.5rem system-ui,sans-serif;text-align:center;padding:2rem;' +
       'opacity:0;pointer-events:none;';
-    (doc.body || doc.documentElement).appendChild(el);
+    doc.documentElement.appendChild(el);
     handle = { env, el, dead: false, fading: false, timer: null };
   }
   handle.el.textContent = p.message;
