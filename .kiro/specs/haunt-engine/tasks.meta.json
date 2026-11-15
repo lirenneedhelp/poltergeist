@@ -50,6 +50,18 @@
         "chatSessionId": "sess_ae6fd499-3be8-4f94-8d16-11ad30d9ac90",
         "timestamp": 1794762316601
       }
+    ],
+    "4.1 Formalize teardown lifecycle in `skeleton/effects/util.js`": [
+      {
+        "executionId": "83428839-4e33-41fd-acc4-20ad31043ecc",
+        "chatSessionId": "sess_3916561b-facd-46cf-8fb0-936cc14452b5",
+        "timestamp": 1794762601395
+      },
+      {
+        "executionId": "83428839-4e33-41fd-acc4-20ad31043ecc",
+        "chatSessionId": "sess_3916561b-facd-46cf-8fb0-936cc14452b5",
+        "timestamp": 1794762903947
+      }
     ]
   }
 }

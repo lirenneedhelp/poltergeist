@@ -65,7 +65,7 @@ Workspace rules that apply to every task:
     - **Validates: Requirements 3.4, 9.1, 9.3, 9.4, 9.6, 9.7**
 
 - [ ] 4. Overlay-based Fog, Flicker and Block (Requirement 10)
-  - [ ] 4.1 Formalize teardown lifecycle in `skeleton/effects/util.js`
+  - [x] 4.1 Formalize teardown lifecycle in `skeleton/effects/util.js`
     - Make the live, fading and dead states explicit. Repeated positive-duration teardown is a no-op that keeps the original timer.
     - Zero-duration teardown cancels a pending fade timer and finishes once.
     - Finish runs at most once, and missing or dead Handles are ignored.
