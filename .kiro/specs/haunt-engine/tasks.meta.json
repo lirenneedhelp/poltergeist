@@ -98,6 +98,25 @@
         "chatSessionId": "sess_9afe5510-8086-4084-bba7-7160491ccfb3",
         "timestamp": 1794764128237
       }
+    ],
+    "4.5 Write jsdom structural tests in `skeleton/test/effects.test.js`": [
+      {
+        "executionId": "698b7d30-7545-47f0-8ca4-b638adfd8e8b",
+        "chatSessionId": "sess_f44c1cf1-6762-47b2-b6c2-14514f2732fc",
+        "timestamp": 1794764198066
+      },
+      {
+        "executionId": "698b7d30-7545-47f0-8ca4-b638adfd8e8b",
+        "chatSessionId": "sess_f44c1cf1-6762-47b2-b6c2-14514f2732fc",
+        "timestamp": 1794764281793
+      }
+    ],
+    "4. Overlay-based Fog, Flicker and Block (Requirement 10)": [
+      {
+        "executionId": "698b7d30-7545-47f0-8ca4-b638adfd8e8b",
+        "chatSessionId": "sess_f44c1cf1-6762-47b2-b6c2-14514f2732fc",
+        "timestamp": 1794764282171
+      }
     ]
   }
 }

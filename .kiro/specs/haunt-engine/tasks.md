@@ -64,7 +64,7 @@ Workspace rules that apply to every task:
     - **Property 5: Scroll distance is the summed path length per target**
     - **Validates: Requirements 3.4, 9.1, 9.3, 9.4, 9.6, 9.7**
 
-- [ ] 4. Overlay-based Fog, Flicker and Block (Requirement 10)
+- [x] 4. Overlay-based Fog, Flicker and Block (Requirement 10)
   - [x] 4.1 Formalize teardown lifecycle in `skeleton/effects/util.js`
     - Make the live, fading and dead states explicit. Repeated positive-duration teardown is a no-op that keeps the original timer.
     - Zero-duration teardown cancels a pending fade timer and finishes once.
@@ -89,7 +89,7 @@ Workspace rules that apply to every task:
     - Keep fade undo (disable pointer events, fade opacity, then remove) and immediate undo.
     - Write no root or body inline styles.
     - _Requirements: 10.11, 10.12, 10.16, 6.13, 6.14, 6.15, 6.16, 6.17, 6.18_
-  - [ ] 4.5 Write jsdom structural tests in `skeleton/test/effects.test.js`
+  - [x] 4.5 Write jsdom structural tests in `skeleton/test/effects.test.js`
     - Overlay parent, geometry and exact z-index stack (Fog 2147483645 < Flicker 2147483646 < Block 2147483647).
     - Fog and Flicker formulas, Flicker in both reduced-motion modes, update in place with unchanged overlay identity and artifact counts, missing `body`, and unchanged root and body `style` attributes.
     - Teardown helper cases: repeated positive fade is a no-op, zero-duration interrupts a fade, finish runs once, and dead Handles are no-ops.
