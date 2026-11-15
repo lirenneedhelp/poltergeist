@@ -56,7 +56,7 @@ Workspace rules that apply to every task:
     - An element's first event records its baseline and adds 0. Equal positions add 0. Viewport and container distances sum into `scrollDistance`.
     - `dispose()` removes the document listener with the same callback and `capture: true`, and removes the window and visibility listeners.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 3.4_
-  - [ ]* 3.2 Extend `skeleton/test/meters.test.js` for inner containers
+  - [x] 3.2 Extend `skeleton/test/meters.test.js` for inner containers
     - Capture registration and removal with the same flag, target normalization, first-event baseline, independent containers, viewport plus container sums, same-position events, and no change after `dispose`.
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
   - [ ]* 3.3 Write property test for scroll distance

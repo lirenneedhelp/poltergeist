@@ -38,6 +38,18 @@
         "chatSessionId": "sess_846a9d2a-0a6a-4b04-9a06-b91ffec13c83",
         "timestamp": 1794762158649
       }
+    ],
+    "3.2 Extend `skeleton/test/meters.test.js` for inner containers": [
+      {
+        "executionId": "b417d20f-5e6f-409a-889d-d78b340f51c5",
+        "chatSessionId": "sess_ae6fd499-3be8-4f94-8d16-11ad30d9ac90",
+        "timestamp": 1794762274784
+      },
+      {
+        "executionId": "b417d20f-5e6f-409a-889d-d78b340f51c5",
+        "chatSessionId": "sess_ae6fd499-3be8-4f94-8d16-11ad30d9ac90",
+        "timestamp": 1794762316601
+      }
     ]
   }
 }
