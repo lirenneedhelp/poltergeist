@@ -16,8 +16,8 @@ Workspace rules that apply to every task:
 
 ## Tasks
 
-- [ ] 1. Set up test tooling
-  - [ ] 1.1 Add dev dependencies and test configuration
+- [x] 1. Set up test tooling
+  - [x] 1.1 Add dev dependencies and test configuration
     - Add `jsdom`, `fast-check` and `@playwright/test` to `devDependencies` in `package.json`, keeping the existing `vitest` entry.
     - Add a root `vitest.config.js` that includes `skeleton/test/**/*.test.js` and excludes `**/*.pw.js`. Suites that need a DOM select jsdom with a per-file `// @vitest-environment jsdom` annotation.
     - Add a root `playwright.config.js` that matches `skeleton/test/browser/**/*.pw.js`, uses the installed Chrome channel and a fixed viewport.
