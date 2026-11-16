@@ -8,13 +8,13 @@ All tasks are new and remain unchecked. The only permitted production change und
 
 Workspace constraints that apply to every task:
 
-- `skeleton/` is the single authored source of truth. `app1-doomscroll/skeleton/` is generated, ignored, and never edited directly.
+- `skeleton/` is the single authored source of truth. `app1-doomscroll/skeleton/` is generated, committed, never edited directly, and checked before Vitest.
 - Effects apply to the whole page and use no YouTube-, X-, Instagram-, feed-, post-, or timeline-specific selector.
 - Every started effect and observer must have a complete undo path.
 - Flicker must retain the skeleton's static `prefers-reduced-motion` behavior.
 - Both Normal and Demo rule documents must pass the root Rule Validator.
 - Persisted behavior meters, Tab Graveyard, and `demo-site/` are out of scope.
-- Long-running watch modes are not used; Vitest runs with `--run` through the existing `npm test` script.
+- Long-running watch modes are not used. The normal `npm test` command runs `check:doomscroll` before Vitest, and the Kiro save hook is convenience automation only.
 
 ## Tasks
 
@@ -36,33 +36,38 @@ Workspace constraints that apply to every task:
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10_
 
 - [ ] 2. Fix Rot for text added at stable intensity
-  - [ ] 2.1 Add a Handle-owned refresh and MutationObserver in `skeleton/effects/rot.js`
-    - Factor the current detached-node prune and whole-body TreeWalker pass into a private refresh function without changing skip rules, deterministic hashing, rewrite adoption, serial assignment, or conditional restoration.
-    - Add private Handle fields for one observer and the latest clamped fraction/glyph array. Update those fields before every explicit refresh.
-    - After the initial pass, observe `documentElement` with `{ subtree: true, childList: true, characterData: true }` when observation is available. Retry observer creation on a later `apply` if `documentElement` was initially absent.
-    - For each observer delivery, refresh at most once when there is an addition/removal or an untracked/page-rewritten character-data target. Ignore Rot's own character records when current data already equals the tracked output.
-    - Reuse one observer on repeated apply, prune removals during refresh, and keep explicit-pass behavior when observation is unavailable.
-    - Disconnect before teardown restoration, guard callbacks after death, clear the observer reference and node map, and preserve idempotent undo.
+  - [ ] 2.1 Add full-body explicit passes and throttled mutation-root passes in `skeleton/effects/rot.js`
+    - Factor shared text-node processing, subtree walking, and detached-node pruning without changing skip rules, deterministic hashing, rewrite adoption, serial assignment, conditional restoration, or public exports.
+    - Keep every explicit `apply` as an immediate full-body pass. Store the latest clamped fraction/glyph array first, then cancel and clear any observer work superseded by that pass.
+    - Add one observer, a separate observer timer, a Set of pending roots, and a pending-prune flag to each live Handle. Observe `documentElement` with `{ subtree: true, childList: true, characterData: true }` when available.
+    - Queue only each `childList.addedNode` and each externally changed `characterData` text target. Use removals only to request detached-entry pruning. Ignore Rot-owned character records whose text already equals tracked output.
+    - On the first relevant delivery, arm one 250 ms timer. Merge later records into that pending batch without adding a timer; when it fires, de-duplicate overlapping roots and process only in-body queued roots, never `document.body` as a fallback.
+    - Process text roots directly and added element/document-fragment roots with a TreeWalker rooted at that subtree. Permit the body as a root only when the body itself was an added node.
+    - Reuse the observer across explicit applies, use the latest Handle params at flush time, and retain explicit-pass behavior when observation is unavailable.
+    - On undo, disconnect the observer and cancel/clear the observer timer and queue before conditional text restoration. Guard callbacks/timers after death and preserve idempotent undo.
     - Do not modify `skeleton/engine.js` or any other production skeleton file.
-    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 4.14, 4.15_
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 4.14, 4.15, 4.16, 4.17, 4.18, 4.19, 4.20, 4.21_
 
-  - [ ] 2.2 Extend `skeleton/test/rot.test.js` for observer behavior and restoration
-    - Test eligible text appended after an explicit intensity-1 apply and await actual jsdom MutationObserver delivery without manually reapplying Rot.
-    - Test a tracked text-node rewrite, a newly inserted/replaced body, latest intensity and glyph params after an explicit update, and observer identity across repeated apply calls.
-    - Test one refresh per mutation delivery, settlement of Rot's own mutations without an unbounded callback loop, and pruning after subtree removal.
-    - Test disconnect-before-restore, exact restoration of initial and appended text, conditional preservation of later page rewrites, repeat undo, queued callback no-op, and untouched mutations after undo.
-    - Test the no-MutationObserver and no-documentElement fallbacks without changing the exported effect contract.
-    - **Property 4: Rot refresh and undo form a reversible mutation lifecycle**
-    - **Validates: Requirements 4.1, 4.3, 4.4, 4.5, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 4.14**
+  - [ ] 2.2 Extend `skeleton/test/rot.test.js` for root scope, throttling, and restoration
+    - Verify an explicit apply immediately walks the whole body and a later explicit apply cancels a pending observer timer/queue because its full pass supersedes that work.
+    - With fake timers and actual jsdom mutation delivery, append eligible text at stable intensity 1; assert no observer pass at 249 ms, exactly one pass at 250 ms, and use of the latest explicit intensity/glyph params.
+    - Deliver several callbacks inside one window and require one pass over all distinct roots. Cover duplicate/ancestor roots, removed roots, detached pruning, an added/replaced body, and direct adoption of one changed text node.
+    - Instrument TreeWalker roots and/or text-node visits: after initial apply, append one subtree beside an unchanged sentinel and require every observer traversal root to be the appended subtree, never the body fallback, with the sentinel never visited. Add a changed-text case that visits only that exact text node.
+    - Test observer identity across repeated apply calls, settlement of Rot-owned mutations without a feedback loop, and scheduling of no more than one observer pass per 250 ms during continuous traffic.
+    - Test disconnect/timer cancellation before restore, exact restoration of initial and appended text, conditional preservation of later page rewrites, repeat undo, queued callback no-op, and untouched mutations after undo.
+    - Test no-MutationObserver and no-documentElement fallbacks without changing the exported effect contract.
+    - **Property 4: Rot observer work is bounded and reversible**
+    - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.15, 4.16, 4.17, 4.18, 4.19, 4.20, 7.2**
 
 - [ ] 3. Add deterministic skeleton synchronization and package validation
-  - [ ] 3.1 Implement `scripts/sync-doomscroll-skeleton.mjs` and package commands
+  - [ ] 3.1 Implement `scripts/sync-doomscroll-skeleton.mjs`, commit the mirror, and wire package commands
     - Add synchronize mode and a read-only `--check` mode, resolving paths from the repository root and guarding that the generated target is exactly `app1-doomscroll/skeleton` before replacing it.
     - Copy all source files under root `skeleton/` except `skeleton/test/**`, in sorted relative-path order and without byte or line-ending rewrites. Remove stale generated files only inside the guarded generated target.
     - In check mode, compare the complete relative file sets and bytes, aggregate missing/extra/changed diagnostics, and perform no writes or timestamp changes.
-    - Add `build:doomscroll` and `check:doomscroll` scripts to `package.json`; add only `/app1-doomscroll/skeleton/` to `.gitignore` for this generated output.
+    - Add `build:doomscroll` and `check:doomscroll` scripts. Change `npm test` to run `npm run check:doomscroll` before `vitest --run`, with failure short-circuiting Vitest.
+    - Run the build to create `app1-doomscroll/skeleton/`, include the generated production files in the delivered Git change, and ensure no `.gitignore` rule matches that directory.
     - Export or isolate testable comparison helpers without adding runtime dependencies to the extension.
-    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.9, 6.10_
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.10, 7.1_
 
   - [ ] 3.2 Add Package Validator checks and tests
     - Parse both JSON files and run root `validateRules` with `builtinEffects`; assert exact rule ids/order, meter values, params, messages, and undo settings.
@@ -71,9 +76,17 @@ Workspace constraints that apply to every task:
     - Expand WAR declarations and require exactly the reachable JavaScript graph plus `rules.json`; reject generated test files and broader resources or origins.
     - Scan app-owned JavaScript and HTML for remote executable URLs, `eval`, `new Function`, string-valued timers, inline script bodies, and inline event-handler attributes; report the path and construct.
     - Add package tests for success and aggregated failures using temporary directories, including stale, missing, extra, and byte-changed skeleton files and each prohibited code form.
+    - Verify that Git ignore rules do not match `app1-doomscroll/skeleton/` and that a drifted temporary/fixture mirror makes the check fail without writing. Verify the normal test script orders `check:doomscroll` before Vitest with failure short-circuiting.
     - **Property 1: Scope-bearing lists are exactly equal**
     - **Property 5: Generated skeleton identity is exact**
-    - **Validates: Requirements 1.3, 1.4, 1.6, 1.7, 1.8, 1.9, 1.11, 2.1, 6.5, 6.6, 6.7, 6.8**
+    - **Validates: Requirements 1.3, 1.4, 1.6, 1.7, 1.8, 1.9, 1.11, 2.1, 6.4, 6.5, 6.6, 6.7, 6.8, 7.1**
+
+  - [ ] 3.3 Add the Kiro PostFileSave convenience hook
+    - Use Kiro's hook creation tool/interface, not a manual file write, to create `.kiro/hooks/build-doomscroll-on-skeleton-save.json` with file format version `v1`, trigger `PostFileSave`, command `npm run build:doomscroll`, and a descriptive name.
+    - Use an anchored positive cross-platform path matcher for direct files under the root `skeleton/` and descendants under the root `skeleton/effects/`; do not rely on lookahead. Prove that representative relative and absolute `/` and `\\` root-source paths match, while `skeleton/test/**` and `app1-doomscroll/skeleton/**` paths do not.
+    - Commit the hook configuration. Document that it runs when Kiro emits the save event, may not cover manual or other-editor saves, and cannot replace the build/check commands or the `npm test` drift failure.
+    - Do not duplicate copy logic in the hook; it must invoke the same authoritative build command.
+    - _Requirements: 6.10_
 
 - [ ] 4. Implement extension control state and popup
   - [ ] 4.1 Implement the module service worker in `app1-doomscroll/background.js`
@@ -103,31 +116,33 @@ Workspace constraints that apply to every task:
 - [ ] 5. Implement the classic loader and Runtime Controller
   - [ ] 5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`
     - Keep `content.js` a classic script. Use a contained async bootstrap and no static imports or exports.
-    - Model desired pause/demo state, `normalSnapshot`, `demoSnapshot`, current instance, a serialized Promise queue, generation token, and disposed flag.
+    - Model unknown/confirmed desired fields, separate pause/demo revisions, `normalSnapshot`, `demoSnapshot`, current instance, a serialized Promise queue, generation token, reduced-motion restart flag, disposed flag, and fault state.
     - Create Demo_Profile from a deep clone by dividing every threshold/ramp by 60, validate it through the dynamically loaded root API, and leave Normal_Profile deeply unchanged.
-    - Reset demo meters only for an off-to-on transition; preserve a demo snapshot across pause/resume while demo remains on; discard demo progress when demo turns off; never merge it into normal meters.
-    - Before replacing an instance, copy only `timeOnSite` and `scrollDistance`, call `stop` through Promise resolution, and clear ownership. Pause always wins and keeps no Engine active.
-    - On stale startup completion, stop the obsolete result immediately. Contain queue errors so later desired-state changes can still reconcile without ever owning two instances.
+    - Reset demo meters on every actual demo Boolean transition, including while paused; preserve a demo snapshot only across pause/resume while demo remains continuously enabled; never merge it into normal meters.
+    - Before replacing an instance, copy only `timeOnSite` and `scrollDistance` as required and call the current synchronous `stop`. Clear ownership only after stop returns; if stop throws, retain the reference, report one fault, and start no replacement.
+    - Check generation after asynchronous package loading and before the synchronous `startPoltergeist` call, so obsolete state never creates an Engine. If start throws, enter a faulted state and do not retry automatically.
+    - Restart the same profile from its snapshot when the reduced-motion media query changes while active; defer that work while paused.
     - **Property 2: Demo scaling preserves rule shape and order**
     - **Property 3: Runtime reconciliation owns at most one instance**
-    - **Validates: Requirements 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 5.9, 5.10, 5.13**
+    - **Validates: Requirements 2.6, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.14, 3.16, 5.9, 5.10, 5.13, 5.17**
 
-  - [ ] 5.2 Wire packaged startup, messages, and cleanup
-    - On initialization, register only the required content-side message and storage listeners, request confirmed content state from the worker, and do not start before that response.
+  - [ ] 5.2 Wire packaged startup, revision-safe messages, and cleanup
+    - Register the required content-side message, storage, media-query, and pagehide listeners before requesting initial state. Capture separate pause/demo revisions, merge each initial field only if no newer event changed it, and start no Engine until both fields are confirmed.
     - Cache one Promise that dynamically imports `chrome.runtime.getURL('skeleton/index.js')` and fetches/parses `chrome.runtime.getURL('rules.json')`; reject non-success responses before parsing.
-    - Validate the Normal_Profile and pass the selected untouched document plus in-memory `initialMeters` to `await startPoltergeist`.
-    - Handle `doomscroll:ping` without changing state, accept `doomscroll:apply-paused` only from the extension, and reconcile `doomscroll.demoMode` changes from the local storage namespace.
-    - Prefix one contained diagnostic per failed operation with `[poltergeist:doomscroll]`, stop any owned partial/obsolete instance, and leave no artifacts after fatal startup failure.
-    - Let skeleton pagehide cleanup run and remove app-owned listeners/dispose desired state when the content context ends where an explicit lifecycle event is available.
+    - Validate the Normal_Profile, check the current generation after package loading, and call the current synchronous `startPoltergeist` with the selected untouched document plus in-memory `initialMeters`.
+    - Handle `doomscroll:ping` without changing state, accept `doomscroll:apply-paused` through the extension message channel, and reconcile `doomscroll.demoMode` changes from the local storage namespace.
+    - Prefix one contained diagnostic per failed operation with `[poltergeist:doomscroll]`. On owned-stop failure retain the instance and fault; on pre-start failure remain clean; on an Entry_Point throw do not claim cleanup of an object that was never returned or retry automatically.
+    - On pagehide, mark app state disposed before any queued callback can reconcile and let the skeleton's existing pagehide listener stop its returned instance.
     - Add no site-specific selector, behavior-meter storage, Storage Adapter, or skeleton Entry Point change.
-    - _Requirements: 1.11, 3.1, 3.2, 3.3, 3.4, 3.11, 3.12, 3.13, 3.14, 5.6, 5.8, 5.9, 5.12, 5.13, 5.14, 5.15, 5.16_
+    - _Requirements: 1.11, 3.1, 3.2, 3.3, 3.4, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 5.6, 5.8, 5.9, 5.12, 5.13, 5.14, 5.15, 5.16, 5.17_
 
   - [ ] 5.3 Add Runtime Controller and loader Vitest coverage
     - Exercise the classic loader in an isolated test context with fake module/fetch/Chrome boundaries; do not add a production app module merely for testing.
-    - Verify exact 1/60 profile values, deep immutability, validation before start, normal/demo snapshot separation, zeroed new demo sessions, pause precedence, and profile selection at startup.
-    - Generate rapid pause/demo event sequences and deferred starts/stops; require at most one published instance, exactly one stop for replaced/obsolete instances, and continued queue operation after a contained error.
-    - Cover dynamic runtime URLs, non-success rules response, bad JSON, validation failure, import/start failure, sync and Promise-returning skeleton APIs, listener messages, storage changes, and clean failure state.
-    - _Requirements: 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 7.3_
+    - Verify exact 1/60 profile values, deep immutability, validation before start, normal/demo snapshot separation, paused off/on demo resets, pause precedence, and profile selection at startup.
+    - Generate rapid pause/demo sequences and deferred package loads; require no synchronous Entry_Point call for stale generations, at most one instance, stop-before-start ordering, and a fault with retained ownership after stop failure.
+    - Race live pause/demo events against the initial state response and require newer per-field revisions to win; cover reduced-motion restart and deferral while paused.
+    - Cover dynamic runtime URLs, non-success rules response, bad JSON, validation failure, synchronous import/start/stop failure boundaries, listener messages, storage changes, pagehide disposal, and clean pre-start failures.
+    - _Requirements: 2.6, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 5.8, 5.9, 5.10, 5.12, 5.13, 5.17, 7.3_
 
 - [ ] 6. Add unpacked-extension browser verification
   - [ ] 6.1 Expand Vitest and Playwright discovery without regressing existing suites
@@ -139,39 +154,43 @@ Workspace constraints that apply to every task:
 
   - [ ] 6.2 Create the local feed fixture and persistent extension fixture
     - Add deterministic `app1-doomscroll/test/fixtures/feed.html` with several long, uniquely identified text posts, a fixed element if useful for restoration checks, and a fixture API that appends a post without site-specific production integration.
-    - Before browser launch, run build and read-only check. Launch a fresh persistent Chromium context with only `app1-doomscroll/` enabled and derive the extension id from its MV3 service worker.
+    - Run the read-only drift check, but do not run the build in browser fixture setup. Launch the committed `app1-doomscroll/` from a fresh persistent Chromium context and derive the extension id from its MV3 service worker, so the test proves a fresh checkout is complete.
     - Route `https://www.youtube.com/doomscroll-fixture` to the local HTML while preserving that approved URL; abort unexpected network access and allow required extension resource requests.
     - Capture page errors, worker errors, and namespaced diagnostics. Close the context and temporary profile in teardown on pass or failure, including Windows-safe cleanup retries.
     - _Requirements: 6.9, 7.5, 7.6, 7.12, 7.13, 7.14_
 
-  - [ ] 6.3 Verify the timed haunt and stable-intensity Rot regression in Playwright
-    - Start the fixture in normal mode and assert it is initially clean. Enable Demo_Mode through the actual popup after load so the demo clock starts from zero.
+  - [ ] 6.3 Verify the timed haunt and stable-plateau Rot regression in Playwright
+    - Start the fixture in normal mode and assert it is initially clean. Open the popup URL only as an extension-origin control page, return the feed page to the foreground, and enable Demo_Mode through the production service-worker message protocol so visible-time metering continues.
     - Poll semantic DOM state and record first appearance. Require Fog before Flicker, Flicker before changed Rot text, Rot before Block, no later artifact at each earlier-stage checkpoint, the exact Block message, and pointer blocking at the 24-second demo point.
-    - Wait beyond the 15-second full-Rot point, append a long saved post, and require it to change after observer delivery without an explicit Rot call or intensity change.
-    - Use text comparisons and effect data attributes rather than screenshots or assertions that every character changes.
-    - _Requirements: 2.12, 2.15, 2.16, 4.4, 4.8, 4.9, 4.10, 7.7, 7.8, 7.12, 7.14_
+    - After elapsed demo time passes the 15-second Rot `rampTo` and the Engine is on its stable update plateau, append a long saved post and require it to change after the throttled observer window without an explicit Rot call.
+    - Use text comparisons and effect data attributes rather than screenshots, exact applied fractions, or assertions that every character changes.
+    - _Requirements: 2.12, 2.15, 2.16, 4.6, 4.7, 4.8, 4.10, 4.11, 4.16, 7.7, 7.8, 7.12, 7.14_
 
-  - [ ] 6.4 Verify popup pause, resume, restoration, and host exclusion in Playwright
-    - Pause the fixture tab through the actual popup. Require all overlays to disappear, every retained original/added fixture string to be restored exactly, and a post appended while paused to remain unchanged.
-    - Resume while Demo_Mode remains enabled. Require one active sequence and confirm later eligible appended text is processed again once Rot is active.
+  - [ ] 6.4 Verify pause, resume, restoration, and host exclusion in Playwright
+    - Resolve the foreground fixture's tab id through extension APIs and send `doomscroll:set-paused` from the background extension-origin control page. Require all overlays to disappear, every retained original/added fixture string to be restored exactly, and a post appended while paused to remain unchanged.
+    - Send the resume command through the same production protocol while Demo_Mode remains enabled. Bring/keep the fixture foreground, require one active sequence, and confirm later eligible appended text is processed again once Rot is active.
     - Open a second page on an unmatched routed origin and require no Doomscroll ping response, imported artifact, or Poltergeist DOM node.
     - Assert no unexpected page, worker, or extension errors and close all contexts in fixture teardown.
-    - _Requirements: 1.10, 3.4, 3.5, 4.12, 4.13, 5.3, 5.4, 5.7, 5.9, 5.10, 7.9, 7.10, 7.11, 7.13, 7.14_
+    - _Requirements: 1.10, 3.4, 3.5, 4.18, 4.19, 5.3, 5.4, 5.7, 5.9, 5.10, 7.9, 7.10, 7.11, 7.13, 7.14_
 
 - [ ] 7. Final checkpoint - verify the complete Doomscroll App
-  - [ ] 7.1 Build, check, and run all automated suites
+  - [ ] 7.1 Verify committed packaging, drift enforcement, and all automated suites
     - Re-read the manifest, rule file, generated-copy policy, and implementation diff; confirm that no production skeleton file except `skeleton/effects/rot.js` changed and that no out-of-scope feature was added.
-    - Run `npm run build:doomscroll`, followed by `npm run check:doomscroll`, and inspect that `app1-doomscroll/skeleton/` is generated and ignored rather than tracked.
-    - Run `npm test` and require the existing skeleton and new app suites to pass.
-    - Run `npm run test:browser` and require both the existing direct-effect suite and unpacked Doomscroll extension suite to pass.
-    - Confirm browser evidence covers actual manifest injection, runtime-URL import, rules fetch, service worker, popup messages, timed escalation, full-intensity appended text, undo on pause, resume, and unmatched-host exclusion.
-    - _Requirements: 1.1, 1.3, 1.5, 1.6, 1.8, 1.9, 2.1, 2.16, 3.12, 3.14, 4.13, 4.15, 5.16, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12, 7.13, 7.14_
+    - Confirm `app1-doomscroll/skeleton/` exists in the delivered Git change and is not ignored. Confirm the committed Kiro hook invokes only `npm run build:doomscroll` for current root production skeleton paths and excludes both `skeleton/test/**` and the Generated_Skeleton.
+    - Before running any build, run `npm test` against the committed mirror. Require `check:doomscroll` to run before Vitest and all existing skeleton/new app suites to pass; separately exercise a drift fixture and require failure without repair.
+    - Run `npm run build:doomscroll`, inspect that it creates no tracked content diff when the mirror was current, then run `npm run check:doomscroll` successfully.
+    - Run `npm run test:browser`; its fixture must check but not build before loading the committed unpacked extension. Require both the existing direct-effect suite and Doomscroll extension suite to pass.
+    - Confirm unit evidence covers explicit full-body Rot, mutation-root-only observer traversal, no unchanged sibling visit, one pass per 250 ms, pending-timer cancellation, and undo. Confirm browser evidence covers actual manifest injection, runtime-URL import, rules fetch, service worker, control messages, timed escalation, post-ramp appended text, pause, resume, and unmatched-host exclusion.
+    - _Requirements: 1.1, 1.3, 1.5, 1.6, 1.8, 1.9, 2.1, 2.16, 3.12, 3.14, 4.1, 4.6, 4.7, 4.8, 4.17, 4.18, 4.19, 4.21, 5.16, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.11, 7.12, 7.13, 7.14_
 
 ## Notes
 
 - Every task is required. No optional task is used because the user explicitly requested packaging, controls, the Rot regression fix, drift detection, and unpacked-extension verification.
-- `app1-doomscroll/skeleton/` is package output, not an app fork. Never patch it directly; rerun `npm run build:doomscroll` after a root skeleton change.
-- The Rot task intentionally supersedes only the earlier Haunt Engine design choice not to observe DOM churn. The Engine's intensity epsilon and tick behavior remain untouched.
+- `app1-doomscroll/skeleton/` is generated and committed package output, not an app fork. Never patch it directly; edit root `skeleton/`, run `npm run build:doomscroll`, review, and include both changes.
+- `npm test` is read-only with respect to the mirror: it runs `check:doomscroll` first and must fail on drift rather than repair it.
+- The committed Kiro PostFileSave hook shortens the feedback loop for Kiro-originated root production saves. It invokes the authoritative build command, excludes `skeleton/test/**` and the generated mirror, and is never cited as drift proof.
+- Explicit Rot applies remain full-body and immediate. Observer work is limited to queued mutation roots, coalesced to at most one pass per 250 ms, and canceled on explicit supersession or undo.
+- The Rot task supersedes only the earlier Haunt Engine choice not to observe DOM churn. The Engine's intensity epsilon and Tick behavior remain untouched.
 - Normal and demo progression both use `timeOnSite`; demo changes only timing, not effects, params, message, matching, or reduced-motion behavior.
 - `chrome.storage.session` pause state and `chrome.storage.local` demo preference are control state, not persisted behavior meters.
 - The Playwright extension project uses bundled Chromium because current Playwright documentation says branded Chrome no longer accepts the required side-load flags. It still exercises the Manifest V3 Chrome-extension runtime.
@@ -183,12 +202,13 @@ Workspace constraints that apply to every task:
 ```json
 {
   "waves": [
-    { "id": 0, "tasks": ["1.1", "1.2", "2.1", "3.1"] },
-    { "id": 1, "tasks": ["2.2", "3.2", "4.1", "5.1"] },
-    { "id": 2, "tasks": ["4.2", "5.2"] },
-    { "id": 3, "tasks": ["4.3", "5.3", "6.1", "6.2"] },
-    { "id": 4, "tasks": ["6.3", "6.4"] },
-    { "id": 5, "tasks": ["7.1"] }
+    { "id": 0, "tasks": ["1.1", "1.2", "2.1", "4.1", "5.1"] },
+    { "id": 1, "tasks": ["2.2", "3.1", "4.2", "5.2"] },
+    { "id": 2, "tasks": ["3.2", "3.3", "4.3", "5.3", "6.1"] },
+    { "id": 3, "tasks": ["6.2"] },
+    { "id": 4, "tasks": ["6.3"] },
+    { "id": 5, "tasks": ["6.4"] },
+    { "id": 6, "tasks": ["7.1"] }
   ]
 }
 ```

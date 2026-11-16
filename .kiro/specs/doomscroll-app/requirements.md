@@ -6,7 +6,7 @@ Doomscroll App is the first Poltergeist application: a Chrome Manifest V3 extens
 
 Every requirement in this document is `NEW`; `app1-doomscroll/` is empty at the start of this spec. The root `skeleton/` remains the single authored source of truth. Implementation may change only `skeleton/effects/rot.js` within production skeleton code, plus its tests, to make Rot process text inserted after the effect reaches a stable intensity. `skeleton/engine.js` and every other production file under `skeleton/` remain unchanged.
 
-The implementation uses a deterministic build script, rather than a Kiro hook, to generate `app1-doomscroll/skeleton/` from the root `skeleton/`. The generated directory is disposable package output, is ignored by Git, and is checked byte-for-byte against its source before verification.
+The implementation uses deterministic build/check scripts to generate `app1-doomscroll/skeleton/` from the root `skeleton/`. The generated directory is committed to Git so a fresh clone is immediately loadable as an unpacked extension. A read-only byte-for-byte check runs in the normal `npm test` path. A Kiro PostFileSave hook refreshes the copy after Kiro saves production skeleton files, but the hook is only a convenience; the scripts and drift check remain authoritative.
 
 Persisted behaviour meters, including Haunt Engine Requirement 12, are out of scope. The extension may persist the global demo preference and session-scoped per-tab pause flags; neither is a behaviour meter. Tab Graveyard, `demo-site/`, site-specific feed selectors, remote code, store publication, and extension signing are also out of scope.
 
@@ -18,9 +18,10 @@ No implementation code is changed by this spec phase.
 
 - **Approved_Host_Set**: Exactly `https://www.youtube.com/*`, `https://x.com/*`, and `https://www.instagram.com/*`.
 - **Authored_App**: The version-controlled files directly under `app1-doomscroll/`, excluding the Generated_Skeleton.
-- **Generated_Skeleton**: The disposable `app1-doomscroll/skeleton/` copy produced from the root `skeleton/` by the Doomscroll_Build.
+- **Generated_Skeleton**: The committed `app1-doomscroll/skeleton/` copy produced from the root `skeleton/` by the Doomscroll_Build; it is generated but version-controlled so a fresh clone is loadable.
 - **Doomscroll_Build**: The deterministic Node build command that refreshes the Generated_Skeleton and validates the package.
 - **Doomscroll_Check**: The read-only command that fails when the Generated_Skeleton or package metadata has drifted.
+- **Kiro_Build_Hook**: The committed PostFileSave hook under `.kiro/hooks/` that runs the Doomscroll_Build after Kiro saves a production skeleton file; it is convenience automation, not the drift guarantee.
 - **Classic_Loader**: The non-module `content.js` file declared by `manifest.json`, which uses dynamic `import()` to load packaged ES modules.
 - **Rule_Profile**: A validated rules document passed to `startPoltergeist` for one Engine instance.
 - **Normal_Profile**: The unchanged rules parsed from `rules.json`.
@@ -31,6 +32,8 @@ No implementation code is changed by this spec phase.
 - **Pause_State**: A Boolean associated with one Chrome tab for the current browser session.
 - **Demo_Mode**: A global Boolean preference selecting the Demo_Profile on every supported, unpaused tab.
 - **Rot_Observer**: The one `MutationObserver` owned by a live Rot handle.
+- **Mutation_Root**: An added node/subtree from a `childList` record or the exact text node from a `characterData` record, provided it remains within the document body when processed.
+- **Observer_Refresh**: One throttled Rot pass over the queued Mutation_Roots plus detached-entry pruning; it never walks the whole body.
 - **External_Mutation**: Added, removed, or page-rewritten text that was not merely Rot writing the handle's already-computed output.
 - **Package_Validator**: The build/check logic that validates JSON, rules, manifest scope, permissions, imports, and web-accessible-resource coverage.
 - **Fixture_Feed**: Local deterministic HTML used by Playwright while the page retains a URL in the Approved_Host_Set.
@@ -104,21 +107,27 @@ No implementation code is changed by this spec phase.
 
 #### Acceptance Criteria
 
-1. WHEN `Rot_Effect.apply` creates a live Handle, THE Rot_Effect SHALL perform its existing whole-body text pass and SHALL create at most one Rot_Observer owned by that Handle when `MutationObserver` and `documentElement` are available.
-2. THE Rot_Observer SHALL observe `documentElement` with `subtree: true`, `childList: true`, and `characterData: true`, so it covers inserted bodies, appended feed items, and recycled text nodes without a site-specific selector.
-3. ON every explicit `apply`, THE Rot_Effect SHALL store the latest clamped fraction and glyph sequence on the Handle, and every observer-driven refresh SHALL use those latest values.
-4. WHILE a Rot rule remains active and the Engine no longer calls `apply` because computed intensity differs from the Handle's last applied intensity by less than 0.01, including on the post-`rampTo` plateau, WHEN a nonempty eligible text node is added beneath the document body, THE Rot_Observer SHALL cause that text to be processed at the Handle's current fraction.
-5. WHEN the page rewrites a connected tracked text node, THE Rot_Effect SHALL adopt the rewritten value as that node's new original text and SHALL process it at the current fraction.
-6. THE Rot_Effect SHALL preserve its existing skip behavior for `SCRIPT`, `STYLE`, `NOSCRIPT`, `TEXTAREA`, `INPUT`, `CODE`, content-editable parents, and whitespace-only text.
-7. THE Rot_Effect SHALL preserve deterministic character selection, monotonic decay as intensity grows, page-rewrite conflict handling, detached-node pruning, and the public exports `{ apply, undo, description }`.
-8. WHEN `apply` is called repeatedly with the same live Handle, THE Rot_Effect SHALL reuse the same Rot_Observer rather than registering another observer.
-9. WHEN one MutationObserver delivery contains multiple relevant mutation records, THE Rot_Effect SHALL perform at most one observer-driven refresh for that delivery.
-10. WHEN Rot's own writes produce `characterData` records whose nodes already equal their tracked outputs, THE Rot_Observer SHALL ignore those records, so the observer does not create an unbounded callback loop.
-11. WHEN nodes are removed, THE next explicit or observer-driven refresh SHALL prune detached text-node entries before walking the body and SHALL NOT modify detached text while pruning.
-12. WHEN `undo` is called on a Rot Handle, THE Rot_Effect SHALL disconnect the Rot_Observer before restoring text, mark or retain the Handle as inactive according to the shared teardown contract, conditionally restore every retained node still equal to Rot's output, and clear its node map.
-13. AFTER `undo` completes, queued observer work SHALL be a no-op and subsequently added or rewritten text SHALL remain unchanged by that Handle.
-14. IF `MutationObserver` or `documentElement` is unavailable, THEN `apply` SHALL retain its existing explicit-pass behavior, return a usable Handle, and allow `undo` without throwing.
-15. THE implementation of this requirement SHALL modify no production skeleton file except `skeleton/effects/rot.js`; in particular, it SHALL NOT change `skeleton/engine.js`, its 0.01 intensity update threshold, or its Tick frequency.
+1. WHEN `Rot_Effect.apply` is called explicitly, THE Rot_Effect SHALL update the Handle's latest clamped fraction and glyph sequence and SHALL perform its existing full-body text pass, including detached-entry pruning, before returning.
+2. WHEN `Rot_Effect.apply` creates a live Handle, THE Rot_Effect SHALL create at most one Rot_Observer owned by that Handle when `MutationObserver` and `documentElement` are available.
+3. THE Rot_Observer SHALL observe `documentElement` with `subtree: true`, `childList: true`, and `characterData: true`, so it covers inserted bodies, appended feed items, and recycled text nodes without a site-specific selector.
+4. WHEN a Rot_Observer delivery contains `childList` records, THE Rot_Effect SHALL queue only their added nodes as Mutation_Roots and SHALL note removals for detached-entry pruning; it SHALL NOT queue an ancestor merely because a descendant changed.
+5. WHEN a Rot_Observer delivery contains an externally changed `characterData` record, THE Rot_Effect SHALL queue only that record's text node as a Mutation_Root.
+6. WHEN the first relevant mutation arrives with no Observer_Refresh scheduled, THE Rot_Effect SHALL schedule one Observer_Refresh for 250 milliseconds later; further relevant deliveries before that timer fires SHALL merge their Mutation_Roots and prune request into the same pending batch without scheduling another refresh.
+7. THE Rot_Effect SHALL execute at most one Observer_Refresh in each 250 millisecond observer-throttle window, including during continuous mutation traffic.
+8. WHEN an Observer_Refresh executes, THE Rot_Effect SHALL prune detached tracked nodes and process only the queued Mutation_Roots that remain within `document.body`: an added text node directly, descendants of an added subtree, and an externally changed text node directly. THE Observer_Refresh SHALL NOT select `document.body` as a fallback traversal root or visit eligible text outside those roots; it MAY traverse the body only when the body itself is a queued added Mutation_Root.
+9. WHEN queued Mutation_Roots overlap, THE Rot_Effect SHALL de-duplicate identical roots and MAY drop a descendant root already covered by a queued ancestor, without processing any text outside the resulting roots.
+10. EVERY Observer_Refresh SHALL use the latest fraction and glyph sequence stored by the most recent explicit `apply`.
+11. WHILE a Rot rule remains active and the Engine no longer calls `apply` because computed intensity differs from the Handle's last applied intensity by less than 0.01, including on the post-`rampTo` plateau, WHEN a nonempty eligible text node is added beneath the document body, THE next Observer_Refresh SHALL process that text at the Handle's current fraction.
+12. WHEN the page rewrites a connected tracked text node, THE next Observer_Refresh SHALL adopt the rewritten value as that node's new original text and SHALL process it at the current fraction.
+13. THE Rot_Effect SHALL preserve its existing skip behavior for `SCRIPT`, `STYLE`, `NOSCRIPT`, `TEXTAREA`, `INPUT`, `CODE`, content-editable parents, and whitespace-only text, for both explicit and observer-driven passes.
+14. THE Rot_Effect SHALL preserve deterministic character selection, monotonic decay as intensity grows, page-rewrite conflict handling, detached-node pruning, and the public exports `{ apply, undo, description }`.
+15. WHEN `apply` is called repeatedly with the same live Handle, THE Rot_Effect SHALL reuse the same Rot_Observer rather than registering another observer.
+16. WHEN Rot's own writes produce `characterData` records whose nodes already equal their tracked outputs, THE Rot_Observer SHALL ignore those records, so they neither schedule an Observer_Refresh nor create an unbounded callback loop.
+17. WHEN an explicit full-body `apply` occurs while observer work is pending, THE Rot_Effect SHALL cancel the pending observer timer and clear its queued roots after the explicit pass has superseded that work.
+18. WHEN `undo` is called on a Rot Handle, THE Rot_Effect SHALL disconnect the Rot_Observer and cancel the pending observer timer before restoring text, SHALL conditionally restore every retained node still equal to Rot's output, and SHALL clear its node map and pending roots.
+19. AFTER `undo` completes, queued observer work SHALL be a no-op and subsequently added or rewritten text SHALL remain unchanged by that Handle.
+20. IF `MutationObserver` or `documentElement` is unavailable, THEN explicit `apply` SHALL retain its full-body behavior, return a usable Handle, and allow `undo` without throwing.
+21. THE implementation of this requirement SHALL modify no production skeleton file except `skeleton/effects/rot.js`; in particular, it SHALL NOT change `skeleton/engine.js`, its 0.01 intensity update threshold, or its Tick frequency.
 
 ### Requirement 5: Popup pause and demo controls - NEW
 **User Story:** As a user, I want to pause haunting in the current tab and enable a short demo globally, so that I can regain control or record the effect without changing production timing.
@@ -151,24 +160,24 @@ No implementation code is changed by this spec phase.
 1. THE repository SHALL provide `npm run build:doomscroll` backed by a Node script that copies the root `skeleton/` production tree into the Generated_Skeleton.
 2. THE Doomscroll_Build SHALL copy every root skeleton file except `skeleton/test/**`, preserve relative paths and file bytes, and remove stale files from the Generated_Skeleton that are absent under the source copy policy.
 3. THE Doomscroll_Build SHALL produce the same Generated_Skeleton bytes and relative file set when run twice against unchanged inputs and SHALL write no timestamps, absolute machine paths, or generated source edits.
-4. THE Generated_Skeleton SHALL be listed in `.gitignore` and SHALL carry no manually maintained app-specific patch; all production changes, including the Rot fix, SHALL be made first in the root `skeleton/`.
-5. THE repository SHALL provide `npm run check:doomscroll` as a read-only Doomscroll_Check that compares the source and generated relative file sets and bytes and fails on every missing, extra, or changed generated file.
+4. THE Generated_Skeleton SHALL be committed to Git and SHALL NOT be ignored, so a fresh clone contains a loadable unpacked extension without first running the Doomscroll_Build; it SHALL carry no manually maintained app-specific patch, and all production changes, including the Rot fix, SHALL be made first in the root `skeleton/`.
+5. THE repository SHALL provide `npm run check:doomscroll` as a read-only Doomscroll_Check that compares the source and generated relative file sets and bytes and fails on every missing, extra, or changed generated file; the normal `npm test` script SHALL run this check before Vitest, and drift SHALL make `npm test` exit nonzero without repairing the copy.
 6. THE Package_Validator SHALL parse `manifest.json` and `rules.json`, require Manifest V3 and the exact permission and match sets from Requirement 1, and run the root Rule_Validator against the Normal_Profile.
 7. THE Package_Validator SHALL resolve the relative static JavaScript import graph rooted at generated `skeleton/index.js`, fail if an import escapes the extension root or resolves to a missing file, and require every reachable module plus `rules.json` to be covered by `web_accessible_resources`.
 8. THE Package_Validator SHALL fail if a test file is copied into the Generated_Skeleton, if a web-accessible resource is broader than the approved runtime graph, if packaged executable code refers to a remote URL, or if app-owned JavaScript/HTML contains `eval`, `new Function`, string-valued timer code, an inline script body, or an inline event-handler attribute.
-9. THE Playwright extension fixture and final verification SHALL run the Doomscroll_Build and Doomscroll_Check before loading `app1-doomscroll/` as an unpacked extension.
-10. THE synchronization mechanism SHALL be the deterministic build/check scripts and SHALL NOT depend on an IDE session, a Kiro hook, a file watcher, or a developer remembering to copy individual files.
+9. THE Playwright extension fixture SHALL run the Doomscroll_Check without first running the Doomscroll_Build before loading the committed `app1-doomscroll/` as an unpacked extension, so browser verification proves that a fresh checkout is complete rather than silently repairing drift.
+10. THE Doomscroll_Build and Doomscroll_Check SHALL remain the source of truth for synchronization, and THE repository SHALL contain a committed Kiro_Build_Hook under `.kiro/hooks/` that runs `npm run build:doomscroll` when Kiro emits `PostFileSave` for a production file directly under the root `skeleton/` or under the root `skeleton/effects/`, thereby excluding both `skeleton/test/**` and the Generated_Skeleton; THE hook SHALL be documented as convenience automation whose absence or failure cannot make a stale Generated_Skeleton pass `npm test`.
 
 ### Requirement 7: Automated app and browser verification - NEW
 **User Story:** As a maintainer, I want automated evidence that the packaged extension escalates and restores correctly on a changing feed, so that packaging or infinite-scroll regressions are caught before release.
 
 #### Acceptance Criteria
 
-1. THE Vitest configuration SHALL continue to run the existing skeleton suites and SHALL additionally include Doomscroll app unit and package tests without treating Playwright `.pw.js` files as Vitest tests.
-2. THE Rot unit suite SHALL verify appended eligible text at stable intensity 1, page-rewritten tracked text, use of updated intensity and glyph params, observer reuse, mutation batching, self-mutation loop termination, detached-node pruning, conditional restoration, observer disconnection, and no changes after undo.
+1. THE normal `npm test` command SHALL run the read-only Doomscroll_Check first and, only if it passes, SHALL run the existing skeleton suites plus Doomscroll app unit and package tests through Vitest without treating Playwright `.pw.js` files as Vitest tests.
+2. THE Rot unit suite SHALL verify appended eligible text at stable intensity 1, page-rewritten tracked text, use of updated intensity and glyph params, observer reuse, root-only traversal, no visit to unchanged text elsewhere in the body, one Observer_Refresh per 250 millisecond window, mutation batching, self-mutation loop termination, detached-node pruning, explicit full-body supersession, conditional restoration, observer/timer cancellation, and no changes after undo.
 3. THE app unit tests SHALL verify Normal_Profile validation, exact thresholds and params, Demo_Profile scaling and immutability, Runtime_Controller single-instance transitions, Pause_State precedence, normal/demo snapshot separation, service-worker storage semantics, popup unavailable behavior, and package-scope checks.
 4. THE Playwright configuration SHALL preserve the existing skeleton browser suite and SHALL discover the Doomscroll browser suite under `app1-doomscroll/test/browser/`.
-5. (BROWSER-VERIFIED) THE Doomscroll suite SHALL launch the built unpacked extension in a fresh Playwright persistent Chromium context using only that extension's directory and SHALL obtain its extension id from the Manifest V3 service worker.
+5. (BROWSER-VERIFIED) THE Doomscroll suite SHALL launch the committed unpacked extension in a fresh Playwright persistent Chromium context using only that extension's directory and SHALL obtain its extension id from the Manifest V3 service worker.
 6. (BROWSER-VERIFIED) THE suite SHALL fulfill an Approved_Host_Set URL from the local Fixture_Feed without external network access, so the production manifest and rules are exercised without adding a localhost permission.
 7. (BROWSER-VERIFIED) AFTER the fixture page starts in normal mode and is kept as the foreground tab, WHEN the test enables Demo_Mode through the production service-worker protocol from an extension-origin page, THEN the suite SHALL observe Fog before Flicker, Flicker before Rot, and Rot before the Block message, and SHALL verify that no later-stage artifact appears at an earlier stage checkpoint.
 8. (BROWSER-VERIFIED) AFTER Demo_Profile elapsed time has passed the Rot `rampTo` and the Rot Handle is on a stable Engine-update plateau, WHEN a new fixture post with eligible text is appended, THEN the new text SHALL differ from its original after observer delivery without an explicit Rot call.
@@ -176,5 +185,5 @@ No implementation code is changed by this spec phase.
 10. (BROWSER-VERIFIED) WHEN the same protocol resumes the tab while Demo_Mode remains enabled, THEN the Demo_Profile SHALL resume with one Engine and newly added eligible text SHALL become subject to Rot again.
 11. (BROWSER-VERIFIED) WHEN another page uses a URL outside the Approved_Host_Set, THEN no Doomscroll content-script response or Poltergeist artifact SHALL appear there.
 12. THE browser suite SHALL use deterministic fixture text long enough to make a 0.55 maximum rot fraction observable, SHALL poll for semantic DOM states instead of relying on screenshots, and SHALL close its persistent context and temporary profile on success or failure.
-13. THE final verification SHALL run `npm test`, `npm run build:doomscroll`, `npm run check:doomscroll`, and `npm run test:browser`, and all commands SHALL exit successfully with no unhandled page, service-worker, or extension errors attributable to Doomscroll App.
+13. THE final verification SHALL first run `npm test` against the committed Generated_Skeleton, then run `npm run build:doomscroll` and prove that the build creates no tracked content diff, then run `npm run check:doomscroll` and `npm run test:browser`; all commands SHALL exit successfully with no unhandled page, service-worker, or extension errors attributable to Doomscroll App.
 14. THE implementation SHALL be considered incomplete if only direct skeleton modules are tested; the browser evidence SHALL come from the actual manifest, Classic_Loader, Generated_Skeleton, rules fetch, service worker, and popup/control protocol packaged in `app1-doomscroll/`.

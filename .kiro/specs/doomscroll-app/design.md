@@ -4,7 +4,7 @@
 
 Doomscroll App is a small host integration around the existing Poltergeist skeleton. It declares four time-based rules for three exact social-feed hosts, dynamically loads the packaged skeleton from a classic Manifest V3 content script, and owns only the state needed for per-tab pause and global demo mode.
 
-The root `skeleton/` remains the only authored engine. A deterministic Node script copies its production files into ignored package output at `app1-doomscroll/skeleton/`, which lets Chrome load `app1-doomscroll/` directly as an unpacked extension. A read-only mode proves that generated output has the same files and bytes as the root source.
+The root `skeleton/` remains the only authored engine. A deterministic Node script copies its production files into `app1-doomscroll/skeleton/`, and that generated mirror is committed to Git so a fresh clone can be loaded directly as an unpacked extension. A read-only mode proves that the committed files and bytes still match the root source, and the normal test command runs that check before Vitest.
 
 The only production skeleton change is a `MutationObserver` lifecycle inside `skeleton/effects/rot.js`. The Engine correctly avoids reapplying an effect when intensity changes by less than 0.01. Near and beyond a rule's `rampTo`, computed intensity stops producing a large enough delta; depending on timer increments, the Handle's last applied value can be 1 or slightly below it. Rot therefore owns observation of later text at its latest applied fraction rather than weakening the Engine's update rule for every effect.
 
@@ -16,18 +16,20 @@ The only production skeleton change is a `MutationObserver` lifecycle inside `sk
 | Site scope | No app host declarations | Exact HTTPS hosts for YouTube, X, and Instagram in every scope-bearing list | 1 |
 | Rules | No app rules | Fog 2–5 min, Flicker 5–10 min, Rot 10–15 min, Block 20–25 min | 2 |
 | Demo | None | A validated 1/60-time clone showing the full sequence in 25 seconds | 2, 3, 5 |
-| Rot on dynamic content | New text is found only on a later explicit `apply` | One observer per Handle refreshes at the latest Rot state | 4 |
+| Rot on dynamic content | New text is found only on a later explicit `apply` | One observer per Handle queues mutation roots and processes them at most once per 250 ms | 4 |
 | Controls | None | Session-scoped per-tab pause and a locally stored global demo preference | 5 |
-| Skeleton packaging | Root modules are outside the app root | Generated, ignored mirror plus exact drift check | 6 |
+| Skeleton packaging | Root modules are outside the app root | Generated, committed mirror; normal-test drift guard; convenience Kiro save hook | 6 |
 | Browser coverage | Direct effect modules only | Actual unpacked extension, local routed feed, escalation, append, pause, and resume | 7 |
 
 ### Goals
 
-- Produce an unpacked Chrome Manifest V3 package rooted at `app1-doomscroll/`.
+- Produce an unpacked Chrome Manifest V3 package rooted at `app1-doomscroll/` that is complete in a fresh clone.
 - Keep all host and resource exposure equal to the three approved HTTPS origins.
 - Make the normal progression gradual and the demo progression short but behaviorally identical.
 - Keep every transition reversible, including pause, profile switch, unload, and Rot observation.
 - Preserve one live Engine and one live Rot observer per content document.
+- Limit observer work to accumulated mutation roots and at most one pass per 250 ms, while retaining full-body explicit applications.
+- Make generated-copy drift fail `npm test`; use the Kiro save hook only to shorten the feedback loop.
 - Verify the packaged manifest/module graph rather than only testing source modules directly.
 
 ### Non-goals
@@ -47,14 +49,15 @@ The only production skeleton change is a `MutationObserver` lifecycle inside `sk
 - `storage.session` is memory-backed for the extension session and is not exposed to content scripts by default; `storage.local` is appropriate for a small persistent preference. Both require the `storage` permission. See [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage).
 - Most Tabs API operations, including querying a tab id and messaging a content script, do not require the broad `tabs` permission. That permission is needed for sensitive tab properties, which this popup does not read. See [Chrome Tabs API](https://developer.chrome.com/docs/extensions/reference/api/tabs).
 - Current Playwright guidance requires a persistent context for extension tests. Google Chrome and Edge no longer support the command-line side-loading flags used by the fixture, so Playwright documents its bundled Chromium channel for unpacked-extension automation. See [Playwright Chrome extensions](https://playwright.dev/docs/chrome-extensions).
+- Kiro file-save hooks use committed `.kiro/hooks/*.json` files with `version: "v1"`, a `PostFileSave` trigger, a regular-expression path matcher, and a command action. They are workflow automation rather than a substitute for a repository test. See [Kiro hooks](https://kiro.dev/docs/hooks.md) and [file-save hook types](https://kiro.dev/docs/hooks/types.md#file-save).
 
 Content from the cited sources was rephrased for compliance with licensing restrictions.
 
-### Packaging decision
+### Packaging and synchronization decision
 
-A build script is chosen over a Kiro hook.
+The deterministic build/check scripts are authoritative. The Generated_Skeleton is committed rather than ignored, because `app1-doomscroll/` must be loadable from a fresh clone without a preparatory command. `npm run check:doomscroll` compares the committed mirror to the root source, and `npm test` runs that read-only check before Vitest so stale generated files cannot pass the normal test path.
 
-A hook would make package correctness depend on one editor and on the hook having run after every source change. A deterministic script works in Kiro, another editor, a terminal, and CI. It also supports a read-only check, which a one-way copy hook does not prove.
+A committed Kiro PostFileSave hook complements the scripts. It runs `npm run build:doomscroll` when Kiro saves a current production file directly under `skeleton/` or inside `skeleton/effects/`; its positive matcher does not match `skeleton/test/**`. This hook improves editor feedback but cannot be the guarantee: hooks may not run outside Kiro, a hook command can fail after the save, and a user may edit with another tool. The build command remains the only writer and the check command remains the enforcement point.
 
 The generated location is deliberately inside the extension root:
 
@@ -67,7 +70,7 @@ app1-doomscroll/
   popup.html
   popup.js
   popup.css
-  skeleton/                  # generated; ignored; never edited directly
+  skeleton/                  # generated, committed; never edited directly
   test/
     content.test.js
     background.test.js
@@ -79,9 +82,12 @@ app1-doomscroll/
       feed.html
 scripts/
   sync-doomscroll-skeleton.mjs
+.kiro/
+  hooks/
+    build-doomscroll-on-skeleton-save.json
 ```
 
-Chrome can therefore load `app1-doomscroll/` directly. The build copies all root skeleton production files and excludes only `skeleton/test/**`. Copying the production tree instead of a hand-maintained file list prevents a new core dependency from being omitted. Web-accessible-resource validation remains graph-based, so copied files that are not runtime imports are not exposed unnecessarily.
+Chrome can therefore load `app1-doomscroll/` directly after checkout. The build copies all root skeleton production files and excludes only `skeleton/test/**`. Copying the production tree instead of a hand-maintained file list prevents a new core dependency from being omitted. Web-accessible-resource validation remains graph-based, so committed generated files that are not runtime imports are not exposed unnecessarily.
 
 ## Architecture
 
@@ -124,11 +130,15 @@ The page never communicates with extension state through page globals or `window
 
 ```mermaid
 flowchart LR
-    SRC[skeleton/ production files] -->|build copy| GEN[app1-doomscroll/skeleton/]
+    SRC[skeleton/ production files] -->|build command| GEN[committed app1-doomscroll/skeleton/]
+    HOOK[Kiro PostFileSave convenience hook] -->|invokes build command| GEN
+    GEN --> GIT[Fresh clone]
     APP[Authored app files] --> PKG[Unpacked app root]
-    GEN --> PKG
+    GIT --> PKG
     SRC --> CHECK[Read-only drift checker]
     GEN --> CHECK
+    CHECK -->|first step| NPMTEST[npm test]
+    NPMTEST --> VITEST[Vitest]
     MAN[manifest.json] --> VALIDATE[Package validator]
     RULES[rules.json] --> VALIDATE
     GEN --> GRAPH[Static import graph]
@@ -137,6 +147,8 @@ flowchart LR
     VALIDATE --> PW
     PKG --> PW
 ```
+
+The hook and explicit build both invoke the same writer. Neither the normal test command nor Playwright repairs drift before checking it.
 
 ### Content startup sequence
 
@@ -212,11 +224,13 @@ The app targets the synchronous `startPoltergeist` and `stop` contract that exis
 | `app1-doomscroll/popup.html` | Add | Minimal accessible markup with status and two labelled controls. |
 | `app1-doomscroll/popup.js` | Add | Active-tab query, status render, pause/demo commands, and contained errors. |
 | `app1-doomscroll/popup.css` | Add | Small static layout, focus, disabled, and status styles. |
-| `skeleton/effects/rot.js` | Modify | Add one observer to each live Handle, use the latest params, filter own mutations, and disconnect on undo. |
-| `skeleton/test/rot.test.js` | Modify | Add observer lifecycle, dynamic text, rewrite, batching, loop, and restoration tests. |
+| `skeleton/effects/rot.js` | Modify | Keep explicit full-body passes; queue only observer mutation roots; throttle root passes to 250 ms; cancel observation and timer on undo. |
+| `skeleton/test/rot.test.js` | Modify | Add root-scoped traversal, throttle, observer lifecycle, dynamic text, rewrite, batching, loop, supersession, and restoration tests. |
 | `scripts/sync-doomscroll-skeleton.mjs` | Add | Build mode and `--check` mode; copy policy, byte comparison, and package validation. |
-| `.gitignore` | Modify | Ignore only `/app1-doomscroll/skeleton/` as generated extension output. |
-| `package.json` | Modify | Add `build:doomscroll` and `check:doomscroll`; keep existing test entry points. |
+| `.kiro/hooks/build-doomscroll-on-skeleton-save.json` | Add through Kiro hook tooling | Run the shared build command after Kiro saves a current production skeleton path; exclude tests with a positive matcher. |
+| `.gitignore` | Verify | Keep `app1-doomscroll/skeleton/` unignored. |
+| `app1-doomscroll/skeleton/**` | Add as generated files | Commit the exact production mirror so a fresh clone loads unpacked. |
+| `package.json` | Modify | Add `build:doomscroll` and `check:doomscroll`; run the check before Vitest in `npm test`. |
 | `vitest.config.js` | Modify | Include app unit/package tests while retaining skeleton tests and excluding `.pw.js`. |
 | `playwright.config.js` | Modify | Discover existing skeleton browser tests and the app extension suite without running either twice. |
 | `app1-doomscroll/test/**` | Add | Unit, package, fixture, and unpacked-extension tests. |
@@ -462,36 +476,38 @@ The existing Handle gains internal fields:
   serial,
   dead,
   fading,
-  timer,
+  timer,                         // existing teardown field
   observer: MutationObserver | null,
+  observerTimer: unknown | null,
+  pendingRoots: Set<Node>,
+  pendingPrune: boolean,
   fraction: number,
   glyphs: string[]
 }
 ```
 
-These fields are private to the effect. The exported `{ apply, undo, description }` interface does not change.
+`observerTimer` is separate from the shared teardown `timer`. These fields are private to the effect. The exported `{ apply, undo, description }` interface does not change.
 
-#### Refresh algorithm
+#### Explicit full-body pass
 
-The current pruning and body walk move into an internal `refresh(handle)` function:
+The existing prune and body walk remain the behavior of every explicit `apply`:
 
 ```js
-function refresh(handle) {
-  if (!handle || handle.dead) return;
-
-  for (const node of handle.nodes.keys()) {
-    if (node.isConnected === false) handle.nodes.delete(node);
-  }
-
-  const body = handle.env.document.body;
-  if (!body) return;
-
-  // Existing TreeWalker, rewrite-adoption, deterministic rot, and map updates.
-  // Use handle.fraction and handle.glyphs, which apply updates first.
+function apply(env, params, intensity, handle) {
+  // Create/reuse the Handle and store the newest fraction and glyphs.
+  pruneDetached(handle);
+  processSubtree(handle, env.document.body); // full-body explicit pass
+  clearPendingObserverWork(handle);          // explicit pass superseded it
+  ensureObserver(handle);
+  return handle;
 }
 ```
 
-`apply` updates `fraction` and `glyphs` on every call, invokes `refresh`, and then ensures one observer exists if the environment supports it. The initial refresh runs before observation, so its own first-pass writes are not delivered back to the new observer.
+`processSubtree` reuses the current TreeWalker acceptance rules, rewrite adoption, deterministic hashing, serial allocation, and conditional output writes. If its root is a text node, it processes that exact node because `TreeWalker.nextNode()` does not yield the walker root. If the root is an element, document fragment, or body, it visits eligible descendant text only.
+
+The explicit pass is intentionally not throttled. Engine-driven intensity updates must continue to update all currently tracked and newly discoverable page text immediately. If an explicit pass occurs while an observer timer is pending, it cancels that timer and clears queued roots after completing the body pass because the body pass has already covered them.
+
+#### Observer root queue and throttle
 
 The observer watches `documentElement`, not `body`, because a document may add or replace its body. Its options are exactly:
 
@@ -499,26 +515,37 @@ The observer watches `documentElement`, not `body`, because a document may add o
 { subtree: true, childList: true, characterData: true }
 ```
 
-One observer callback handles one delivered record array:
+One callback classifies a delivered record array without traversing the body:
 
 1. Return if the Handle is dead.
-2. Treat a `childList` record as relevant when nodes were added or removed.
-3. Treat a `characterData` record as relevant when its text node is untracked or its current data differs from the tracked `entry.out`.
-4. If any record is relevant, call `refresh(handle)` once.
-5. Otherwise return. This filters the records generated by Rot's own writes once the current text equals `entry.out`.
+2. For each `childList` record, add each `addedNode` to `pendingRoots`. If the record removed any nodes, set `pendingPrune = true`; removed nodes are not traversal roots.
+3. For each `characterData` record, inspect only its text target. If the target is untracked or differs from its tracked `entry.out`, add that text node to `pendingRoots`. If it already equals `entry.out`, treat the record as Rot's own write and ignore it.
+4. If the batch queued a root or requested pruning and `observerTimer` is null, schedule one timer for 250 ms. Later deliveries merge into the existing Sets/flag and do not schedule another timer.
 
-An appended subtree causes one full body refresh. That is the smallest safe whole-page change and reuses all current skip, adoption, serial, deterministic-hash, and cleanup behavior. It may be optimized later by walking mutation roots, but such an optimization must preserve the same semantics and is not part of this spec.
+When the timer fires, one `flushObserverRoots(handle)` operation:
+
+1. Clears the timer token, snapshots and clears `pendingRoots`/`pendingPrune`, and returns if the Handle is dead.
+2. Prunes detached tracked nodes when requested; pruning may also run unconditionally because it does not traverse page text.
+3. Discards queued roots that are no longer under the current body. The current body itself is valid only when it was an actual added root.
+4. De-duplicates identical roots and removes a descendant root when another queued root already contains it.
+5. Processes an added text root or changed text root directly. For every other added root, calls `processSubtree(handle, root)` with that root, never with the body as a global fallback.
+6. Uses the Handle's latest `fraction` and `glyphs`, including values from any explicit `apply` that occurred after the mutation was queued.
+
+This fixed trailing window yields at most one observer-driven pass per 250 ms during continuous mutation traffic. A mutation immediately after a flush can arm the next timer, but that pass cannot run until another 250 ms has elapsed. It also gives one observer delivery containing many posts a single root pass while preserving all distinct added subtrees.
+
+The root-only boundary is observable and tested. After the initial explicit full-body call, a test clears its traversal instrumentation, appends one subtree beside a separate unchanged sentinel, advances 249 ms, and observes no pass. At 250 ms it asserts that every post-initial TreeWalker root is the appended subtree, never `document.body`, and that the sentinel text node was not visited. A separate changed-text test requires direct processing of only that text node.
 
 #### Undo ordering
 
 Rot has instant undo:
 
 1. Call `observer.disconnect()` and clear the Handle's observer reference.
-2. Enter the existing shared teardown path, which marks the Handle dead.
-3. For each retained entry, restore `orig` only when `node.data === entry.out`.
-4. Clear the node map.
+2. Cancel `observerTimer`, set it to null, and clear `pendingRoots`/`pendingPrune`.
+3. Enter the existing shared teardown path, which marks the Handle dead.
+4. For each retained entry, restore `orig` only when `node.data === entry.out`.
+5. Clear the node map.
 
-Every callback starts with the dead check, so already queued work cannot rewrite restored text. Repeated undo remains a no-op through the shared teardown contract. If observation is unavailable, explicit applications still work as before.
+Every callback and timer starts with the dead check, so already queued work cannot rewrite restored text. Repeated undo remains a no-op through the shared teardown contract. If observation is unavailable, explicit full-body applications still work as before.
 
 ### Skeleton synchronization and package validation
 
@@ -529,7 +556,19 @@ node scripts/sync-doomscroll-skeleton.mjs          # synchronize, then validate
 node scripts/sync-doomscroll-skeleton.mjs --check  # compare only, then validate
 ```
 
-`package.json` exposes these as `build:doomscroll` and `check:doomscroll`.
+`package.json` exposes these as `build:doomscroll` and `check:doomscroll`. Its normal test script enforces drift before unit tests:
+
+```json
+{
+  "scripts": {
+    "build:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs",
+    "check:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs --check",
+    "test": "npm run check:doomscroll && vitest --run"
+  }
+}
+```
+
+The `&&` is intentional: Vitest must not run after a failed drift check, and neither test command repairs generated output.
 
 #### Synchronize mode
 
@@ -539,6 +578,9 @@ node scripts/sync-doomscroll-skeleton.mjs --check  # compare only, then validate
 - Exclude paths whose first relative segment is `test`.
 - Recreate the target and copy raw bytes without rewriting line endings or JSON.
 - Run package validation after copying.
+- Leave the resulting changes visible in `app1-doomscroll/skeleton/` for normal code review and commit; never add that path to `.gitignore`.
+
+The build is the sole writer of Generated_Skeleton content. Developers do not edit the mirror to resolve drift; they edit root `skeleton/`, rerun the build, and commit both source and generated changes.
 
 #### Check mode
 
@@ -548,6 +590,29 @@ node scripts/sync-doomscroll-skeleton.mjs --check  # compare only, then validate
 - Report all missing, extra, and changed paths in one run.
 - Perform no write, touch, cleanup, or timestamp update.
 - Run package validation only after copy identity is established.
+
+#### Kiro convenience hook
+
+The implementation creates `.kiro/hooks/build-doomscroll-on-skeleton-save.json` through Kiro's hook creation interface rather than writing hook JSON ad hoc. Its committed shape is:
+
+```json
+{
+  "version": "v1",
+  "hooks": [{
+    "name": "Build Doomscroll skeleton mirror",
+    "trigger": "PostFileSave",
+    "matcher": "^(?:skeleton[\\\\/]|(?:[A-Za-z]:)?[\\\\/](?:.*[\\\\/])?poltergeist[\\\\/]skeleton[\\\\/])(?:[^\\\\/]+|effects[\\\\/].+)$",
+    "action": {
+      "type": "command",
+      "command": "npm run build:doomscroll"
+    }
+  }]
+}
+```
+
+After JSON decoding, `[\\/]` accepts Windows and POSIX separators. The anchored alternatives accept either a workspace-relative root `skeleton/` path or an absolute path ending in this repository's `poltergeist/skeleton/`, followed by the current production layout: direct source files or descendants of `effects/`. Neither `skeleton/test/rot.test.js` nor `app1-doomscroll/skeleton/rot.js` matches, which prevents test-triggered work and generated-copy recursion without regex lookahead. If the production skeleton later gains another source subdirectory, its positive path must be added alongside `effects/`.
+
+The hook runs only when Kiro emits `PostFileSave`; a manual save or a different editor need not trigger it. A failed post-save build does not revert the source save. These limitations are why committed output plus `npm run check:doomscroll` in `npm test` is the guarantee.
 
 #### Package validation
 
@@ -562,6 +627,7 @@ The validator performs these checks:
 7. Expand the manifest resource declarations and prove that `rules.json` and every reachable generated module are exposed.
 8. Reject web-accessible files outside that required set, test files in the generated tree, or a WAR match set different from the Approved_Host_Set.
 9. Scan app-owned JavaScript and HTML for remote executable URLs, `eval`, `new Function`, string-valued `setTimeout`/`setInterval` calls, inline script bodies, and inline event-handler attributes; fail with the offending path and construct.
+10. Fail if Git ignore rules match `app1-doomscroll/skeleton/`; final repository review confirms the generated files are included in the delivered change.
 
 The generated `rule-schema.json` can be present because the complete production tree is copied, but it is not web-accessible unless it becomes a runtime dependency.
 
@@ -627,17 +693,17 @@ For every finite sequence of pause, demo, and motion-preference events, after ea
 
 **Validates: Requirements 3.4, 3.5, 3.9, 3.10, 3.11, 3.12, 3.16, 5.9, 5.13, 5.17**
 
-### Property 4: Rot refresh and undo form a reversible mutation lifecycle
+### Property 4: Rot observer work is bounded and reversible
 
-For every eligible original string and every external append or rewrite delivered to a live Rot Handle, observer settlement leaves the node tracked with output computed from the latest fraction/glyphs. If the page does not rewrite that output again, undo restores the adopted original, disconnects observation, and no later mutation is changed by that Handle.
+For every finite mutation-record sequence delivered to a live Rot Handle, the observer processes only the union of in-body added roots and externally changed text targets, executes at most one pass per 250 ms window, and uses the latest fraction/glyphs. Text outside those roots is not visited. If the page does not rewrite Rot's outputs again, undo restores each adopted original, cancels pending work, and no later mutation is changed by that Handle.
 
-**Validates: Requirements 4.3, 4.4, 4.5, 4.10, 4.12, 4.13**
+**Validates: Requirements 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.16, 4.17, 4.18, 4.19**
 
 ### Property 5: Generated skeleton identity is exact
 
-For every file admitted by the copy policy, the Generated_Skeleton contains one file at the same relative path with equal bytes; it contains no other file. Therefore a successful Doomscroll_Check implies the packaged copy is not an authored fork.
+For every file admitted by the copy policy, the committed Generated_Skeleton contains one file at the same relative path with equal bytes and contains no other file. Therefore a successful Doomscroll_Check implies the unpacked extension in a fresh clone uses an exact generated mirror rather than an authored fork. The Kiro hook may produce that state but is not part of the implication.
 
-**Validates: Requirements 6.2, 6.3, 6.5**
+**Validates: Requirements 6.2, 6.3, 6.4, 6.5, 6.10**
 
 ## Error Handling
 
@@ -656,8 +722,10 @@ For every file admitted by the copy policy, the Generated_Skeleton contains one 
 | Pause tab receiver is absent after commit | Return `{ok:true, delivered:false}` and preserve the committed value | Popup shows committed state plus unavailable notice; future reload reads it |
 | Unknown/malformed message | Return `{ok:false}` and do not write or message a tab | State unchanged |
 | Rot observer callback sees a dead Handle | Return immediately | Restored page remains unchanged |
+| Rot observer receives more mutations inside a pending window | Merge roots/flag into the existing batch; do not arm a second timer | One root-scoped pass at the end of the window |
 | Build target guard fails | Abort before deletion/copy | Source and unrelated paths untouched |
-| Drift check fails | Report all differing paths and exit nonzero without writes | Generated tree remains inspectable |
+| Kiro convenience build fails or does not run | Report hook failure if available; do not treat it as proof of synchronization | Committed mirror may be stale and `npm test` still fails on the drift check |
+| Drift check fails | Report all differing paths and exit nonzero without writes; skip Vitest/browser launch | Committed generated tree remains inspectable |
 | Browser assertion fails | Close persistent context/profile in fixture teardown | No background browser remains |
 
 Errors sent to the popup are concise and do not include page content. Console diagnostics use a `[poltergeist:doomscroll]` prefix and do not log storage records beyond safe error context.
@@ -666,7 +734,7 @@ Errors sent to the popup are concise and do not include page content. Console di
 
 ### Vitest
 
-Vitest remains the unit/package runner. `vitest.config.js` includes both:
+`npm test` first invokes the read-only Doomscroll_Check and stops on drift. Only then does Vitest run. `vitest.config.js` includes both:
 
 ```text
 skeleton/test/**/*.test.js
@@ -677,7 +745,7 @@ and excludes `**/*.pw.js`.
 
 Focused suites cover:
 
-- `skeleton/test/rot.test.js`: real jsdom `MutationObserver` delivery, appended text at intensity 1, recycled text, latest params, observer identity, one refresh per delivery, self-write settlement, detached pruning, disconnect, restoration, repeat undo, and post-undo mutation.
+- `skeleton/test/rot.test.js`: real jsdom `MutationObserver` delivery; an unthrottled explicit full-body pass; appended and changed-text roots; latest params; observer identity; fake-timer checks at 249/250 ms; multiple-delivery coalescing; overlapping-root de-duplication; no `document.body` fallback; instrumented proof that an unchanged sibling text node is never visited; explicit-apply supersession; self-write settlement; detached pruning; timer/observer cancellation; restoration; repeat undo; and post-undo mutation.
 - `content.test.js`: pure profile transform, snapshots, paused off/on demo resets, pause precedence, per-field initial-state revisions, generation races before synchronous start, stop-fault containment, and reduced-motion restarts.
 - `background.test.js`: sender-derived tab ids, independent session keys, local storage validation, write-before-message order, concurrent tab isolation, tab removal, committed-but-undelivered results, and unknown messages.
 - `popup.test.js`: active-tab status, unsupported state, enabled global demo, rollback on failed commits, committed unavailable delivery, labels, and disabled behavior.
@@ -691,7 +759,7 @@ The existing skeleton browser suite continues using its current real-browser pro
 
 Fixture setup:
 
-1. Run the Doomscroll_Build, then the read-only Doomscroll_Check.
+1. Run the read-only Doomscroll_Check against the committed Generated_Skeleton. Do not run the Doomscroll_Build in fixture setup; a browser test must fail rather than repair a stale fresh-checkout package.
 2. Launch Playwright's bundled Chromium with a fresh persistent user-data directory and only:
    - `--disable-extensions-except=<absolute app1-doomscroll path>`
    - `--load-extension=<absolute app1-doomscroll path>`
@@ -716,19 +784,21 @@ The fixture uses stable, long text because deterministic Rot at `maxFraction: 0.
 | 1. MV3 package/scope | Yes | Yes | Injection/non-injection smoke |
 | 2. Rules/profiles | Yes | Yes | Timed demo sequence |
 | 3. Loader/lifecycle | Import graph | Yes | Actual import/fetch/start/stop |
-| 4. Rot continuity | Production-file boundary | Yes | Stable post-ramp append |
+| 4. Rot continuity | Production-file boundary | Root-scope/throttle/undo tests | Stable post-ramp append |
 | 5. Controls | Manifest/protocol checks | Yes | Service-worker pause/demo protocol round trip |
-| 6. Synchronization | Build/check command | Package tests | Precondition to launch |
-| 7. Verification | Configuration | Suite discovery | Primary browser evidence |
+| 6. Synchronization | Committed mirror, build/check commands, hook config | Drift, no-repair, Git-ignore tests | Read-only precondition to launch |
+| 7. Verification | `npm test` ordering/configuration | Suite discovery | Primary fresh-checkout browser evidence |
 
 ## Risks and Limitations
 
 | Risk or limitation | Effect | Mitigation / accepted boundary |
 |---|---|---|
-| Generated skeleton is absent after clone | Unpacked load fails | Document and automate `npm run build:doomscroll`; Playwright always builds and checks first. |
-| Generated skeleton is stale | Tests may exercise old core | Byte-for-byte check runs before browser launch and final verification. |
+| Generated skeleton is omitted from a commit | A fresh clone cannot load the extension | Commit the mirror, keep it unignored, and review the generated paths as part of the delivered change; browser setup never builds it for the test. |
+| Generated skeleton is stale | Tests or users may exercise old core | `npm test` runs the byte-for-byte check first, and Playwright repeats the check before launch without repair. |
+| Kiro hook does not fire, runs outside Kiro, or fails | The convenience copy is not refreshed immediately | The hook is non-authoritative; explicit build writes the mirror and the normal test still rejects drift. |
 | WAR exposes packaged modules to scripts on approved sites | Sites can fetch/fingerprint those resources | Expose only the runtime graph and rules, restrict origins exactly, and enable dynamic URLs. |
-| A full body walk per relevant mutation can cost more on very large feeds | Short main-thread work during DOM churn | One observer per Handle, one refresh per delivery, own-write filtering, detached pruning; targeted-root optimization is future work. |
+| A mutation batch contains many large added subtrees | A root-scoped pass can still consume main-thread time | Coalesce deliveries for 250 ms, de-duplicate overlapping roots, and never fall back to a whole-body observer pass. |
+| Root throttling delays Rot on a new post | Added text may stay clean briefly | Accept a bounded delay of about 250 ms in exchange for lower churn; explicit Engine applies remain immediate full-body passes. |
 | Host page continuously rewrites text | Rot repeatedly adopts and reapplies | This is intended while active; pause/undo disconnects immediately. |
 | A site moves feed text into closed shadow DOM | Rot cannot see it | Shadow traversal and site-specific integration are out of scope. |
 | Page reload resets normal meters | Users can reset progression | Explicitly accepted until the separate persisted-meter requirement is implemented. |
@@ -748,7 +818,7 @@ The fixture uses stable, long text because deterministic Rot at `maxFraction: 0.
 | 1 | Exact Approved_Host_Set in four scope locations; only storage permission; isolated classic script; explicit local WAR graph. |
 | 2 | Four shared `timeOnSite` rules; aligned ramps; exact params/message; pure 1/60 demo clone and validation. |
 | 3 | Async classic package load followed by the current synchronous Entry Point; revision-safe startup handshake; snapshot-based app wrapper; serialized stop-before-start reconciliation; reduced-motion restart; fault instead of overlap. |
-| 4 | Handle-owned documentElement observer; latest Handle state; relevant-record filter; shared refresh; disconnect-before-restore; no Engine change. |
+| 4 | Explicit full-body apply; Handle-owned documentElement observer; 250 ms accumulated root queue; added-subtree and exact changed-text processing only; no unchanged sibling visits; timer/observer cancellation; no Engine change. |
 | 5 | Independent session pause keys in the worker; local global demo Boolean; revision-safe content handshake; committed/delivered distinction; accessible popup and precedence rules. |
-| 6 | Build script rather than hook; ignored in-app generated copy; exact file/byte checker; import/WAR/package and prohibited-code validator. |
-| 7 | Expanded Vitest and Playwright discovery; persistent bundled-Chromium extension fixture; foreground routed feed; timed escalation, stable-plateau append, protocol pause/resume, and unmatched-page checks. |
+| 6 | Authoritative build/check scripts; committed, unignored in-app generated mirror; drift check before Vitest and browser launch; non-authoritative Kiro PostFileSave convenience hook; import/WAR/package and prohibited-code validation. |
+| 7 | Normal-test drift enforcement; root-scope/throttle unit evidence; expanded Vitest and Playwright discovery; fresh-checkout persistent bundled-Chromium fixture; timed escalation, stable-plateau append, protocol pause/resume, and unmatched-page checks. |
