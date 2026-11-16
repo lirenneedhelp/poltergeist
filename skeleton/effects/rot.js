@@ -32,6 +32,11 @@ export function apply(env, params = {}, intensity, handle) {
   const doc = env.document;
   if (!handle || handle.dead) {
     handle = { env, nodes: new Map(), serial: 0, dead: false, fading: false, timer: null };
+  } else {
+    // Drop entries for nodes the page removed; never touch their data.
+    for (const node of Array.from(handle.nodes.keys())) {
+      if (node.isConnected === false) handle.nodes.delete(node);
+    }
   }
   if (!doc.body) return handle;
 

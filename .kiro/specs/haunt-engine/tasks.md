@@ -120,8 +120,8 @@ Workspace rules that apply to every task:
     - **Property 15: Effect validation is registry membership and is pure**
     - **Validates: Requirements 8.6, 11.1, 11.2, 11.3, 11.4, 11.5**
 
-- [ ] 6. Rot detached-node pruning (Requirement 13)
-  - [ ] 6.1 Prune detached nodes in `skeleton/effects/rot.js`
+- [x] 6. Rot detached-node pruning (Requirement 13)
+  - [x] 6.1 Prune detached nodes in `skeleton/effects/rot.js`
     - On every `apply` with a live Handle, delete every node-map entry whose node has `isConnected === false` before reading `document.body` or walking text. Do not touch any node's `data`.
     - Leave connected entries unchanged. Keep the enumerable `Map` so undo still restores a node only when `node.data === entry.out`, then clears the map.
     - Return the live Handle without walking when `body` is absent.

@@ -158,6 +158,25 @@
         "chatSessionId": "sess_bd90677d-7c61-4386-afdb-8e68424d2565",
         "timestamp": 1794819739508
       }
+    ],
+    "6.1 Prune detached nodes in `skeleton/effects/rot.js`": [
+      {
+        "executionId": "834efa91-f9a2-45c7-aa26-16e31bf0e26c",
+        "chatSessionId": "sess_33da14d3-2321-4a3c-96a2-699f3b7ab676",
+        "timestamp": 1794821749992
+      },
+      {
+        "executionId": "834efa91-f9a2-45c7-aa26-16e31bf0e26c",
+        "chatSessionId": "sess_33da14d3-2321-4a3c-96a2-699f3b7ab676",
+        "timestamp": 1794821931279
+      }
+    ],
+    "6. Rot detached-node pruning (Requirement 13)": [
+      {
+        "executionId": "834efa91-f9a2-45c7-aa26-16e31bf0e26c",
+        "chatSessionId": "sess_33da14d3-2321-4a3c-96a2-699f3b7ab676",
+        "timestamp": 1794821931355
+      }
     ]
   }
 }
