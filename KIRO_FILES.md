@@ -1,16 +1,30 @@
-## 2026-11-16: Task 4.2 Fog as overlay
-**Kiro feature:** spec task (haunt-engine 4.2)
-**What I asked:** Start task 4.2
-**What happened:** Kiro rewrote fog.js as a backdrop-filter overlay; jsdom tests passed.
-**What I caught/changed:** jsdom can't verify blur, so added a Playwright check (task 7.3).
-**Evidence:** commit abc1234, 12 new tests
-**Write-up angle:** knowing which tests jsdom can't prove
-
 ## 2026-11-16: Task 4.1 Teardown lifecycle
 **Kiro feature:** spec task (haunt-engine 4.1, Req 5.10)
 **What happened:** Kiro made the effect states explicit (live, fading, dead).
 **Bug found:** in the original vibe-coded skeleton, a second fade-out call
 cancelled the running fade and removed the effect instantly. Requirement 5.10
 said it should be a no-op, so writing the spec exposed it.
-**Caveat:** no test yet; task 4.5 must cover it.
-**Evidence:** commit <hash>, 39 tests still passing
+**Test coverage:** "repeated positive-duration teardown is a no-op and keeps
+the original timer" in effects.test.js (task 4.5, commit f97c0c2).
+**Evidence:** commit 30fd149
+
+## 2026-11-16: Tasks 4.2–4.5 Overlay effects
+**Kiro feature:** spec tasks (haunt-engine 4.2–4.5, Req 10)
+**What happened:** Fog, flicker and block became separate fixed overlays on
+<html>, stacked fog < flicker < block. Nothing styles <html> or <body> any more,
+so the block message stays readable and fixed navbars don't move.
+**What I caught/changed:** jsdom can't render blur or measure layout, so the
+visual checks (Req 10.13–10.14) are left for a Playwright test in real Chrome
+(task 7.3).
+**Evidence:** commits 4b1cb71, 9d39cd7, c05646b, f97c0c2; tests 39 → 67.
+Break-it check: changing fog's z-index failed 2 tests.
+
+## 2026-11-16: Task 5 Custom effects in the validator
+**Kiro feature:** spec tasks (haunt-engine 5.1–5.2, Req 11)
+**What happened:** The validator now accepts any effect in the registry it's
+given, instead of a hard-coded list of four.
+**What I caught/changed:** the spec put the startPoltergeist fix (Req 11.6) in
+task 10.1, which I'd deferred until after App 1, so custom effects would still
+have been rejected at startup. I pulled that one-line fix forward into 5.1.
+**Evidence:** commits 4b1dfdc, ff21291; tests 67 → 75.
+Break-it check: ignoring the registry failed 5 tests.
