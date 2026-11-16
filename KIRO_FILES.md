@@ -28,3 +28,17 @@ task 10.1, which I'd deferred until after App 1, so custom effects would still
 have been rejected at startup. I pulled that one-line fix forward into 5.1.
 **Evidence:** commits 4b1dfdc, ff21291; tests 67 → 75.
 Break-it check: ignoring the registry failed 5 tests.
+
+## 2026-11-16: Task 6 Rot pruning
+**Kiro feature:** spec tasks (haunt-engine 6.1–6.2, Req 13)
+**What happened:** Rot now drops references to text nodes the page has removed,
+so long sessions on infinite feeds don't leak memory. Removed nodes' text is
+never touched.
+**Evidence:** commits 80505f4, 9c4f2a4; tests 75 → 82.
+Break-it check: disabling the pruning line failed 3 tests.
+
+**Found while reviewing (not yet fixed):** the engine only re-applies an effect
+when its intensity changes. Once rot reaches full intensity it is never applied
+again, so feed posts that load after that point stay clean, and the feed looks
+like it is healing as you scroll. Fix in the doomscroll-app spec, likely by
+having rot watch for new text with a MutationObserver.
