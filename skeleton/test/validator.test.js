@@ -55,6 +55,64 @@ describe('schema stays in sync', () => {
   });
 });
 
+describe('validator effect registry', () => {
+  const withType = (type) => {
+    const r = good();
+    r.effect.type = type;
+    return r;
+  };
+  const custom = { haunt: { apply() {}, undo() {}, description: 'x' }, ghost: {} };
+
+  it('accepts custom registry types and rejects builtin ones not in it', () => {
+    expect(validateRule(withType('haunt'), 'rule', custom)).toEqual([]);
+    expect(validateRule(withType('haunt'), custom)).toEqual([]);
+    expect(validateRule(withType('rot'), custom).join('\n')).toContain('effect.type');
+    expect(validateRules([withType('ghost')], custom).valid).toBe(true);
+    expect(validateRules([withType('rot')], custom).valid).toBe(false);
+  });
+
+  it('defaults to builtin effects', () => {
+    for (const t of Object.keys(builtinEffects)) {
+      expect(validateRule(withType(t))).toEqual([]);
+      expect(validateRules([withType(t)]).valid).toBe(true);
+    }
+    expect(validateRule(withType('haunt'))).not.toEqual([]);
+  });
+
+  it('rejects every type with an empty registry', () => {
+    const errors = validateRule(withType('rot'), 'rule', {});
+    expect(errors.join('\n')).toContain('effect.type');
+    expect(validateRules([good()], {}).valid).toBe(false);
+  });
+
+  it('lists the complete key list in diagnostics', () => {
+    const msg = validateRule(withType('nope'), 'rule', custom).find((e) => e.includes('effect.type'));
+    expect(msg).toContain('haunt');
+    expect(msg).toContain('ghost');
+    const builtinMsg = validateRule(withType('nope')).find((e) => e.includes('effect.type'));
+    for (const k of Object.keys(builtinEffects)) expect(builtinMsg).toContain(k);
+  });
+
+  it('does not mutate rule or registry', () => {
+    const rule = withType('nope');
+    const ruleCopy = JSON.stringify(rule);
+    const registry = { a: {}, b: {} };
+    const keys = Object.keys(registry);
+    validateRule(rule, 'rule', registry);
+    validateRules([rule], registry);
+    expect(JSON.stringify(rule)).toBe(ruleCopy);
+    expect(Object.keys(registry)).toEqual(keys);
+  });
+
+  it('EFFECT_TYPES equals builtinEffects keys and schema type is a plain string', () => {
+    const schema = JSON.parse(readFileSync(new URL('../rule-schema.json', import.meta.url), 'utf8'));
+    const type = schema.definitions.rule.properties.effect.properties.type;
+    expect(type).toEqual({ type: 'string' });
+    expect(type.enum).toBeUndefined();
+    expect([...EFFECT_TYPES]).toEqual(Object.keys(builtinEffects));
+  });
+});
+
 describe('matchUrl', () => {
   it('handles wildcard hosts, schemes, and paths', () => {
     expect(matchUrl(['*://*.example.com/*'], 'https://www.example.com/a?b=1')).toBe(true);

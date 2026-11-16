@@ -112,7 +112,7 @@ Workspace rules that apply to every task:
     - Export `EFFECT_TYPES` as an immutable snapshot of `Object.keys(builtinEffects)`.
     - In `skeleton/rule-schema.json`, replace the `effect.type` enum with `{ "type": "string" }`.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.8, 1.11_
-  - [ ]* 5.2 Extend `skeleton/test/validator.test.js`
+  - [x] 5.2 Extend `skeleton/test/validator.test.js`
     - Custom, default and empty registries. Complete key list in diagnostics. Input immutability. Schema `effect.type` is a string with no enum. `EFFECT_TYPES` equals the `builtinEffects` keys. Meter and undo enums still match the schema.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.8, 1.17_
   - [ ]* 5.3 Write property test for registry validation
