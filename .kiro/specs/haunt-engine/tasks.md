@@ -126,7 +126,7 @@ Workspace rules that apply to every task:
     - Leave connected entries unchanged. Keep the enumerable `Map` so undo still restores a node only when `node.data === entry.out`, then clears the map.
     - Return the live Handle without walking when `body` is absent.
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 6.11, 6.12_
-  - [ ]* 6.2 Write Rot tests in `skeleton/test/rot.test.js` (jsdom)
+  - [x] 6.2 Write Rot tests in `skeleton/test/rot.test.js` (jsdom)
     - Mixed and all-connected maps, no detached references after apply, text unchanged by pruning, retained entries unchanged, undo after removal does not throw and restores connected nodes, page rewrite adoption, and conditional restore.
     - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 6.11, 6.12_
   - [ ]* 6.3 Write property test for Rot pruning
