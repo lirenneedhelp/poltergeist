@@ -189,6 +189,18 @@
         "chatSessionId": "sess_e69da201-696b-4a01-bd11-5c6dfa10ffc2",
         "timestamp": 1794822178456
       }
+    ],
+    "7.1 Write jsdom restoration suite `skeleton/test/restoration.test.js`": [
+      {
+        "executionId": "6210abf7-3b31-420f-912a-b0be152f7869",
+        "chatSessionId": "sess_d61d1f39-8d35-41cb-9404-e7cd71f88886",
+        "timestamp": 1794822390487
+      },
+      {
+        "executionId": "6210abf7-3b31-420f-912a-b0be152f7869",
+        "chatSessionId": "sess_d61d1f39-8d35-41cb-9404-e7cd71f88886",
+        "timestamp": 1794822565050
+      }
     ]
   }
 }

@@ -135,7 +135,7 @@ Workspace rules that apply to every task:
     - **Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 13.6**
 
 - [ ] 7. Restoration and real-browser verification (Requirements 14 and 10.13-10.14)
-  - [ ] 7.1 Write jsdom restoration suite `skeleton/test/restoration.test.js`
+  - [x] 7.1 Write jsdom restoration suite `skeleton/test/restoration.test.js`
     - Use `// @vitest-environment jsdom`. Snapshot = `documentElement.outerHTML` plus the `documentElement` and `body` `style` attributes, captured by value.
     - For every built-in effect, apply at 3 or more distinct intensities with the same Handle, then undo with `durationMs: 0` and require snapshot equality. Call undo a second time and require no throw and no change.
     - Fog and Block: fake-timer fade, advance exactly `durationMs`, then require equality. Start a fade, then call `undo(..., { durationMs: 0 })` without advancing timers and require equality.
