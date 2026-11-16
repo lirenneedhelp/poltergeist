@@ -134,7 +134,7 @@ Workspace rules that apply to every task:
     - **Property 23: Rot pruning is an exact non-mutating partition**
     - **Validates: Requirements 13.1, 13.2, 13.3, 13.4, 13.5, 13.6**
 
-- [ ] 7. Restoration and real-browser verification (Requirements 14 and 10.13-10.14)
+- [x] 7. Restoration and real-browser verification (Requirements 14 and 10.13-10.14)
   - [x] 7.1 Write jsdom restoration suite `skeleton/test/restoration.test.js`
     - Use `// @vitest-environment jsdom`. Snapshot = `documentElement.outerHTML` plus the `documentElement` and `body` `style` attributes, captured by value.
     - For every built-in effect, apply at 3 or more distinct intensities with the same Handle, then undo with `durationMs: 0` and require snapshot equality. Call undo a second time and require no throw and no change.
@@ -148,7 +148,7 @@ Workspace rules that apply to every task:
     - Create `skeleton/test/properties/effects-ownership.property.test.js` (jsdom).
     - **Property 14: Built-in updates and cleanup preserve ownership invariants**
     - **Validates: Requirements 6.20, 10.7, 10.10, 10.12, 14.2, 14.3, 14.7**
-  - [ ] 7.3 Write real-Chrome checks `skeleton/test/browser/effects.pw.js`
+  - [x] 7.3 Write real-Chrome checks `skeleton/test/browser/effects.pw.js`
     - Load a deterministic local fixture with representative `position: fixed` elements and the packaged effect modules in a fixed viewport.
     - While Fog, Flicker and Block are all active, assert that the Block overlay's `parentElement` is `documentElement`, its computed `filter` and `backdrop-filter` are `none`, and its computed opacity equals its configured opacity within a narrow tolerance.
     - Assert that the bounding rectangles of the fixed fixture elements are unchanged before and during each effect and all three together.

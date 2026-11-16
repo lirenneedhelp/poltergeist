@@ -201,6 +201,25 @@
         "chatSessionId": "sess_d61d1f39-8d35-41cb-9404-e7cd71f88886",
         "timestamp": 1794822565050
       }
+    ],
+    "7.3 Write real-Chrome checks `skeleton/test/browser/effects.pw.js`": [
+      {
+        "executionId": "d7d5f271-022e-4c25-9942-df3378915389",
+        "chatSessionId": "sess_cad9b49e-244f-417b-b24e-c57d9a2c0824",
+        "timestamp": 1794822632854
+      },
+      {
+        "executionId": "d7d5f271-022e-4c25-9942-df3378915389",
+        "chatSessionId": "sess_cad9b49e-244f-417b-b24e-c57d9a2c0824",
+        "timestamp": 1794822684699
+      }
+    ],
+    "7. Restoration and real-browser verification (Requirements 14 and 10.13-10.14)": [
+      {
+        "executionId": "d7d5f271-022e-4c25-9942-df3378915389",
+        "chatSessionId": "sess_cad9b49e-244f-417b-b24e-c57d9a2c0824",
+        "timestamp": 1794822684782
+      }
     ]
   }
 }
