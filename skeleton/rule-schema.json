@@ -46,7 +46,7 @@
           "required": ["type"],
           "additionalProperties": false,
           "properties": {
-            "type": { "enum": ["fog", "flicker", "rot", "block"] },
+            "type": { "type": "string" },
             "params": { "type": "object" }
           }
         },

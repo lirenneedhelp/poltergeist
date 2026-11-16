@@ -20,7 +20,7 @@ export function startPoltergeist({
   tickMs = DEFAULT_TICK_MS,
   initialMeters,
 } = {}) {
-  const { valid, errors, rules } = validateRules(rulesDoc);
+  const { valid, errors, rules } = validateRules(rulesDoc, effects);
   if (!valid) throw new Error(`Invalid Poltergeist rules:\n${errors.join('\n')}`);
 
   const motionQuery = win.matchMedia?.('(prefers-reduced-motion: reduce)');

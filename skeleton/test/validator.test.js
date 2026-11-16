@@ -49,7 +49,7 @@ describe('schema stays in sync', () => {
   const props = schema.definitions.rule.properties;
   it('enums match validator constants and effect registry', () => {
     expect(props.trigger.properties.meter.enum).toEqual(METERS);
-    expect(props.effect.properties.type.enum).toEqual(EFFECT_TYPES);
+    expect(props.effect.properties.type).toEqual({ type: 'string' });
     expect(props.undo.properties.mode.enum).toEqual(UNDO_MODES);
     expect(Object.keys(builtinEffects).sort()).toEqual([...EFFECT_TYPES].sort());
   });

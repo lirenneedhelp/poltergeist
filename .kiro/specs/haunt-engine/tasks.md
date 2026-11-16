@@ -105,8 +105,8 @@ Workspace rules that apply to every task:
     - **Property 13: Block opacity and interaction follow intensity**
     - **Validates: Requirements 6.14, 6.15, 6.16**
 
-- [ ] 5. Registry-derived effect types in the validator (Requirement 11)
-  - [ ] 5.1 Derive allowed effect types from the supplied registry
+- [x] 5. Registry-derived effect types in the validator (Requirement 11)
+  - [x] 5.1 Derive allowed effect types from the supplied registry
     - In `skeleton/validator.js`, add an optional registry parameter to `validateRules(document, effects = builtinEffects)`. Support `validateRule(rule, path = 'rule', effects = builtinEffects)` plus the `validateRule(rule, effectsRegistry)` overload (a string argument is a path, an object is a registry).
     - Accept `effect.type` only when it is a string equal to an own key of the registry. A rejection error names `effect.type` and lists every key in deterministic order, including `[]` for an empty registry. Never mutate the rule or the registry.
     - Export `EFFECT_TYPES` as an immutable snapshot of `Object.keys(builtinEffects)`.

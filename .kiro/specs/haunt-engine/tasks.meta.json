@@ -117,6 +117,35 @@
         "chatSessionId": "sess_f44c1cf1-6762-47b2-b6c2-14514f2732fc",
         "timestamp": 1794764282171
       }
+    ],
+    "5.1 Derive allowed effect types from the supplied registry": [
+      {
+        "executionId": "2676118a-0333-4aa8-8634-7af44f65ff4b",
+        "chatSessionId": "sess_a7a37f9e-1655-44e6-a492-488ef5d64631",
+        "timestamp": 1794819007305
+      },
+      {
+        "executionId": "2676118a-0333-4aa8-8634-7af44f65ff4b",
+        "chatSessionId": "sess_a7a37f9e-1655-44e6-a492-488ef5d64631",
+        "timestamp": 1794819068341
+      },
+      {
+        "executionId": "eac9b074-a702-460d-a899-038c85afb24e",
+        "chatSessionId": "sess_a7a37f9e-1655-44e6-a492-488ef5d64631",
+        "timestamp": 1794819273020
+      },
+      {
+        "executionId": "eac9b074-a702-460d-a899-038c85afb24e",
+        "chatSessionId": "sess_a7a37f9e-1655-44e6-a492-488ef5d64631",
+        "timestamp": 1794819327560
+      }
+    ],
+    "5. Registry-derived effect types in the validator (Requirement 11)": [
+      {
+        "executionId": "2676118a-0333-4aa8-8634-7af44f65ff4b",
+        "chatSessionId": "sess_a7a37f9e-1655-44e6-a492-488ef5d64631",
+        "timestamp": 1794819068430
+      }
     ]
   }
 }

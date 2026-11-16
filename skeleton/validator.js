@@ -3,9 +3,10 @@
 // A test keeps the enums below in sync with the schema file.
 
 import { isValidPattern } from './match.js';
+import { builtinEffects } from './effects/index.js';
 
 export const METERS = ['timeOnSite', 'scrollDistance', 'timeSinceActive'];
-export const EFFECT_TYPES = ['fog', 'flicker', 'rot', 'block'];
+export const EFFECT_TYPES = Object.freeze(Object.keys(builtinEffects));
 export const UNDO_MODES = ['instant', 'fade'];
 
 const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
@@ -18,8 +19,17 @@ function checkKeys(obj, allowed, path, errors) {
   }
 }
 
-/** Validate one rule. Returns an array of error strings (empty = valid). */
-export function validateRule(rule, path = 'rule') {
+/**
+ * Validate one rule. Returns an array of error strings (empty = valid).
+ * Overloads: validateRule(rule, path?, effects?) and validateRule(rule, effects).
+ */
+export function validateRule(rule, path = 'rule', effects = builtinEffects) {
+  if (typeof path !== 'string') {
+    // validateRule(rule, effectsRegistry)
+    effects = path;
+    path = 'rule';
+  }
+  const allowedTypes = effects !== null && typeof effects === 'object' ? Object.keys(effects) : [];
   const errors = [];
   if (!isObj(rule)) return [`${path}: must be an object`];
   checkKeys(rule, ['id', 'description', 'enabled', 'match', 'trigger', 'effect', 'undo'], path, errors);
@@ -62,7 +72,9 @@ export function validateRule(rule, path = 'rule') {
     errors.push(`${path}.effect: required object`);
   } else {
     checkKeys(e, ['type', 'params'], `${path}.effect`, errors);
-    if (!EFFECT_TYPES.includes(e.type)) errors.push(`${path}.effect.type: must be one of ${EFFECT_TYPES.join(', ')}`);
+    if (typeof e.type !== 'string' || !allowedTypes.includes(e.type)) {
+      errors.push(`${path}.effect.type: must be one of [${allowedTypes.join(', ')}]`);
+    }
     if (e.params !== undefined && !isObj(e.params)) errors.push(`${path}.effect.params: must be an object`);
   }
 
@@ -80,7 +92,7 @@ export function validateRule(rule, path = 'rule') {
 }
 
 /** Validate a rules file (array or {rules: [...]}). Returns {valid, errors, rules}. */
-export function validateRules(doc) {
+export function validateRules(doc, effects = builtinEffects) {
   const errors = [];
   let list;
   if (Array.isArray(doc)) list = doc;
@@ -92,7 +104,7 @@ export function validateRules(doc) {
   }
   const seen = new Set();
   list.forEach((r, i) => {
-    errors.push(...validateRule(r, `rules[${i}]`));
+    errors.push(...validateRule(r, `rules[${i}]`, effects));
     if (isObj(r) && typeof r.id === 'string') {
       if (seen.has(r.id)) errors.push(`rules[${i}].id: duplicate id "${r.id}"`);
       seen.add(r.id);
