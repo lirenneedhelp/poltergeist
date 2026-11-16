@@ -154,7 +154,7 @@ Workspace rules that apply to every task:
     - Assert that the bounding rectangles of the fixed fixture elements are unchanged before and during each effect and all three together.
     - _Requirements: 10.13, 10.14, 14.10_
 
-- [ ] 8. Checkpoint - Foundations complete
+- [x] 8. Checkpoint - Foundations complete
   - Ensure all tests pass, ask the user if questions arise. Requirements 9, 10, 11 and 13 and their tests must be complete before Requirement 12 starts.
 
 - [ ] 9. Persisted per-site meters (Requirement 12), core modules
