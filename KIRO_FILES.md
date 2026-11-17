@@ -93,3 +93,5 @@ graph; a Kiro save hook rebuilds the skeleton copy.
 bad manifest could pass `check:doomscroll` (the spec required it to fail).
 **Evidence:** commits 2ef2ba6, 9d24d9e; tests 162 → 229. Break-it checks: an
 extra `tabs` permission failed 4 tests; a missing web-accessible file failed 2.
+**Fixed:** task 3.4 (commit 71eec3c). `check:doomscroll` now runs the
+validator and exits with an error on an extra permission.
