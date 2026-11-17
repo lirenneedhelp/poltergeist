@@ -257,6 +257,102 @@ function doomscrollCreateController({ loadPackage, report = () => {} } = {}) {
 void (async function bootDoomscroll() {
   const chromeApi = globalThis.chrome;
   if (!chromeApi || !chromeApi.runtime || !chromeApi.runtime.id) return;
-  // Packaged startup (listeners, initial state, cached package load,
-  // diagnostics, pagehide disposal) is wired here by task 5.2.
+
+  const LOG_PREFIX = '[poltergeist:doomscroll]';
+  const DEMO_KEY = 'doomscroll.demoMode';
+  const MSG = {
+    CONTENT_STATE: 'doomscroll:content-state',
+    APPLY_PAUSED: 'doomscroll:apply-paused',
+    PING: 'doomscroll:ping',
+  };
+  const win = globalThis.window || globalThis;
+
+  // One cached package Promise: a failure is reported once and never retried in a loop.
+  let packagePromise = null;
+  function loadPackage() {
+    if (!packagePromise) {
+      packagePromise = (async () => {
+        const [api, response] = await Promise.all([
+          import(chromeApi.runtime.getURL('skeleton/index.js')),
+          fetch(chromeApi.runtime.getURL('rules.json')),
+        ]);
+        if (!response || !response.ok) {
+          throw new Error(`rules.json request failed (HTTP ${response ? response.status : 'none'})`);
+        }
+        const normalProfile = await response.json();
+        return { api, normalProfile };
+      })();
+    }
+    return packagePromise;
+  }
+
+  // One contained diagnostic per failed operation; never logs page content or storage records.
+  function report(kind, message, error) {
+    try {
+      const detail = error && typeof error.message === 'string' ? error.message : undefined;
+      if (detail) console.error(LOG_PREFIX, message, detail);
+      else console.error(LOG_PREFIX, message);
+    } catch {
+      // Diagnostics must never throw.
+    }
+  }
+
+  const controller = doomscrollCreateController({ loadPackage, report });
+
+  // 1. Register every listener before requesting initial state.
+  win.addEventListener('pagehide', () => controller.dispose());
+
+  chromeApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (!message || typeof message !== 'object') return false;
+    if (sender && sender.id !== undefined && sender.id !== chromeApi.runtime.id) return false;
+    if (message.type === MSG.PING) {
+      sendResponse({ ok: true });
+      return false;
+    }
+    if (message.type === MSG.APPLY_PAUSED) {
+      if (typeof message.paused !== 'boolean') {
+        sendResponse({ ok: false, error: 'paused must be a Boolean' });
+        return false;
+      }
+      void controller.setPaused(message.paused);
+      sendResponse({ ok: true });
+      return false;
+    }
+    return false;
+  });
+
+  if (chromeApi.storage && chromeApi.storage.onChanged) {
+    chromeApi.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local' || !changes || !Object.prototype.hasOwnProperty.call(changes, DEMO_KEY)) return;
+      const next = changes[DEMO_KEY] ? changes[DEMO_KEY].newValue : undefined;
+      // A removed key means the default (off); non-Boolean junk is ignored.
+      if (next === undefined && changes[DEMO_KEY]) void controller.setDemoMode(false);
+      else if (typeof next === 'boolean') void controller.setDemoMode(next);
+    });
+  }
+
+  try {
+    const query = typeof win.matchMedia === 'function' ? win.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    const onMotion = () => { void controller.motionChanged(); };
+    if (query && typeof query.addEventListener === 'function') query.addEventListener('change', onMotion);
+    else if (query && typeof query.addListener === 'function') query.addListener(onMotion);
+  } catch (error) {
+    report('motion', 'could not observe the reduced-motion preference', error);
+  }
+
+  // 2. Capture revisions, then request the initial state.
+  const captured = controller.captureRevisions();
+  let reply;
+  try {
+    reply = await chromeApi.runtime.sendMessage({ type: MSG.CONTENT_STATE });
+  } catch (error) {
+    report('state', 'could not read the initial Doomscroll state', error);
+    return;
+  }
+  if (!reply || reply.ok !== true) {
+    report('state', 'could not read the initial Doomscroll state');
+    return;
+  }
+  // Merges each field only if no newer event changed it; starts nothing until both are confirmed.
+  void controller.applyInitialState({ paused: reply.paused, demoMode: reply.demoMode }, captured);
 }());

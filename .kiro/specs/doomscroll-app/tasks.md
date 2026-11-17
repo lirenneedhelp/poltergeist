@@ -135,7 +135,7 @@ Workspace constraints that apply to every task:
     - **Property 3: Runtime reconciliation owns at most one instance**
     - **Validates: Requirements 2.6, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.14, 3.16, 5.9, 5.10, 5.13, 5.17**
 
-  - [ ] 5.2 Wire packaged startup, revision-safe messages, and cleanup
+  - [x] 5.2 Wire packaged startup, revision-safe messages, and cleanup
     - Register the required content-side message, storage, media-query, and pagehide listeners before requesting initial state. Capture separate pause/demo revisions, merge each initial field only if no newer event changed it, and start no Engine until both fields are confirmed.
     - Cache one Promise that dynamically imports `chrome.runtime.getURL('skeleton/index.js')` and fetches/parses `chrome.runtime.getURL('rules.json')`; reject non-success responses before parsing.
     - Validate the Normal_Profile, check the current generation after package loading, and call the current synchronous `startPoltergeist` with the selected untouched document plus in-memory `initialMeters`.

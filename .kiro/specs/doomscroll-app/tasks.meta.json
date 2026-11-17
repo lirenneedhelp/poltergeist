@@ -177,6 +177,18 @@
         "chatSessionId": "sess_8cdc5271-fec3-4930-b638-b8741c2b903a",
         "timestamp": 1794891018911
       }
+    ],
+    "5.2 Wire packaged startup, revision-safe messages, and cleanup": [
+      {
+        "executionId": "7da413f4-71fe-413c-a012-7c2ba0e7b7bf",
+        "chatSessionId": "sess_5b77af6e-bd63-453a-b615-8a0e294fe752",
+        "timestamp": 1794891074631
+      },
+      {
+        "executionId": "7da413f4-71fe-413c-a012-7c2ba0e7b7bf",
+        "chatSessionId": "sess_5b77af6e-bd63-453a-b615-8a0e294fe752",
+        "timestamp": 1794891137724
+      }
     ]
   }
 }
