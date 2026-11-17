@@ -1,0 +1,36 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create `app1-doomscroll/manifest.json` with exact scope": [
+      {
+        "executionId": "1bb0bc84-7c98-4417-b270-eb561c0f275b",
+        "chatSessionId": "sess_0cbb98c5-b378-4328-b513-7ac09e055e0a",
+        "timestamp": 1794886728825
+      },
+      {
+        "executionId": "1bb0bc84-7c98-4417-b270-eb561c0f275b",
+        "chatSessionId": "sess_0cbb98c5-b378-4328-b513-7ac09e055e0a",
+        "timestamp": 1794886905498
+      }
+    ],
+    "1.2 Create the validated Normal Profile in `app1-doomscroll/rules.json`": [
+      {
+        "executionId": "f0a34ea4-e9a3-45fc-bbe7-ecfdead797f1",
+        "chatSessionId": "sess_20758d5d-46cd-44c0-8c34-951bdd2e585a",
+        "timestamp": 1794886971092
+      },
+      {
+        "executionId": "f0a34ea4-e9a3-45fc-bbe7-ecfdead797f1",
+        "chatSessionId": "sess_20758d5d-46cd-44c0-8c34-951bdd2e585a",
+        "timestamp": 1794887041279
+      }
+    ],
+    "1. Add the authored Manifest V3 package and rules": [
+      {
+        "executionId": "f0a34ea4-e9a3-45fc-bbe7-ecfdead797f1",
+        "chatSessionId": "sess_20758d5d-46cd-44c0-8c34-951bdd2e585a",
+        "timestamp": 1794887041344
+      }
+    ]
+  }
+}

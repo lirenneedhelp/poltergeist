@@ -18,15 +18,15 @@ Workspace constraints that apply to every task:
 
 ## Tasks
 
-- [ ] 1. Add the authored Manifest V3 package and rules
-  - [ ] 1.1 Create `app1-doomscroll/manifest.json` with exact scope
+- [x] 1. Add the authored Manifest V3 package and rules
+  - [x] 1.1 Create `app1-doomscroll/manifest.json` with exact scope
     - Declare Manifest V3 metadata, `background.js` as a module service worker, `popup.html` as the action popup, and classic `content.js` at `document_idle` in the top frame only.
     - Set `permissions` to exactly `storage` and `host_permissions` to exactly `https://www.youtube.com/*`, `https://x.com/*`, and `https://www.instagram.com/*`.
     - Use that exact host set for content-script and web-accessible-resource matches. Expose `rules.json` plus the complete static module graph rooted at `skeleton/index.js`, set `use_dynamic_url: true`, and expose no popup, worker, test, fixture, or build file.
     - Include no inline or remote executable code and request no `tabs`, `activeTab`, or `scripting` permission.
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.10_
 
-  - [ ] 1.2 Create the validated Normal Profile in `app1-doomscroll/rules.json`
+  - [x] 1.2 Create the validated Normal Profile in `app1-doomscroll/rules.json`
     - Add exactly `doomscroll-fog`, `doomscroll-flicker`, `doomscroll-rot`, and `doomscroll-block`, in that order, all enabled, all using `timeOnSite`, and all matching the exact approved host set.
     - Set Fog to 120→300 seconds with `{ maxBlur: 5, maxGrayscale: 0.8 }` and 400 ms fade undo.
     - Set Flicker to 300→600 seconds with `{ maxDepth: 0.22, periodMs: 1600 }` and instant undo.
