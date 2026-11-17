@@ -133,5 +133,7 @@ site list and the small exposed file list remain the protection.
 the block message appeared in about 25 seconds.
 **Next:** the block screen works but looks plain (dim overlay, small text);
 it's the payoff shot of the demo, so a visual polish pass is planned.
-**Evidence:** commits [5.1], [5.2], [5.3], [fix]; tests [before] → [after];
-screenshots: Chrome error log, block screen.
+**Evidence:** commits 3cc5fea, f8c8389, 9146b52, 72d76f9; tests 268 → 303
+(task 5.3 added 33, the fix added 2). Break-it checks: dividing by 30 failed
+11 tests; removing the generation check failed 2; skipping stop() before a
+restart failed 9. Screenshots: Chrome error log, block screen.
