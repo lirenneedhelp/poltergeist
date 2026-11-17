@@ -165,3 +165,19 @@ test it with a real save and check the result.
 **Evidence:** hook file `.kiro/hooks/build-doomscroll-on-skeleton-save.json`;
 drift check output (screenshot); `npm test` back to 303 passing after
 restoring the test edit.
+
+## 2026-11-17: doomscroll-app Task 6 (browser tests)
+**Kiro feature:** spec tasks; High effort for 6.2–6.3
+**What happened:** Playwright now loads the real unpacked extension in
+Chromium, serves a local feed page at a youtube.com address, and checks:
+fog → flicker → rot → block in order within the demo timeline; a post
+added after rot peaks still rots; pause restores every string exactly;
+resume restarts one sequence; an unapproved site gets nothing.
+**What I checked:** Kiro reported "9 tests pass" from a subagent without
+running the suite itself, so I ran `npm run test:browser` twice myself:
+9/9 both times, no flakiness.
+**Evidence:** commits 8010b45 (6.1), c7cbc61 (6.2), 51802d5 (6.3),
+63c0ef5 (6.4). Commit messages for 6.2 and 6.3 describe the next task's
+content; the file lists are correct. Break-it checks: ignoring pause failed
+1 test; disabling rot's observer failed 1; changing the block message
+failed 4.
