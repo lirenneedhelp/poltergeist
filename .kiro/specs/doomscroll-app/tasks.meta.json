@@ -43,6 +43,25 @@
         "chatSessionId": "sess_806c47b6-b743-4957-8bc1-8a2cc5889b17",
         "timestamp": 1794887522058
       }
+    ],
+    "2.2 Extend `skeleton/test/rot.test.js` for root scope, throttling, and restoration": [
+      {
+        "executionId": "d826fc27-bea6-4473-8dd0-e71f13f61a3e",
+        "chatSessionId": "sess_94053648-5c2a-47fd-ac35-364fb5863683",
+        "timestamp": 1794887659559
+      },
+      {
+        "executionId": "d826fc27-bea6-4473-8dd0-e71f13f61a3e",
+        "chatSessionId": "sess_94053648-5c2a-47fd-ac35-364fb5863683",
+        "timestamp": 1794887816319
+      }
+    ],
+    "2. Fix Rot for text added at stable intensity": [
+      {
+        "executionId": "d826fc27-bea6-4473-8dd0-e71f13f61a3e",
+        "chatSessionId": "sess_94053648-5c2a-47fd-ac35-364fb5863683",
+        "timestamp": 1794887816393
+      }
     ]
   }
 }

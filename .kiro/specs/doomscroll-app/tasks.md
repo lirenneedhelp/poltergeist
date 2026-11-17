@@ -35,7 +35,7 @@ Workspace constraints that apply to every task:
     - Validate the document against the root Rule Validator and preserve the aligned full-intensity/start boundaries.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10_
 
-- [ ] 2. Fix Rot for text added at stable intensity
+- [x] 2. Fix Rot for text added at stable intensity
   - [x] 2.1 Add full-body explicit passes and throttled mutation-root passes in `skeleton/effects/rot.js`
     - Factor shared text-node processing, subtree walking, and detached-node pruning without changing skip rules, deterministic hashing, rewrite adoption, serial assignment, conditional restoration, or public exports.
     - Keep every explicit `apply` as an immediate full-body pass. Store the latest clamped fraction/glyph array first, then cancel and clear any observer work superseded by that pass.
@@ -48,7 +48,7 @@ Workspace constraints that apply to every task:
     - Do not modify `skeleton/engine.js` or any other production skeleton file.
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.13, 4.14, 4.15, 4.16, 4.17, 4.18, 4.19, 4.20, 4.21_
 
-  - [ ] 2.2 Extend `skeleton/test/rot.test.js` for root scope, throttling, and restoration
+  - [x] 2.2 Extend `skeleton/test/rot.test.js` for root scope, throttling, and restoration
     - Verify an explicit apply immediately walks the whole body and a later explicit apply cancels a pending observer timer/queue because its full pass supersedes that work.
     - With fake timers and actual jsdom mutation delivery, append eligible text at stable intensity 1; assert no observer pass at 249 ms, exactly one pass at 250 ms, and use of the latest explicit intensity/glyph params.
     - Deliver several callbacks inside one window and require one pass over all distinct roots. Cover duplicate/ancestor roots, removed roots, detached pruning, an added/replaced body, and direct adoption of one changed text node.
