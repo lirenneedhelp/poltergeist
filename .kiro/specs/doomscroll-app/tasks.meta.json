@@ -141,6 +141,25 @@
         "chatSessionId": "sess_41359665-14f8-4aea-86a1-616e251bad37",
         "timestamp": 1794889852965
       }
+    ],
+    "4.3 Add service-worker and popup Vitest coverage": [
+      {
+        "executionId": "06ae2833-b8aa-4805-a605-8d46fcbc430c",
+        "chatSessionId": "sess_bd541f19-5a3c-4afa-b88e-1b545b02a632",
+        "timestamp": 1794889918294
+      },
+      {
+        "executionId": "06ae2833-b8aa-4805-a605-8d46fcbc430c",
+        "chatSessionId": "sess_bd541f19-5a3c-4afa-b88e-1b545b02a632",
+        "timestamp": 1794890010819
+      }
+    ],
+    "4. Implement extension control state and popup": [
+      {
+        "executionId": "06ae2833-b8aa-4805-a605-8d46fcbc430c",
+        "chatSessionId": "sess_bd541f19-5a3c-4afa-b88e-1b545b02a632",
+        "timestamp": 1794890010871
+      }
     ]
   }
 }

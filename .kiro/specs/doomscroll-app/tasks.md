@@ -97,7 +97,7 @@ Workspace constraints that apply to every task:
     - Keep the existing `npm test` ordering (`npm run check:doomscroll && vitest --run`) and confirm `npm test` passes against the real package.
     - _Requirements: 6.5, 6.6, 7.1_
 
-- [ ] 4. Implement extension control state and popup
+- [x] 4. Implement extension control state and popup
   - [x] 4.1 Implement the module service worker in `app1-doomscroll/background.js`
     - Define only the enumerated messages `doomscroll:content-state`, `doomscroll:popup-state`, `doomscroll:set-paused`, `doomscroll:set-demo`, `doomscroll:apply-paused`, and `doomscroll:ping`.
     - Store each true pause state in its own namespaced `chrome.storage.session` key ending in the tab id; treat missing/non-true values as unpaused and remove only that key on `tabs.onRemoved`.
@@ -115,7 +115,7 @@ Workspace constraints that apply to every task:
     - Add restrained static styling with visible focus, disabled, and status states; add no animation.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.10, 5.11, 5.14, 5.15_
 
-  - [ ] 4.3 Add service-worker and popup Vitest coverage
+  - [x] 4.3 Add service-worker and popup Vitest coverage
     - Mock only the Chrome APIs used by each file and reset listeners/storage between tests.
     - Cover sender-derived ids, exact independent storage keys, malformed values, write-before-notify ordering, simultaneous per-tab isolation, tab removal, service-worker restart reads, demo defaults/updates, unknown messages, failed commits, and committed-but-undelivered results.
     - Cover accessible popup markup, active-tab lookup, supported/unsupported display, pause disablement, globally available demo, successful updates, duplicate-click suppression, failed-commit rollback, and committed unavailable rendering.
