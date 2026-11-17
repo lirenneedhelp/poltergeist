@@ -36,7 +36,7 @@ Workspace constraints that apply to every task:
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10_
 
 - [ ] 2. Fix Rot for text added at stable intensity
-  - [ ] 2.1 Add full-body explicit passes and throttled mutation-root passes in `skeleton/effects/rot.js`
+  - [x] 2.1 Add full-body explicit passes and throttled mutation-root passes in `skeleton/effects/rot.js`
     - Factor shared text-node processing, subtree walking, and detached-node pruning without changing skip rules, deterministic hashing, rewrite adoption, serial assignment, conditional restoration, or public exports.
     - Keep every explicit `apply` as an immediate full-body pass. Store the latest clamped fraction/glyph array first, then cancel and clear any observer work superseded by that pass.
     - Add one observer, a separate observer timer, a Set of pending roots, and a pending-prune flag to each live Handle. Observe `documentElement` with `{ subtree: true, childList: true, characterData: true }` when available.

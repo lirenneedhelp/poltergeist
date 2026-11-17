@@ -31,6 +31,18 @@
         "chatSessionId": "sess_20758d5d-46cd-44c0-8c34-951bdd2e585a",
         "timestamp": 1794887041344
       }
+    ],
+    "2.1 Add full-body explicit passes and throttled mutation-root passes in `skeleton/effects/rot.js`": [
+      {
+        "executionId": "1b45ffee-2b4d-4db3-a1bc-5a60c354f0cf",
+        "chatSessionId": "sess_806c47b6-b743-4957-8bc1-8a2cc5889b17",
+        "timestamp": 1794887272422
+      },
+      {
+        "executionId": "1b45ffee-2b4d-4db3-a1bc-5a60c354f0cf",
+        "chatSessionId": "sess_806c47b6-b743-4957-8bc1-8a2cc5889b17",
+        "timestamp": 1794887522058
+      }
     ]
   }
 }
