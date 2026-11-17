@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest --run",
+    "build:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs",
+    "check:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs --check",
+    "test": "npm run check:doomscroll && vitest --run",
     "test:browser": "playwright test"
   },
   "devDependencies": {

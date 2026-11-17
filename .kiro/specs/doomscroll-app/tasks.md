@@ -60,7 +60,7 @@ Workspace constraints that apply to every task:
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.15, 4.16, 4.17, 4.18, 4.19, 4.20, 7.2**
 
 - [ ] 3. Add deterministic skeleton synchronization and package validation
-  - [ ] 3.1 Implement `scripts/sync-doomscroll-skeleton.mjs`, commit the mirror, and wire package commands
+  - [x] 3.1 Implement `scripts/sync-doomscroll-skeleton.mjs`, commit the mirror, and wire package commands
     - Add synchronize mode and a read-only `--check` mode, resolving paths from the repository root and guarding that the generated target is exactly `app1-doomscroll/skeleton` before replacing it.
     - Copy all source files under root `skeleton/` except `skeleton/test/**`, in sorted relative-path order and without byte or line-ending rewrites. Remove stale generated files only inside the guarded generated target.
     - In check mode, compare the complete relative file sets and bytes, aggregate missing/extra/changed diagnostics, and perform no writes or timestamp changes.
