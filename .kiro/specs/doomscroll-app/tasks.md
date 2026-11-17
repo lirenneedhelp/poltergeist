@@ -153,7 +153,7 @@ Workspace constraints that apply to every task:
     - Cover dynamic runtime URLs, non-success rules response, bad JSON, validation failure, synchronous import/start/stop failure boundaries, listener messages, storage changes, pagehide disposal, and clean pre-start failures.
     - _Requirements: 2.6, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 5.8, 5.9, 5.10, 5.12, 5.13, 5.17, 7.3_
 
-- [ ] 6. Add unpacked-extension browser verification
+- [x] 6. Add unpacked-extension browser verification
   - [x] 6.1 Expand Vitest and Playwright discovery without regressing existing suites
     - Update `vitest.config.js` to include `app1-doomscroll/test/**/*.test.js` alongside the existing skeleton tests and continue excluding `.pw.js`.
     - Update `playwright.config.js` so the existing `skeleton/test/browser/**/*.pw.js` suite keeps its current browser behavior and `app1-doomscroll/test/browser/**/*.pw.js` runs once in its extension project.
@@ -175,7 +175,7 @@ Workspace constraints that apply to every task:
     - Use text comparisons and effect data attributes rather than screenshots, exact applied fractions, or assertions that every character changes.
     - _Requirements: 2.12, 2.15, 2.16, 4.6, 4.7, 4.8, 4.10, 4.11, 4.16, 7.7, 7.8, 7.12, 7.14_
 
-  - [ ] 6.4 Verify pause, resume, restoration, and host exclusion in Playwright
+  - [x] 6.4 Verify pause, resume, restoration, and host exclusion in Playwright
     - Resolve the foreground fixture's tab id through extension APIs and send `doomscroll:set-paused` from the background extension-origin control page. Require all overlays to disappear, every retained original/added fixture string to be restored exactly, and a post appended while paused to remain unchanged.
     - Send the resume command through the same production protocol while Demo_Mode remains enabled. Bring/keep the fixture foreground, require one active sequence, and confirm later eligible appended text is processed again once Rot is active.
     - Open a second page on an unmatched routed origin and require no Doomscroll ping response, imported artifact, or Poltergeist DOM node.

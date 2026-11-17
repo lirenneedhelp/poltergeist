@@ -244,6 +244,25 @@
         "chatSessionId": "sess_66f73e51-232b-41e8-9f8b-5a60d152849f",
         "timestamp": 1794905021185
       }
+    ],
+    "6.4 Verify pause, resume, restoration, and host exclusion in Playwright": [
+      {
+        "executionId": "a3d329dc-ff3c-4aa5-95c6-7f2d19638ecf",
+        "chatSessionId": "sess_edec282c-6b61-4638-b72d-b9340fe8f1bc",
+        "timestamp": 1794905080097
+      },
+      {
+        "executionId": "a3d329dc-ff3c-4aa5-95c6-7f2d19638ecf",
+        "chatSessionId": "sess_edec282c-6b61-4638-b72d-b9340fe8f1bc",
+        "timestamp": 1794905319626
+      }
+    ],
+    "6. Add unpacked-extension browser verification": [
+      {
+        "executionId": "a3d329dc-ff3c-4aa5-95c6-7f2d19638ecf",
+        "chatSessionId": "sess_edec282c-6b61-4638-b72d-b9340fe8f1bc",
+        "timestamp": 1794905319688
+      }
     ]
   }
 }
