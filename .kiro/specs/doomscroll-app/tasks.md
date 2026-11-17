@@ -88,6 +88,15 @@ Workspace constraints that apply to every task:
     - Do not duplicate copy logic in the hook; it must invoke the same authoritative build command.
     - _Requirements: 6.10_
 
+  - [x] 3.4 Run the Package Validator from both sync modes and prove `check:doomscroll` fails on an extra permission
+    - In the CLI entry of `scripts/sync-doomscroll-skeleton.mjs`, dynamically import `validatePackage` from `./validate-doomscroll-package.mjs`. Do not add a static import, and do not change the exported `check`, `build`, `compareFileMaps`, `listFiles`, `isExcluded`, `formatDiagnostics`, or `REPO_ROOT` contracts.
+    - Build mode: after copying, run `validatePackage(REPO_ROOT)`; print every error to stderr and return exit code 1 on any error. Do not roll back the copied mirror.
+    - Check mode: keep the drift comparison first. If drift exists, report it and return 1 without running the validator. Otherwise run `validatePackage(REPO_ROOT)`, print every error to stderr, and return 1 on any error. Perform no writes.
+    - Print a success line only when both the mirror step and validation pass.
+    - In `app1-doomscroll/test/package.test.js`, add a test that builds a temporary repository containing `package.json`, `scripts/`, root `skeleton/` without `skeleton/test/**`, and `app1-doomscroll/` with `manifest.json`, `rules.json`, and the generated `skeleton/`. First run the `check:doomscroll` npm script there and require exit code 0 as a control. Then add one extra permission (for example `tabs`) to the temporary `manifest.json`, run `check:doomscroll` again, and require a nonzero exit, a stderr line naming the `permissions` error, and no file content or mtime changes in the temporary repository. Run the npm script in a way that works on Windows and POSIX. Never modify the real `app1-doomscroll/manifest.json`.
+    - Keep the existing `npm test` ordering (`npm run check:doomscroll && vitest --run`) and confirm `npm test` passes against the real package.
+    - _Requirements: 6.5, 6.6, 7.1_
+
 - [ ] 4. Implement extension control state and popup
   - [ ] 4.1 Implement the module service worker in `app1-doomscroll/background.js`
     - Define only the enumerated messages `doomscroll:content-state`, `doomscroll:popup-state`, `doomscroll:set-paused`, `doomscroll:set-demo`, `doomscroll:apply-paused`, and `doomscroll:ping`.
@@ -204,7 +213,7 @@ Workspace constraints that apply to every task:
   "waves": [
     { "id": 0, "tasks": ["1.1", "1.2", "2.1", "4.1", "5.1"] },
     { "id": 1, "tasks": ["2.2", "3.1", "4.2", "5.2"] },
-    { "id": 2, "tasks": ["3.2", "3.3", "4.3", "5.3", "6.1"] },
+    { "id": 2, "tasks": ["3.2", "3.3", "3.4", "4.3", "5.3", "6.1"] },
     { "id": 3, "tasks": ["6.2"] },
     { "id": 4, "tasks": ["6.3"] },
     { "id": 5, "tasks": ["6.4"] },

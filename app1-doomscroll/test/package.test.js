@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { promises as fs } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -91,6 +91,32 @@ describe('real package', () => {
     expect(parts[1]).toMatch(/^vitest\b/);
     expect(parts).toHaveLength(2);
   });
+});
+
+describe('check:doomscroll npm script', () => {
+  // A single command string with shell: true runs through cmd.exe on Windows and /bin/sh on POSIX,
+  // which resolves npm/npm.cmd without passing user-controlled arguments.
+  const runCheck = (cwd) => spawnSync('npm run check:doomscroll', { cwd, shell: true, encoding: 'utf8' });
+
+  it('fails read-only on an extra manifest permission after a passing control run', async () => {
+    const root = await makeRepo();
+    await fs.copyFile(path.join(REPO_ROOT, 'package.json'), path.join(root, 'package.json'));
+    await fs.cp(path.join(REPO_ROOT, 'scripts'), path.join(root, 'scripts'), { recursive: true });
+
+    const control = runCheck(root);
+    expect(control.status, control.stderr).toBe(0);
+
+    const mp = path.join(root, 'app1-doomscroll', 'manifest.json');
+    const m = await readJson(mp);
+    m.permissions.push('tabs');
+    await fs.writeFile(mp, JSON.stringify(m, null, 2));
+    const before = await snapshot(root);
+
+    const res = runCheck(root);
+    expect(res.status).not.toBe(0);
+    expect(res.stderr.split(/\r?\n/).some((l) => /manifest\.json: permissions must be exactly \["storage"\]/.test(l))).toBe(true);
+    expect(await snapshot(root)).toEqual(before);
+  }, 60_000);
 });
 
 describe('import graph', () => {

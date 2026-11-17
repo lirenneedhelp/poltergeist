@@ -85,3 +85,11 @@ run tasks one at a time with Autopilot off.
 Break-it checks: removing the 250 ms throttle failed 7 tests; removing the
 "ignore rot's own writes" guard failed 1 test; editing one skeleton file made
 `npm test` report `changed: match.js` and stop.
+
+## 2026-11-17: doomscroll-app Tasks 3.2–3.3
+**What happened:** a package validator checks the manifest, rules and module
+graph; a Kiro save hook rebuilds the skeleton copy.
+**What I caught:** the check command didn't actually run the validator, so a
+bad manifest could pass `check:doomscroll` (the spec required it to fail).
+**Evidence:** commits 2ef2ba6, 9d24d9e; tests 162 → 229. Break-it checks: an
+extra `tabs` permission failed 4 tests; a missing web-accessible file failed 2.

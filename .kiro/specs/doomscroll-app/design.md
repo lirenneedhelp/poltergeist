@@ -591,6 +591,13 @@ The build is the sole writer of Generated_Skeleton content. Developers do not ed
 - Perform no write, touch, cleanup, or timestamp update.
 - Run package validation only after copy identity is established.
 
+#### Validator invocation
+
+- Both modes call `validatePackage` from `scripts/validate-doomscroll-package.mjs` and print each error to stderr; any error makes the process exit code 1.
+- Build mode validates after the copy completes. A validation failure leaves the freshly copied mirror in place (the copy is correct; the authored package is what is invalid) and does not roll back.
+- Check mode keeps the existing rule that validation runs only after copy identity is established. On drift, it reports the drift diagnostics and exits 1 without running the validator. Check mode stays read-only.
+- The sync script loads the validator with a dynamic `import()` inside its CLI entry, not a static import. The validator already statically imports `check` and `REPO_ROOT` from the sync script, and tests use the sync script's exported helpers; a static import would create a module cycle and pull `skeleton/index.js` into every importer of the sync helpers.
+
 #### Kiro convenience hook
 
 The implementation creates `.kiro/hooks/build-doomscroll-on-skeleton-save.json` through Kiro's hook creation interface rather than writing hook JSON ad hoc. Its committed shape is:

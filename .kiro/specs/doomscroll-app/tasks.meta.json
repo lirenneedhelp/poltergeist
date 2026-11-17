@@ -105,6 +105,18 @@
         "chatSessionId": "sess_0a4ebf2c-7fd7-46de-a01e-e61411057a3e",
         "timestamp": 1794888488569
       }
+    ],
+    "3.4 Run the Package Validator from both sync modes and prove `check:doomscroll` fails on an extra permission": [
+      {
+        "executionId": "f93e2d1d-98ea-4ed2-8a09-57a4b2c21cf6",
+        "chatSessionId": "sess_0cbb98c5-b378-4328-b513-7ac09e055e0a",
+        "timestamp": 1794889129139
+      },
+      {
+        "executionId": "f93e2d1d-98ea-4ed2-8a09-57a4b2c21cf6",
+        "chatSessionId": "sess_0cbb98c5-b378-4328-b513-7ac09e055e0a",
+        "timestamp": 1794889219967
+      }
     ]
   }
 }

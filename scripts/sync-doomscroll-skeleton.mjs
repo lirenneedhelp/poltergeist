@@ -110,12 +110,25 @@ async function main() {
       for (const line of result.diagnostics) console.error(`  ${line}`);
       return 1;
     }
-    console.log('Doomscroll skeleton mirror is in sync.');
+    if (!(await runValidator())) return 1;
+    console.log('Doomscroll skeleton mirror is in sync and the package is valid.');
     return 0;
   }
   const written = await build();
-  console.log(`Synchronized ${written.length} file(s) into app1-doomscroll/skeleton/.`);
+  // A validation failure leaves the freshly copied mirror in place: the copy is correct.
+  if (!(await runValidator())) return 1;
+  console.log(`Synchronized ${written.length} file(s) into app1-doomscroll/skeleton/; the package is valid.`);
   return 0;
+}
+
+/** Dynamic import: the validator statically imports this module, so a static import would form a cycle. */
+async function runValidator() {
+  const { validatePackage } = await import('./validate-doomscroll-package.mjs');
+  const { ok, errors } = await validatePackage(REPO_ROOT);
+  if (ok) return true;
+  console.error('Doomscroll package validation failed:');
+  for (const e of errors) console.error(`  ${e}`);
+  return false;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
