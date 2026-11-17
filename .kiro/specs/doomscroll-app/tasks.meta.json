@@ -129,6 +129,18 @@
         "chatSessionId": "sess_93834be8-f36e-4297-b71c-9e0189875730",
         "timestamp": 1794889535891
       }
+    ],
+    "4.2 Implement the minimal popup": [
+      {
+        "executionId": "c8be476b-1699-4808-9fef-7e7dd50b79e9",
+        "chatSessionId": "sess_41359665-14f8-4aea-86a1-616e251bad37",
+        "timestamp": 1794889617397
+      },
+      {
+        "executionId": "c8be476b-1699-4808-9fef-7e7dd50b79e9",
+        "chatSessionId": "sess_41359665-14f8-4aea-86a1-616e251bad37",
+        "timestamp": 1794889852965
+      }
     ]
   }
 }

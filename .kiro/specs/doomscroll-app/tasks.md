@@ -107,7 +107,7 @@ Workspace constraints that apply to every task:
     - Return an asynchronous response in the Manifest V3-compatible listener pattern and reject unknown or malformed messages without side effects.
     - _Requirements: 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.11, 5.12, 5.14, 5.15, 5.16_
 
-  - [ ] 4.2 Implement the minimal popup
+  - [x] 4.2 Implement the minimal popup
     - Create `popup.html` with a heading, live status region, labelled `Pause on this tab` and `Demo mode on supported tabs` controls, and external `popup.js`/`popup.css` only.
     - Query the active tab id without reading sensitive tab properties, request confirmed status from the worker, and render active, paused, demo, unsupported, loading, and error states.
     - Disable only pause when content ping says unsupported. Keep demo available globally.
