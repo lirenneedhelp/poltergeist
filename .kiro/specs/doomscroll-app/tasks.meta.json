@@ -1,5 +1,10 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`": {
+      "status": "passed",
+      "lastRunTimestamp": 1794890852025
+    }
+  },
   "executionHistory": {
     "1.1 Create `app1-doomscroll/manifest.json` with exact scope": [
       {
@@ -159,6 +164,18 @@
         "executionId": "06ae2833-b8aa-4805-a605-8d46fcbc430c",
         "chatSessionId": "sess_bd541f19-5a3c-4afa-b88e-1b545b02a632",
         "timestamp": 1794890010871
+      }
+    ],
+    "5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`": [
+      {
+        "executionId": "bf13a96e-5d79-4919-bee8-202f65157db0",
+        "chatSessionId": "sess_8cdc5271-fec3-4930-b638-b8741c2b903a",
+        "timestamp": 1794890525241
+      },
+      {
+        "executionId": "bf13a96e-5d79-4919-bee8-202f65157db0",
+        "chatSessionId": "sess_8cdc5271-fec3-4930-b638-b8741c2b903a",
+        "timestamp": 1794891018911
       }
     ]
   }

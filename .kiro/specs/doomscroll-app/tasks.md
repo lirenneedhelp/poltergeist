@@ -123,7 +123,7 @@ Workspace constraints that apply to every task:
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.11, 5.14, 5.15, 5.16, 7.3_
 
 - [ ] 5. Implement the classic loader and Runtime Controller
-  - [ ] 5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`
+  - [x] 5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`
     - Keep `content.js` a classic script. Use a contained async bootstrap and no static imports or exports.
     - Model unknown/confirmed desired fields, separate pause/demo revisions, `normalSnapshot`, `demoSnapshot`, current instance, a serialized Promise queue, generation token, reduced-motion restart flag, disposed flag, and fault state.
     - Create Demo_Profile from a deep clone by dividing every threshold/ramp by 60, validate it through the dynamically loaded root API, and leave Normal_Profile deeply unchanged.

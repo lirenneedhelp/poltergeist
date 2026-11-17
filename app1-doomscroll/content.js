@@ -1,0 +1,262 @@
+// Doomscroll App content script (classic, isolated world, top frame only).
+//
+// This file must stay a classic script: Chrome loads `content_scripts` as
+// classic scripts, so the ES-module skeleton is loaded later with a dynamic
+// import of a runtime URL. There are no static module declarations here.
+//
+// The two top-level function declarations below are visible only inside the
+// extension's isolated world (and to tests that evaluate this file in a VM
+// context). The page cannot see them. All asynchronous work starts from the
+// contained async bootstrap at the bottom of the file.
+
+/**
+ * Build the Demo_Profile from the Normal_Profile: a deep clone whose trigger
+ * `threshold` and `rampTo` are divided by exactly 60. The input is not mutated.
+ * Accepts either `{ rules: [...] }` or a bare rule array, like the validator.
+ */
+function doomscrollCreateDemoProfile(normalDocument) {
+  const demo = typeof structuredClone === 'function'
+    ? structuredClone(normalDocument)
+    : JSON.parse(JSON.stringify(normalDocument));
+  const rules = Array.isArray(demo) ? demo : demo && Array.isArray(demo.rules) ? demo.rules : [];
+  for (const rule of rules) {
+    const trigger = rule && rule.trigger;
+    if (!trigger || typeof trigger !== 'object') continue;
+    if (typeof trigger.threshold === 'number') trigger.threshold /= 60;
+    if (typeof trigger.rampTo === 'number') trigger.rampTo /= 60;
+  }
+  return demo;
+}
+
+/**
+ * Runtime Controller: owns profile selection, meter snapshots, and at most one
+ * live Poltergeist instance for this document.
+ *
+ * @param {object} deps
+ * @param {() => Promise<{ api: { startPoltergeist: Function, validateRules: Function, builtinEffects: object }, normalProfile: object }>} deps.loadPackage
+ *   Resolves the dynamically imported skeleton API and the parsed rules.json.
+ *   Expected to cache its own Promise so repeated starts do not refetch.
+ * @param {(kind: string, message: string, error?: unknown) => void} [deps.report]
+ *   Diagnostic sink. Called at most once per failure kind.
+ */
+function doomscrollCreateController({ loadPackage, report = () => {} } = {}) {
+  const zeroMeters = () => ({ timeOnSite: 0, scrollDistance: 0 });
+  const clone = (value) => (typeof structuredClone === 'function'
+    ? structuredClone(value)
+    : JSON.parse(JSON.stringify(value)));
+
+  const state = {
+    desired: { paused: undefined, demoMode: undefined }, // undefined = not yet confirmed
+    revisions: { paused: 0, demoMode: 0 },
+    current: null, // { mode: 'normal' | 'demo', ghost, demoEpoch }
+    normalSnapshot: zeroMeters(),
+    demoSnapshot: zeroMeters(),
+    demoEpoch: 0, // bumps on every actual demo Boolean transition
+    generation: 0,
+    queue: Promise.resolve(),
+    restartForMotion: false,
+    disposed: false,
+    fault: null,
+  };
+  const reported = new Set();
+
+  function reportOnce(kind, message, error) {
+    if (reported.has(kind)) return;
+    reported.add(kind);
+    try {
+      report(kind, message, error);
+    } catch {
+      // A broken diagnostic sink must not break reconciliation.
+    }
+  }
+
+  /** Copy only the two seedable meters; timeSinceActive is derived and never carried. */
+  function captureMeters(ghost) {
+    const values = ghost && ghost.meters && typeof ghost.meters.values === 'function'
+      ? ghost.meters.values()
+      : {};
+    const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0);
+    return { timeOnSite: num(values.timeOnSite), scrollDistance: num(values.scrollDistance) };
+  }
+
+  /** 'paused' | 'normal' | 'demo', or undefined while either field is unconfirmed. */
+  function desiredMode() {
+    const { paused, demoMode } = state.desired;
+    if (typeof paused !== 'boolean' || typeof demoMode !== 'boolean') return undefined;
+    if (paused) return 'paused';
+    return demoMode ? 'demo' : 'normal';
+  }
+
+  /** Stop the owned instance. Returns false (and faults) if its stop() threw. */
+  function stopCurrent() {
+    const cur = state.current;
+    if (!cur) return true;
+    if (cur.mode === 'normal') {
+      state.normalSnapshot = captureMeters(cur.ghost);
+    } else if (cur.demoEpoch === state.demoEpoch && state.desired.demoMode === true) {
+      // Only an uninterrupted enabled demo session keeps its progress.
+      state.demoSnapshot = captureMeters(cur.ghost);
+    }
+    try {
+      cur.ghost.stop();
+    } catch (error) {
+      // Keep ownership: the instance may still be live, so never start another.
+      state.fault = { kind: 'stop', error };
+      reportOnce('stop', 'stopping the haunt failed; Doomscroll is halted on this page', error);
+      return false;
+    }
+    state.current = null;
+    return true;
+  }
+
+  async function reconcile() {
+    if (state.disposed || state.fault) return;
+    const mode = desiredMode();
+    if (mode === undefined) return;
+
+    const restart = state.restartForMotion;
+    state.restartForMotion = false;
+    const cur = state.current;
+    if (cur && cur.mode === mode && !restart && (mode !== 'demo' || cur.demoEpoch === state.demoEpoch)) {
+      return; // already running the desired profile
+    }
+    if (!stopCurrent()) return;
+    if (mode === 'paused') return;
+
+    const generation = state.generation;
+    let pkg;
+    try {
+      pkg = await loadPackage();
+    } catch (error) {
+      reportOnce('load', 'could not load the Poltergeist package', error);
+      return;
+    }
+    // Obsolete work: a newer queued reconciliation owns the next decision.
+    if (generation !== state.generation || state.disposed || state.fault || state.current) return;
+
+    const { api, normalProfile } = pkg;
+    const rules = mode === 'demo' ? doomscrollCreateDemoProfile(normalProfile) : clone(normalProfile);
+    const result = api.validateRules(rules, api.builtinEffects);
+    if (!result || !result.valid) {
+      const errors = result && Array.isArray(result.errors) ? result.errors.join('; ') : 'unknown error';
+      reportOnce(`validate-${mode}`, `${mode} rules are invalid: ${errors}`);
+      return;
+    }
+
+    const demoEpoch = state.demoEpoch;
+    const seed = mode === 'demo' ? state.demoSnapshot : state.normalSnapshot;
+    let ghost;
+    try {
+      ghost = api.startPoltergeist({ rules, initialMeters: { ...seed } });
+    } catch (error) {
+      // No instance was returned, so there is nothing this app can claim to clean up.
+      state.fault = { kind: 'start', error };
+      reportOnce('start', 'starting the haunt failed; Doomscroll is halted on this page', error);
+      return;
+    }
+    state.current = { mode, ghost, demoEpoch };
+  }
+
+  /** Append one reconciliation to the serialized queue. */
+  function enqueue() {
+    state.generation += 1;
+    const run = state.queue.then(reconcile).catch((error) => {
+      reportOnce('reconcile', 'unexpected reconciliation failure', error);
+    });
+    state.queue = run;
+    return run;
+  }
+
+  /** Apply a desired demo value, resetting demo progress on every actual transition. */
+  function assignDemo(value) {
+    const previous = state.desired.demoMode;
+    if (typeof previous === 'boolean' && previous !== value) {
+      state.demoSnapshot = zeroMeters();
+      state.demoEpoch += 1;
+    }
+    state.desired.demoMode = value;
+  }
+
+  return {
+    /** Live pause event (message from the service worker). */
+    setPaused(paused) {
+      if (typeof paused !== 'boolean' || state.disposed) return state.queue;
+      state.revisions.paused += 1;
+      state.desired.paused = paused;
+      return enqueue();
+    },
+
+    /** Live demo event (storage.onChanged). */
+    setDemoMode(demoMode) {
+      if (typeof demoMode !== 'boolean' || state.disposed) return state.queue;
+      state.revisions.demoMode += 1;
+      assignDemo(demoMode);
+      return enqueue();
+    },
+
+    /** Capture field revisions before requesting the initial state. */
+    captureRevisions() {
+      return { ...state.revisions };
+    },
+
+    /**
+     * Merge the initial service-worker response. Each field is assigned only if
+     * no live event changed it since `captured`, so newer events always win.
+     */
+    applyInitialState({ paused, demoMode } = {}, captured = { paused: 0, demoMode: 0 }) {
+      if (state.disposed) return state.queue;
+      if (typeof paused === 'boolean' && state.revisions.paused === captured.paused) {
+        state.desired.paused = paused;
+      }
+      if (typeof demoMode === 'boolean' && state.revisions.demoMode === captured.demoMode) {
+        assignDemo(demoMode);
+      }
+      return enqueue();
+    },
+
+    /** The reduced-motion preference changed; recreate the active profile so Flicker re-reads it. */
+    motionChanged() {
+      if (state.disposed) return state.queue;
+      // While paused (or not yet started) the next start reads the current preference.
+      if (desiredMode() === 'paused' || desiredMode() === undefined) return state.queue;
+      state.restartForMotion = true;
+      return enqueue();
+    },
+
+    /**
+     * pagehide: stop all later app reconciliation. The skeleton's own pagehide
+     * listener stops any returned instance.
+     */
+    dispose() {
+      state.disposed = true;
+      state.generation += 1;
+    },
+
+    /** Resolves after every reconciliation queued so far has settled. */
+    whenIdle() {
+      return state.queue;
+    },
+
+    /** Read-only view for diagnostics and tests. */
+    getState() {
+      return {
+        desired: { ...state.desired },
+        revisions: { ...state.revisions },
+        mode: state.current ? state.current.mode : null,
+        ghost: state.current ? state.current.ghost : null,
+        normalSnapshot: { ...state.normalSnapshot },
+        demoSnapshot: { ...state.demoSnapshot },
+        generation: state.generation,
+        disposed: state.disposed,
+        faulted: state.fault !== null,
+      };
+    },
+  };
+}
+
+void (async function bootDoomscroll() {
+  const chromeApi = globalThis.chrome;
+  if (!chromeApi || !chromeApi.runtime || !chromeApi.runtime.id) return;
+  // Packaged startup (listeners, initial state, cached package load,
+  // diagnostics, pagehide disposal) is wired here by task 5.2.
+}());
