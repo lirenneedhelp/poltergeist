@@ -154,7 +154,7 @@ Workspace constraints that apply to every task:
     - _Requirements: 2.6, 2.11, 2.12, 2.13, 2.14, 2.15, 2.16, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 5.8, 5.9, 5.10, 5.12, 5.13, 5.17, 7.3_
 
 - [ ] 6. Add unpacked-extension browser verification
-  - [ ] 6.1 Expand Vitest and Playwright discovery without regressing existing suites
+  - [x] 6.1 Expand Vitest and Playwright discovery without regressing existing suites
     - Update `vitest.config.js` to include `app1-doomscroll/test/**/*.test.js` alongside the existing skeleton tests and continue excluding `.pw.js`.
     - Update `playwright.config.js` so the existing `skeleton/test/browser/**/*.pw.js` suite keeps its current browser behavior and `app1-doomscroll/test/browser/**/*.pw.js` runs once in its extension project.
     - Use Playwright's bundled Chromium channel for the unpacked-extension project, as required by current Playwright extension loading, while retaining the existing direct-effect browser project.
