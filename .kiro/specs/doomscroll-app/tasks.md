@@ -168,7 +168,7 @@ Workspace constraints that apply to every task:
     - Capture page errors, worker errors, and namespaced diagnostics. Close the context and temporary profile in teardown on pass or failure, including Windows-safe cleanup retries.
     - _Requirements: 6.9, 7.5, 7.6, 7.12, 7.13, 7.14_
 
-  - [ ] 6.3 Verify the timed haunt and stable-plateau Rot regression in Playwright
+  - [x] 6.3 Verify the timed haunt and stable-plateau Rot regression in Playwright
     - Start the fixture in normal mode and assert it is initially clean. Open the popup URL only as an extension-origin control page, return the feed page to the foreground, and enable Demo_Mode through the production service-worker message protocol so visible-time metering continues.
     - Poll semantic DOM state and record first appearance. Require Fog before Flicker, Flicker before changed Rot text, Rot before Block, no later artifact at each earlier-stage checkpoint, the exact Block message, and pointer blocking at the 24-second demo point.
     - After elapsed demo time passes the 15-second Rot `rampTo` and the Engine is on its stable update plateau, append a long saved post and require it to change after the throttled observer window without an explicit Rot call.

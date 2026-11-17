@@ -232,6 +232,18 @@
         "chatSessionId": "sess_19a21a76-bea6-4b3c-9521-1c84396d4cbd",
         "timestamp": 1794904511771
       }
+    ],
+    "6.3 Verify the timed haunt and stable-plateau Rot regression in Playwright": [
+      {
+        "executionId": "c2ccef12-7791-4936-b0d8-0bf96dac983d",
+        "chatSessionId": "sess_66f73e51-232b-41e8-9f8b-5a60d152849f",
+        "timestamp": 1794904945302
+      },
+      {
+        "executionId": "c2ccef12-7791-4936-b0d8-0bf96dac983d",
+        "chatSessionId": "sess_66f73e51-232b-41e8-9f8b-5a60d152849f",
+        "timestamp": 1794905021185
+      }
     ]
   }
 }
