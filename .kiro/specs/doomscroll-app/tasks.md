@@ -182,8 +182,8 @@ Workspace constraints that apply to every task:
     - Assert no unexpected page, worker, or extension errors and close all contexts in fixture teardown.
     - _Requirements: 1.10, 3.4, 3.5, 4.18, 4.19, 5.3, 5.4, 5.7, 5.9, 5.10, 7.9, 7.10, 7.11, 7.13, 7.14_
 
-- [ ] 7. Final checkpoint - verify the complete Doomscroll App
-  - [ ] 7.1 Verify committed packaging, drift enforcement, and all automated suites
+- [x] 7. Final checkpoint - verify the complete Doomscroll App
+  - [x] 7.1 Verify committed packaging, drift enforcement, and all automated suites
     - Re-read the manifest, rule file, generated-copy policy, and implementation diff; confirm that no production skeleton file except `skeleton/effects/rot.js` changed and that no out-of-scope feature was added.
     - Confirm `app1-doomscroll/skeleton/` exists in the delivered Git change and is not ignored. Confirm the committed Kiro hook invokes only `npm run build:doomscroll` for current root production skeleton paths and excludes both `skeleton/test/**` and the Generated_Skeleton.
     - Before running any build, run `npm test` against the committed mirror. Require `check:doomscroll` to run before Vitest and all existing skeleton/new app suites to pass; separately exercise a drift fixture and require failure without repair.
