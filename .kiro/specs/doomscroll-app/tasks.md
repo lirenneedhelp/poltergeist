@@ -98,7 +98,7 @@ Workspace constraints that apply to every task:
     - _Requirements: 6.5, 6.6, 7.1_
 
 - [ ] 4. Implement extension control state and popup
-  - [ ] 4.1 Implement the module service worker in `app1-doomscroll/background.js`
+  - [x] 4.1 Implement the module service worker in `app1-doomscroll/background.js`
     - Define only the enumerated messages `doomscroll:content-state`, `doomscroll:popup-state`, `doomscroll:set-paused`, `doomscroll:set-demo`, `doomscroll:apply-paused`, and `doomscroll:ping`.
     - Store each true pause state in its own namespaced `chrome.storage.session` key ending in the tab id; treat missing/non-true values as unpaused and remove only that key on `tabs.onRemoved`.
     - For content-state requests, derive the tab id from `sender.tab.id` and ignore any payload id. For popup requests, validate an integer tab id and determine support through a content ping without reading URL/title fields.
