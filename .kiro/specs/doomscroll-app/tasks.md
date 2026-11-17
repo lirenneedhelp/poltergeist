@@ -59,7 +59,7 @@ Workspace constraints that apply to every task:
     - **Property 4: Rot observer work is bounded and reversible**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.15, 4.16, 4.17, 4.18, 4.19, 4.20, 7.2**
 
-- [ ] 3. Add deterministic skeleton synchronization and package validation
+- [x] 3. Add deterministic skeleton synchronization and package validation
   - [x] 3.1 Implement `scripts/sync-doomscroll-skeleton.mjs`, commit the mirror, and wire package commands
     - Add synchronize mode and a read-only `--check` mode, resolving paths from the repository root and guarding that the generated target is exactly `app1-doomscroll/skeleton` before replacing it.
     - Copy all source files under root `skeleton/` except `skeleton/test/**`, in sorted relative-path order and without byte or line-ending rewrites. Remove stale generated files only inside the guarded generated target.
@@ -81,7 +81,7 @@ Workspace constraints that apply to every task:
     - **Property 5: Generated skeleton identity is exact**
     - **Validates: Requirements 1.3, 1.4, 1.6, 1.7, 1.8, 1.9, 1.11, 2.1, 6.4, 6.5, 6.6, 6.7, 6.8, 7.1**
 
-  - [ ] 3.3 Add the Kiro PostFileSave convenience hook
+  - [x] 3.3 Add the Kiro PostFileSave convenience hook
     - Use Kiro's hook creation tool/interface, not a manual file write, to create `.kiro/hooks/build-doomscroll-on-skeleton-save.json` with file format version `v1`, trigger `PostFileSave`, command `npm run build:doomscroll`, and a descriptive name.
     - Use an anchored positive cross-platform path matcher for direct files under the root `skeleton/` and descendants under the root `skeleton/effects/`; do not rely on lookahead. Prove that representative relative and absolute `/` and `\\` root-source paths match, while `skeleton/test/**` and `app1-doomscroll/skeleton/**` paths do not.
     - Commit the hook configuration. Document that it runs when Kiro emits the save event, may not cover manual or other-editor saves, and cannot replace the build/check commands or the `npm test` drift failure.

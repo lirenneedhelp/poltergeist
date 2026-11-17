@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Rebuild Doomscroll skeleton mirror on root skeleton save",
+      "trigger": "PostFileSave",
+      "description": "Convenience: runs the authoritative build:doomscroll script when a root skeleton production file is saved in Kiro. Not a substitute for build/check commands or the npm test drift check.",
+      "matcher": "^(?:(?:.*[\\\\/]poltergeist[\\\\/])|(?:\\.[\\\\/]))?skeleton[\\\\/](?:[^\\\\/]+|effects[\\\\/].+)$",
+      "action": {
+        "type": "command",
+        "command": "npm run build:doomscroll"
+      }
+    }
+  ]
+}
