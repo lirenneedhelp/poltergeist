@@ -137,3 +137,31 @@ it's the payoff shot of the demo, so a visual polish pass is planned.
 (task 5.3 added 33, the fix added 2). Break-it checks: dividing by 30 failed
 11 tests; removing the generation check failed 2; skipping stop() before a
 restart failed 9. Screenshots: Chrome error log, block screen.
+
+## 2026-11-17: Kiro save hook check
+**Kiro feature:** agent hooks (File Saved trigger, Run Command action)
+**What happened:** task 3.3 had Kiro write the hook file by hand. Kiro's
+Agent Hooks panel recognised it: listed, shown as enabled, File Saved
+trigger, `npm run build:doomscroll` as the command.
+**What I caught:** saving `skeleton/match.js` in Kiro did not rebuild the
+app's copy. Running `npm run build:doomscroll` by hand worked, so the
+command was fine and the problem was the hook not firing.
+**What I tried:**
+- Re-saved the hook through the Agent Hooks panel. Kiro rewrote the file in
+  its own format and added `"enabled": true`, which the hand-written file
+  lacked. It still didn't fire.
+- Replaced the command with a debug command that writes the hook's stdin
+  payload to a file, and cleared the path pattern so every save matched. No
+  file appeared, so the hook isn't running at all; the path pattern isn't
+  the cause.
+- A save test left the app copy stale, and `npm test` stopped immediately
+  with "Doomscroll skeleton mirror is out of sync: changed: match.js".
+**Status:** the hook doesn't fire in my Kiro. The design already treated it
+as a convenience only: the build script writes the copy, and the drift
+check in `npm test` guarantees it's current. I now run
+`npm run build:doomscroll` by hand after skeleton edits.
+**Lesson:** a hook that shows as enabled in the panel isn't proof it runs;
+test it with a real save and check the result.
+**Evidence:** hook file `.kiro/hooks/build-doomscroll-on-skeleton-save.json`;
+drift check output (screenshot); `npm test` back to 303 passing after
+restoring the test edit.
