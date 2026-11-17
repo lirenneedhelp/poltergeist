@@ -122,7 +122,7 @@ Workspace constraints that apply to every task:
     - Assert that stored values contain no URL, text, history, or meter fields.
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.11, 5.14, 5.15, 5.16, 7.3_
 
-- [ ] 5. Implement the classic loader and Runtime Controller
+- [x] 5. Implement the classic loader and Runtime Controller
   - [x] 5.1 Implement profile transformation and single-instance reconciliation in `app1-doomscroll/content.js`
     - Keep `content.js` a classic script. Use a contained async bootstrap and no static imports or exports.
     - Model unknown/confirmed desired fields, separate pause/demo revisions, `normalSnapshot`, `demoSnapshot`, current instance, a serialized Promise queue, generation token, reduced-motion restart flag, disposed flag, and fault state.
@@ -145,7 +145,7 @@ Workspace constraints that apply to every task:
     - Add no site-specific selector, behavior-meter storage, Storage Adapter, or skeleton Entry Point change.
     - _Requirements: 1.11, 3.1, 3.2, 3.3, 3.4, 3.10, 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17, 5.6, 5.8, 5.9, 5.12, 5.13, 5.14, 5.15, 5.16, 5.17_
 
-  - [ ] 5.3 Add Runtime Controller and loader Vitest coverage
+  - [x] 5.3 Add Runtime Controller and loader Vitest coverage
     - Exercise the classic loader in an isolated test context with fake module/fetch/Chrome boundaries; do not add a production app module merely for testing.
     - Verify exact 1/60 profile values, deep immutability, validation before start, normal/demo snapshot separation, paused off/on demo resets, pause precedence, and profile selection at startup.
     - Generate rapid pause/demo sequences and deferred package loads; require no synchronous Entry_Point call for stale generations, at most one instance, stop-before-start ordering, and a fault with retained ownership after stop failure.
