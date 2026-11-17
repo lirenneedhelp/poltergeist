@@ -42,3 +42,46 @@ when its intensity changes. Once rot reaches full intensity it is never applied
 again, so feed posts that load after that point stay clean, and the feed looks
 like it is healing as you scroll. Fix in the doomscroll-app spec, likely by
 having rot watch for new text with a MutationObserver.
+
+## 2026-11-16: haunt-engine Task 7 Restoration and real-Chrome checks
+**Kiro feature:** spec tasks (haunt-engine 7.1, 7.3, Req 10, 14), Playwright
+**What happened:** a restoration suite applies every effect, undoes it, and
+checks the page is byte-for-byte unchanged, including all four effects undone
+in all 24 orders. A real-Chrome Playwright test checks fixed navbars, sidebars
+and modals don't move while effects are active.
+**Evidence:** commits f15d477, 8dfa32a; tests 82 → 145 unit, 5 browser.
+Break-it checks: if fog's undo leaves its overlay, 54 tests fail. Putting a
+filter back on <body> (the bug Req 10 was written to avoid) failed the
+fixed-element browser tests, because the bottom chat bubble and centred modal moved.
+**Checkpoint:** task 8 closed the haunt-engine foundations (commit 3283ae3).
+
+## 2026-11-17: doomscroll-app spec
+**Kiro feature:** spec (requirements → design → tasks)
+**What happened:** Kiro's first design re-walked the whole page on every DOM
+change to fix the rot-on-infinite-feeds bug, and kept the skeleton copy out of
+Git.
+**What I caught/changed:**
+- A full-page walk on every change would stutter on YouTube, which changes
+  constantly. Revised to process only added or changed nodes, at most once per
+  250 ms.
+- An uncommitted skeleton copy means a judge cloning the repo gets a broken
+  extension. Revised to commit the copy, with a byte-for-byte drift check that
+  runs before every `npm test`.
+- Added a Kiro save hook that rebuilds the copy, while keeping the build script
+  as the real guarantee.
+**Lesson:** the revision run went for about 1.5 hours with Autopilot on. I now
+run tasks one at a time with Autopilot off.
+**Evidence:** commits c736df0, 29b6567
+
+## 2026-11-17: doomscroll-app Tasks 1–3.1
+**Kiro feature:** spec tasks; Opus 5.5 at High effort for the rot observer (2.1)
+**What happened:**
+- 1.1–1.2: Manifest V3 extension limited to YouTube, X and Instagram, with only
+  the `storage` permission; four escalating rules (fog 2 min → block 20 min).
+- 2.1–2.2: rot now decays posts that load after it reaches full intensity,
+  without re-walking the whole page.
+- 3.1: build script copies the skeleton into the app; `npm test` fails on drift.
+**Evidence:** commits a0215f2, 5045e22, 76e0f15, 8b5ed39; tests 145 → 162.
+Break-it checks: removing the 250 ms throttle failed 7 tests; removing the
+"ignore rot's own writes" guard failed 1 test; editing one skeleton file made
+`npm test` report `changed: match.js` and stop.
