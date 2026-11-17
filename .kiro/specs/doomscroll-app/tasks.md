@@ -69,7 +69,7 @@ Workspace constraints that apply to every task:
     - Export or isolate testable comparison helpers without adding runtime dependencies to the extension.
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.10, 7.1_
 
-  - [ ] 3.2 Add Package Validator checks and tests
+  - [x] 3.2 Add Package Validator checks and tests
     - Parse both JSON files and run root `validateRules` with `builtinEffects`; assert exact rule ids/order, meter values, params, messages, and undo settings.
     - Assert Manifest V3, exact permissions, exact host sets, one classic top-frame content script, popup, module worker, and local-only executable resources.
     - Resolve every relative static `import` and `export ... from` edge from generated `skeleton/index.js`; reject bare, absolute, remote, missing, or extension-root-escaping imports.
