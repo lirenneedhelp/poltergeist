@@ -95,3 +95,43 @@ bad manifest could pass `check:doomscroll` (the spec required it to fail).
 extra `tabs` permission failed 4 tests; a missing web-accessible file failed 2.
 **Fixed:** task 3.4 (commit 71eec3c). `check:doomscroll` now runs the
 validator and exits with an error on an extra permission.
+
+## 2026-11-17: doomscroll-app Tasks 4.1–4.3
+**What happened:** a service worker stores pause per tab and demo mode
+globally; a minimal popup shows this tab's status with Pause and Demo
+toggles; 38 new tests (22 service worker, 16 popup).
+**What I checked:** Kiro only ran the two new test files, so I ran the full
+`npm test` myself before committing.
+**Evidence:** commits 524a1b6, 86281bc, f99a23a; tests 230 → [your count].
+
+## 2026-11-17: Kiro save hook check
+**Kiro feature:** agent hooks
+**What happened:** Kiro's task wrote the hook file by hand. Kiro's Agent Hooks
+panel recognised it: listed, enabled, File Saved trigger, Run Command.
+**What I caught:** saving `skeleton/match.js` did not rebuild the app's copy.
+Running `npm run build:doomscroll` by hand worked, so the command is fine and
+the problem is the trigger or the path pattern.
+**Status:** [still investigating / fixed by …]. The drift check in `npm test`
+still catches a stale copy, so nothing ships broken in the meantime.
+
+## 2026-11-17: doomscroll-app Task 5 and first real-Chrome run
+**Kiro feature:** spec tasks; Opus 5.5 at High effort for the runtime
+controller (5.1)
+**What happened:** the content script loads the skeleton, runs one haunting
+per tab, and switches between normal and demo timing (thresholds ÷ 60).
+**What I caught:** every unit test passed, but on YouTube the extension did
+nothing. Chrome's error log showed "Unsafe attempt to load URL
+chrome-extension://<random id>/skeleton/index.js … Domains, protocols and
+ports must match." The spec required `use_dynamic_url: true` as extra
+protection against site fingerprinting, and Chrome then blocks the content
+script from importing those files. Only a real browser enforces this, so no
+unit test could catch it.
+**What I changed:** had Kiro update requirement 1.7, the design, the task, the
+manifest, the validator and its tests to `use_dynamic_url: false`. The exact
+site list and the small exposed file list remain the protection.
+**Result:** in demo mode on YouTube, fog → flicker → rot → block all ran, and
+the block message appeared in about 25 seconds.
+**Next:** the block screen works but looks plain (dim overlay, small text);
+it's the payoff shot of the demo, so a visual polish pass is planned.
+**Evidence:** commits [5.1], [5.2], [5.3], [fix]; tests [before] → [after];
+screenshots: Chrome error log, block screen.

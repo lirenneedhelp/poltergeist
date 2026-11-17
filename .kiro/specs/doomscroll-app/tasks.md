@@ -22,7 +22,7 @@ Workspace constraints that apply to every task:
   - [x] 1.1 Create `app1-doomscroll/manifest.json` with exact scope
     - Declare Manifest V3 metadata, `background.js` as a module service worker, `popup.html` as the action popup, and classic `content.js` at `document_idle` in the top frame only.
     - Set `permissions` to exactly `storage` and `host_permissions` to exactly `https://www.youtube.com/*`, `https://x.com/*`, and `https://www.instagram.com/*`.
-    - Use that exact host set for content-script and web-accessible-resource matches. Expose `rules.json` plus the complete static module graph rooted at `skeleton/index.js`, set `use_dynamic_url: true`, and expose no popup, worker, test, fixture, or build file.
+    - Use that exact host set for content-script and web-accessible-resource matches. Expose `rules.json` plus the complete static module graph rooted at `skeleton/index.js`, set `use_dynamic_url: false`, and expose no popup, worker, test, fixture, or build file. Real Chrome requires `false`: dynamic-id resource URLs were blocked when the YouTube content script imported the skeleton and fetched the rules.
     - Include no inline or remote executable code and request no `tabs`, `activeTab`, or `scripting` permission.
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.10_
 

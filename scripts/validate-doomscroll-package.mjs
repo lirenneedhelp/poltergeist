@@ -140,7 +140,7 @@ export function validateManifestDocument(m, { allFiles = [], reachable = new Set
   if (!Array.isArray(war) || war.length !== 1) errors.push(`${at}: exactly one web_accessible_resources entry is required`);
   else {
     if (!same(war[0].matches, HOSTS)) errors.push(`${at}: web_accessible_resources matches must be exactly the approved hosts`);
-    if (war[0].use_dynamic_url !== true) errors.push(`${at}: web_accessible_resources must set use_dynamic_url true`);
+    if (war[0].use_dynamic_url !== false) errors.push(`${at}: web_accessible_resources must set use_dynamic_url false for content-script import/fetch compatibility`);
     if (war[0].extension_ids !== undefined) errors.push(`${at}: web_accessible_resources must not set extension_ids`);
   }
   const exposed = expandWar(m, allFiles);

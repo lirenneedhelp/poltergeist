@@ -52,7 +52,7 @@
         "https://x.com/*",
         "https://www.instagram.com/*"
       ],
-      "use_dynamic_url": true
+      "use_dynamic_url": false
     }
   ]
 }

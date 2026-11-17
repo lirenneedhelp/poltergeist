@@ -44,7 +44,7 @@ The only production skeleton change is a `MutationObserver` lifecycle inside `sk
 ### Research findings informing the design
 
 - Chrome injects statically declared content scripts on matching URLs and uses `document_idle` as the preferred/default timing. Content scripts run in an isolated world and can call `runtime.getURL`; extension files fetched from a content script must be declared as web-accessible resources. See [Chrome content scripts](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts).
-- Web-accessible resources are denied by default. Manifest V3 maps resource paths to allowed origins, accepts `use_dynamic_url`, and considers only origins for `matches`, whose path therefore remains `/*`. See [Chrome web-accessible resources](https://developer.chrome.com/docs/extensions/reference/manifest/web-accessible-resources).
+- Web-accessible resources are denied by default. Manifest V3 maps resource paths to allowed origins, accepts `use_dynamic_url`, and considers only origins for `matches`, whose path therefore remains `/*`. Real-Chrome testing on `https://www.youtube.com` showed that `use_dynamic_url: true` makes the Classic_Loader's `runtime.getURL` import and rules fetch resolve through a dynamic extension id that Chrome blocks with `Unsafe attempt to load URL chrome-extension://<dynamic-id>/… Domains, protocols and ports must match.` Setting it to `false` keeps those packaged loads usable. The exact three-origin match set and explicit minimal resource list remain the fingerprinting mitigation. See [Chrome web-accessible resources](https://developer.chrome.com/docs/extensions/reference/manifest/web-accessible-resources).
 - Chrome match patterns permit exact hosts and host wildcards. This app chooses exact HTTPS hosts to avoid granting every subdomain or scheme. See [Chrome match patterns](https://developer.chrome.com/docs/extensions/develop/concepts/match-patterns).
 - `storage.session` is memory-backed for the extension session and is not exposed to content scripts by default; `storage.local` is appropriate for a small persistent preference. Both require the `storage` permission. See [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage).
 - Most Tabs API operations, including querying a tab id and messaging a content script, do not require the broad `tabs` permission. That permission is needed for sensitive tab properties, which this popup does not read. See [Chrome Tabs API](https://developer.chrome.com/docs/extensions/reference/api/tabs).
@@ -289,7 +289,7 @@ The intended manifest semantics are:
       "https://x.com/*",
       "https://www.instagram.com/*"
     ],
-    "use_dynamic_url": true
+    "use_dynamic_url": false
   }]
 }
 ```
@@ -803,7 +803,7 @@ The fixture uses stable, long text because deterministic Rot at `maxFraction: 0.
 | Generated skeleton is omitted from a commit | A fresh clone cannot load the extension | Commit the mirror, keep it unignored, and review the generated paths as part of the delivered change; browser setup never builds it for the test. |
 | Generated skeleton is stale | Tests or users may exercise old core | `npm test` runs the byte-for-byte check first, and Playwright repeats the check before launch without repair. |
 | Kiro hook does not fire, runs outside Kiro, or fails | The convenience copy is not refreshed immediately | The hook is non-authoritative; explicit build writes the mirror and the normal test still rejects drift. |
-| WAR exposes packaged modules to scripts on approved sites | Sites can fetch/fingerprint those resources | Expose only the runtime graph and rules, restrict origins exactly, and enable dynamic URLs. |
+| Stable WAR URLs can make the extension easier to fingerprint on approved sites | Scripts on those three origins can probe the explicitly exposed package paths | Keep `use_dynamic_url: false` because real Chrome otherwise blocks the content script's packaged skeleton import and rules fetch; limit exposure instead with the exact three-origin matches and the minimal explicit runtime file list. |
 | A mutation batch contains many large added subtrees | A root-scoped pass can still consume main-thread time | Coalesce deliveries for 250 ms, de-duplicate overlapping roots, and never fall back to a whole-body observer pass. |
 | Root throttling delays Rot on a new post | Added text may stay clean briefly | Accept a bounded delay of about 250 ms in exchange for lower churn; explicit Engine applies remain immediate full-body passes. |
 | Host page continuously rewrites text | Rot repeatedly adopts and reapplies | This is intended while active; pause/undo disconnects immediately. |

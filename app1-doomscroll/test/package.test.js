@@ -73,6 +73,20 @@ describe('real package', () => {
     expect(m.content_scripts[0]).toMatchObject({ js: ['content.js'], all_frames: false, run_at: 'document_idle' });
     expect(m.background).toEqual({ service_worker: 'background.js', type: 'module' });
     expect(m.action.default_popup).toBe('popup.html');
+    expect(m.web_accessible_resources).toHaveLength(1);
+    expect(m.web_accessible_resources[0].use_dynamic_url).toBe(false);
+  });
+
+  it.each([
+    ['true', true],
+    ['omitted', undefined],
+  ])('rejects use_dynamic_url when it is %s', async (_label, value) => {
+    const m = await readJson(path.join(APP, 'manifest.json'));
+    if (value === undefined) delete m.web_accessible_resources[0].use_dynamic_url;
+    else m.web_accessible_resources[0].use_dynamic_url = value;
+    expect(validateManifestDocument(m)).toContain(
+      'manifest.json: web_accessible_resources must set use_dynamic_url false for content-script import/fetch compatibility',
+    );
   });
 
   it('keeps the generated mirror unignored by Git', () => {
