@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Doomscroll fixture feed</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; background: #fafafa; color: #111; font: 16px/1.5 sans-serif; }
+  #fixture-header {
+    position: fixed; top: 0; left: 0; right: 0; height: 48px; z-index: 10;
+    background: #223; color: #fff; display: flex; align-items: center; padding: 0 16px;
+  }
+  #feed { max-width: 640px; margin: 0 auto; padding: 64px 16px 400px; }
+  article { background: #fff; border: 1px solid #ddd; border-radius: 6px; margin: 0 0 16px; padding: 12px 16px; }
+  article h2 { margin: 0 0 8px; font-size: 18px; }
+  article p { margin: 0; }
+</style>
+</head>
+<body>
+<!--
+  Local deterministic feed for the Doomscroll unpacked-extension suite.
+  Production code never targets anything here: effects work on the whole page.
+  Every post body is long, fixed text so a 0.55 maximum Rot fraction is
+  observable, and every post has a unique id so tests can compare saved strings.
+-->
+<header id="fixture-header"><span id="fixture-header-text">Fixture Feed header stays fixed in place</span></header>
+<main id="feed">
+  <article id="post-1" data-fixture-post>
+    <h2>Post one: the morning commute</h2>
+    <p>Post one body. The train left the station a little after seven, carrying sleepy commuters past rows of quiet houses, wet gardens, and shuttered shops while the radio murmured traffic reports nobody was listening to anymore.</p>
+  </article>
+  <article id="post-2" data-fixture-post>
+    <h2>Post two: a recipe for lentil soup</h2>
+    <p>Post two body. Rinse two cups of red lentils, soften an onion with garlic and cumin in olive oil, add the lentils with vegetable stock and a bay leaf, then simmer gently for twenty five minutes before seasoning with lemon.</p>
+  </article>
+  <article id="post-3" data-fixture-post>
+    <h2>Post three: notes from the library</h2>
+    <p>Post three body. The reading room was almost silent except for the soft scratch of pencils and the occasional turning page, and the tall windows let in a pale afternoon light that settled across the long oak tables.</p>
+  </article>
+  <article id="post-4" data-fixture-post>
+    <h2>Post four: weekend hiking report</h2>
+    <p>Post four body. We climbed the ridge trail before the fog lifted, crossing two shallow streams and a meadow full of late wildflowers, then stopped at the summit cairn to eat sandwiches while hawks circled far below us.</p>
+  </article>
+  <article id="post-5" data-fixture-post>
+    <h2>Post five: thoughts on study habits</h2>
+    <p>Post five body. Short focused sessions with regular breaks tend to beat marathon cramming, especially when each session starts with a clear goal, ends with a quick summary, and keeps every distracting device in another room.</p>
+  </article>
+  <article id="post-6" data-fixture-post>
+    <h2>Post six: the neighborhood garden</h2>
+    <p>Post six body. Volunteers spent the whole Saturday turning compost, staking tomatoes, and repairing the old wooden fence, and by evening the beds looked tidy enough that several neighbors stopped by to ask about joining.</p>
+  </article>
+</main>
+<script>
+  // Fixture-only API (main world). Tests call it with page.evaluate; the
+  // extension never reads it.
+  (function () {
+    var feed = document.getElementById('feed');
+    var count = feed.querySelectorAll('[data-fixture-post]').length;
+
+    function defaultBody(id) {
+      return 'Appended post ' + id + ' body. This saved post arrived after the page loaded, and it carries a long deterministic ' +
+        'paragraph about rivers, bridges, lanterns, markets, orchards, and harbors so that partial decay is easy to observe in tests.';
+    }
+
+    window.doomscrollFixture = Object.freeze({
+      /** Append one post; returns its id. Ids and default text are deterministic. */
+      appendPost: function (options) {
+        options = options || {};
+        count += 1;
+        var id = options.id || 'appended-' + count;
+        var article = document.createElement('article');
+        article.id = id;
+        article.setAttribute('data-fixture-post', '');
+        var title = document.createElement('h2');
+        title.textContent = options.title || 'Appended post ' + id;
+        var body = document.createElement('p');
+        body.textContent = options.body || defaultBody(id);
+        article.appendChild(title);
+        article.appendChild(body);
+        feed.appendChild(article);
+        return id;
+      },
+      /** Current {id, title, body} for every post, in document order. */
+      posts: function () {
+        return Array.prototype.map.call(feed.querySelectorAll('[data-fixture-post]'), function (a) {
+          return { id: a.id, title: a.querySelector('h2').textContent, body: a.querySelector('p').textContent };
+        });
+      },
+      /** Current text of the fixed header. */
+      headerText: function () {
+        return document.getElementById('fixture-header-text').textContent;
+      }
+    });
+  }());
+</script>
+</body>
+</html>

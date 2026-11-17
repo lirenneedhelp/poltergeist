@@ -161,7 +161,7 @@ Workspace constraints that apply to every task:
     - Keep a fixed viewport and deterministic timeouts; do not introduce watch mode.
     - _Requirements: 7.1, 7.4, 7.5_
 
-  - [ ] 6.2 Create the local feed fixture and persistent extension fixture
+  - [x] 6.2 Create the local feed fixture and persistent extension fixture
     - Add deterministic `app1-doomscroll/test/fixtures/feed.html` with several long, uniquely identified text posts, a fixed element if useful for restoration checks, and a fixture API that appends a post without site-specific production integration.
     - Run the read-only drift check, but do not run the build in browser fixture setup. Launch the committed `app1-doomscroll/` from a fresh persistent Chromium context and derive the extension id from its MV3 service worker, so the test proves a fresh checkout is complete.
     - Route `https://www.youtube.com/doomscroll-fixture` to the local HTML while preserving that approved URL; abort unexpected network access and allow required extension resource requests.

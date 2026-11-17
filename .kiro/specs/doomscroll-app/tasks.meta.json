@@ -220,6 +220,18 @@
         "chatSessionId": "sess_4000dee5-2f38-418d-b76b-ade35fa033ba",
         "timestamp": 1794902176628
       }
+    ],
+    "6.2 Create the local feed fixture and persistent extension fixture": [
+      {
+        "executionId": "c9aba769-761e-42f0-bd8b-654188fcfac0",
+        "chatSessionId": "sess_19a21a76-bea6-4b3c-9521-1c84396d4cbd",
+        "timestamp": 1794904059729
+      },
+      {
+        "executionId": "c9aba769-761e-42f0-bd8b-654188fcfac0",
+        "chatSessionId": "sess_19a21a76-bea6-4b3c-9521-1c84396d4cbd",
+        "timestamp": 1794904511771
+      }
     ]
   }
 }
