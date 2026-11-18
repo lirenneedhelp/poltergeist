@@ -24,7 +24,7 @@ Constraints for every task:
     - Leave `timeOnSite`, `scrollDistance`, `timeSinceActive`, and `dispose()` behaviour unchanged.
     - _Requirements: 3.1–3.12_
 
-  - [ ] 1.2 Append `timeAway` tests to `skeleton/test/meters.test.js`
+  - [x] 1.2 Append `timeAway` tests to `skeleton/test/meters.test.js`
     - Use the existing `fakeEnv` helper. Cover: hold while visible, max of absences, a shorter later Absence not lowering the value, hidden-at-creation and visible-at-creation seeding, bad seeds, `reset` while visible and while hidden, `reset('timeOnSite')` returning false, missed visibility events, and dispose.
     - Add a fast-check reference-model test over random hide/show/advance/update/reset sequences (`numRuns: 100`).
     - **Property 1: `timeAway` matches a reference model**
