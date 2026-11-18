@@ -48,7 +48,7 @@ Constraints for every task:
     - **Validates: Requirements 4.1–4.11, 3.13, 10.3**
 
 - [ ] 2. Generalise packaging without changing Doomscroll's contract
-  - [ ] 2.1 Extract shared package checks
+  - [x] 2.1 Extract shared package checks
     - Move `stripJsComments`, `extractStaticSpecifiers`, `resolveGraph`, `expandWar`, `scanSource`, and the file walker verbatim into `scripts/package-checks.mjs`.
     - Make `scripts/validate-doomscroll-package.mjs` import them and re-export every name its tests import. Its validation logic and messages must not change.
     - _Requirements: 9.7_
