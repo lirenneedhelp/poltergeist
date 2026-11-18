@@ -45,7 +45,8 @@
         "skeleton/effects/fog.js",
         "skeleton/effects/flicker.js",
         "skeleton/effects/rot.js",
-        "skeleton/effects/block.js"
+        "skeleton/effects/block.js",
+        "skeleton/effects/tombstone.js"
       ],
       "matches": [
         "https://www.youtube.com/*",
