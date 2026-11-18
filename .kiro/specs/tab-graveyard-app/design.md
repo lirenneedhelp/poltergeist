@@ -43,7 +43,7 @@ These choices go beyond the brief or interpret it. Each is cheap to reverse befo
 6. **Popup `Resurrect this tab`.** Fog and Rot have no in-page button, so without this button the only way to clear early decay would be to wait for the Tombstone. It is one extra message.
 7. **`"incognito": "not_allowed"`.** This keeps incognito titles and URLs out of storage without runtime checks.
 8. **`pretest` runs `check:graveyard`.** An existing test requires the `test` script to be exactly `npm run check:doomscroll && vitest --run`, so the graveyard check is added through npm's `pretest` hook instead of editing that script or that test.
-9. **No Kiro save hook for the graveyard mirror.** The Doomscroll hook does not fire in this Kiro install (KIRO_FILES.md, 2026-11-17), and the drift check is the guarantee. `npm run build:skeletons` rebuilds both mirrors.
+9. **No Kiro save hook for the graveyard mirror.** The existing Doomscroll hook fires on saves made by Kiro's agent (it did not fire on manual editor saves in testing; see KIRO_FILES.md, update of 2026-11-19), but it rebuilds only the Doomscroll mirror. No second hook is added: `npm run build:skeletons` rebuilds both mirrors, and the drift check in `npm test` is the guarantee for both apps.
 
 ### Research findings
 

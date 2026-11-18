@@ -61,7 +61,7 @@ Constraints for every task:
     - Until task 3.2 creates the app, `check:graveyard` will fail; do this task and 3.1–3.2 in one sitting, or temporarily leave `pretest` out until 3.2 and note it.
     - _Requirements: 9.1–9.6_
 
-  - [ ] 2.3 Expose the tombstone module in Doomscroll and rebuild its mirror
+  - [x] 2.3 Expose the tombstone module in Doomscroll and rebuild its mirror
     - Add `skeleton/effects/tombstone.js` to the web-accessible resources in `app1-doomscroll/manifest.json`. Change nothing else in Doomscroll's authored files.
     - Run `npm run build:doomscroll` and commit the regenerated `app1-doomscroll/skeleton/`.
     - Run `npm run check:doomscroll`, the full Vitest suite, and the Doomscroll Playwright project; all must pass unchanged.

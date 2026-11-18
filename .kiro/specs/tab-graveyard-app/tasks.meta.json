@@ -60,6 +60,18 @@
         "chatSessionId": "sess_bf5145b7-21ad-4469-898c-d3a3f751168b",
         "timestamp": 1795025741018
       }
+    ],
+    "2.3 Expose the tombstone module in Doomscroll and rebuild its mirror": [
+      {
+        "executionId": "c89fdfce-3842-4247-8b5a-1fb799aa0ec5",
+        "chatSessionId": "sess_a337fd37-1748-48d6-a310-deae8ba91fa3",
+        "timestamp": 1795026595037
+      },
+      {
+        "executionId": "c89fdfce-3842-4247-8b5a-1fb799aa0ec5",
+        "chatSessionId": "sess_a337fd37-1748-48d6-a310-deae8ba91fa3",
+        "timestamp": 1795026777454
+      }
     ]
   }
 }
