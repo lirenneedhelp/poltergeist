@@ -39,8 +39,8 @@ afterEach(() => {
 });
 
 describe('registry', () => {
-  it('has exactly the four built-in effects', () => {
-    expect(Object.keys(builtinEffects).sort()).toEqual([...NAMES].sort());
+  it('has exactly the five built-in effects', () => {
+    expect(Object.keys(builtinEffects).sort()).toEqual([...NAMES, 'tombstone'].sort());
   });
 });
 

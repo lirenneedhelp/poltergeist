@@ -87,7 +87,7 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 10. THE Time_Away_Meter SHALL reuse the existing visibility listener and SHALL be removed by the existing `dispose()`.
 11. THE meter module SHALL contain no reference to `chrome` or `browser` extension APIs.
 12. THE rule schema and the validator meter list SHALL both include `timeAway`, and the existing schema/validator consistency test SHALL keep passing.
-13. THE existing meter, engine, effect, restoration, validator, and index tests SHALL pass unchanged.
+13. THE existing meter, engine, effect, restoration, validator, and index tests SHALL pass unchanged. The only permitted edit to an existing test is adding `tombstone` to the built-in effect registry assertion in `skeleton/test/restoration.test.js`.
 
 ### Requirement 4: Tombstone effect and host hooks - SKELETON
 **User Story:** As a user returning to a long-abandoned tab, I want a tombstone that names the page and says how long I left it, with one button to bring it back, so that the neglect is clear and recovery is one click.
@@ -208,4 +208,4 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 7. `playwright.config.js` SHALL add a `graveyard-extension` project with `testDir` `app2-tab-graveyard/test/browser` on the bundled Chromium channel, and SHALL keep the existing two projects unchanged.
 8. (BROWSER-VERIFIED) THE graveyard suite SHALL run `check:graveyard` without building, load only the committed `app2-tab-graveyard/` in a fresh persistent context, route fixture URLs to local HTML, block other network access, and close the context and profile on pass or failure.
 9. (BROWSER-VERIFIED) THE suite SHALL verify the behaviour in Requirements 6.4, 6.5, 6.6, and 7.15, plus a trusted click on `Resurrect` clearing every Poltergeist artifact and restoring the fixture text exactly.
-10. THE final check SHALL run `npm test`, `npm run build:skeletons` with no resulting Git diff, and `npm run test:browser`; every existing Doomscroll and skeleton test SHALL pass without modification.
+10. THE final check SHALL run `npm test`, `npm run build:skeletons` with no resulting Git diff, and `npm run test:browser`; every existing Doomscroll and skeleton test SHALL pass without modification, except that the built-in effect registry assertion in `skeleton/test/restoration.test.js` adds `tombstone` (the only permitted edit to an existing test).

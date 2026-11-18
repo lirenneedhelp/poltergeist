@@ -188,3 +188,14 @@ During tab-graveyard-app task 1.1 it ran once per skeleton file Kiro saved
 method was wrong, not the hook. Overlapping runs during a task are harmless;
 I still run the build and `npm test` at the end, and the drift check stays
 the guarantee.
+
+## 2026-11-19: tab-graveyard-app Tasks 1.1–1.2
+**Kiro feature:** spec tasks; Opus 5.5 High for the meter (1.1); the save
+hook rebuilt Doomscroll's skeleton copy automatically as Kiro edited
+**What happened:** new `timeAway` meter holds the longest absence while the
+user looks at the tab, so returning doesn't erase the decay; Resurrect
+resets it.
+**Evidence:** commits e40b4a8, ed05bc3; tests 303 → 319; Doomscroll browser
+tests still pass. Break-it checks: dropping to 0 on return failed 8 tests;
+holding the latest instead of the longest absence failed 2; not restarting
+on reset failed 2; no missed-event correction failed 1.

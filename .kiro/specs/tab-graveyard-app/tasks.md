@@ -7,7 +7,7 @@ This plan adds three generic pieces to the root skeleton (the `timeAway` meter, 
 Constraints for every task:
 
 - `skeleton/` is the single authored source. Never edit a generated mirror; edit the root, run `npm run build:skeletons`, and commit both.
-- Existing test files are not edited. New skeleton cases go into new `describe` blocks appended to existing files, or into new files.
+- Existing test files are not edited. New skeleton cases go into new `describe` blocks appended to existing files, or into new files. Sole exception: the built-in effect registry assertion in `skeleton/test/restoration.test.js` adds `tombstone`.
 - Doomscroll's behaviour must not change. Its only authored change is one web-accessible-resource line in `app1-doomscroll/manifest.json`.
 - `storage` is the only permission. No `host_permissions`. Never read `url`, `pendingUrl`, `title`, or `favIconUrl` from a `Tab`.
 - `tabs.remove` is called only while handling `graveyard:bury`.
@@ -30,7 +30,7 @@ Constraints for every task:
     - **Property 1: `timeAway` matches a reference model**
     - **Validates: Requirements 3.2–3.10, 10.2**
 
-  - [ ] 1.3 Add `skeleton/effects/tombstone.js`, register it, and add env hooks
+  - [x] 1.3 Add `skeleton/effects/tombstone.js`, register it, and add env hooks
     - Implement `{ apply, undo, description }` as designed: a host on `documentElement` with an open shadow root, inline styles, heading, message, and native button; opacity from intensity; pointer blocking at `blockAt`.
     - Implement the `{title}` and `{duration}` placeholders with the fallbacks, truncation, and wording rules in Requirement 4.4–4.5, using `textContent` only.
     - Re-render on every apply and on `env.setTimeout(…, 0)` after the document becomes visible. Call `env.onAction(action)` only for trusted clicks, inside try/catch.

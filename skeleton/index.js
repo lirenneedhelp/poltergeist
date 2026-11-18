@@ -11,6 +11,7 @@ export { matchUrl } from './match.js';
  * One-call setup for a content script.
  *   const ghost = startPoltergeist({ rules: await (await fetch(chrome.runtime.getURL('rules.json'))).json() });
  * Throws if the rules are invalid. Returns {engine, meters, stop}.
+ * Optional onAction(name) receives actions reported by effects (e.g. the tombstone button).
  */
 export function startPoltergeist({
   rules: rulesDoc,
@@ -19,11 +20,13 @@ export function startPoltergeist({
   effects = builtinEffects,
   tickMs = DEFAULT_TICK_MS,
   initialMeters,
+  onAction,
 } = {}) {
   const { valid, errors, rules } = validateRules(rulesDoc, effects);
   if (!valid) throw new Error(`Invalid Poltergeist rules:\n${errors.join('\n')}`);
 
   const motionQuery = win.matchMedia?.('(prefers-reduced-motion: reduce)');
+  let meters; // assigned below; readMeter reads it lazily
   const env = {
     window: win,
     document: doc,
@@ -35,9 +38,18 @@ export function startPoltergeist({
     clearTimeout: (id) => win.clearTimeout(id),
     setInterval: (fn, ms) => win.setInterval(fn, ms),
     clearInterval: (id) => win.clearInterval(id),
+    readMeter: (name) => meters?.values()[name],
+    onAction: (name) => {
+      if (typeof onAction !== 'function') return;
+      try {
+        onAction(name);
+      } catch (err) {
+        console.error('[poltergeist] onAction:', err);
+      }
+    },
   };
 
-  const meters = createMeters({ window: win, document: doc, initial: initialMeters });
+  meters = createMeters({ window: win, document: doc, initial: initialMeters });
   const engine = createEngine({ rules, meters, effects, env, getUrl: () => win.location.href, tickMs });
   const stop = () => {
     engine.stop();

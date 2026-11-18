@@ -29,6 +29,18 @@
         "chatSessionId": "sess_6a84d673-c170-468d-8e15-14c2f04cd8de",
         "timestamp": 1795023855864
       }
+    ],
+    "1.3 Add `skeleton/effects/tombstone.js`, register it, and add env hooks": [
+      {
+        "executionId": "580c5358-685b-41f6-a0d3-3e60c8a17f4c",
+        "chatSessionId": "sess_d78be392-8559-4787-a074-7a3fc5e52ee5",
+        "timestamp": 1795024107640
+      },
+      {
+        "executionId": "580c5358-685b-41f6-a0d3-3e60c8a17f4c",
+        "chatSessionId": "sess_d78be392-8559-4787-a074-7a3fc5e52ee5",
+        "timestamp": 1795024676639
+      }
     ]
   }
 }
