@@ -41,6 +41,25 @@
         "chatSessionId": "sess_d78be392-8559-4787-a074-7a3fc5e52ee5",
         "timestamp": 1795024676639
       }
+    ],
+    "1.4 Add tombstone and env-hook tests": [
+      {
+        "executionId": "e0e6193c-4f9e-44de-936c-57cd5c2639c6",
+        "chatSessionId": "sess_bf5145b7-21ad-4469-898c-d3a3f751168b",
+        "timestamp": 1795025338722
+      },
+      {
+        "executionId": "e0e6193c-4f9e-44de-936c-57cd5c2639c6",
+        "chatSessionId": "sess_bf5145b7-21ad-4469-898c-d3a3f751168b",
+        "timestamp": 1795025740969
+      }
+    ],
+    "1. Add the generic skeleton pieces": [
+      {
+        "executionId": "e0e6193c-4f9e-44de-936c-57cd5c2639c6",
+        "chatSessionId": "sess_bf5145b7-21ad-4469-898c-d3a3f751168b",
+        "timestamp": 1795025741018
+      }
     ]
   }
 }

@@ -15,7 +15,7 @@ Constraints for every task:
 
 ## Tasks
 
-- [ ] 1. Add the generic skeleton pieces
+- [x] 1. Add the generic skeleton pieces
   - [x] 1.1 Add the `timeAway` meter in `skeleton/meters.js`
     - Add `heldAway` and `awayStartedAt`, the creation seeding rules for `initial.timeAway` and `initial.timeAwayCurrent`, start/end on the existing visibility listener, missed-event correction in `update()`, and `timeAway` in `values()` measured to `lastTick`.
     - Add `reset(name)`: for `timeAway`, zero the held value, restart any Absence in progress, and return true; return false for any other name.
@@ -40,7 +40,7 @@ Constraints for every task:
     - Do not change `engine.js`, `match.js`, or the other effects.
     - _Requirements: 4.1–4.12_
 
-  - [ ] 1.4 Add tombstone and env-hook tests
+  - [x] 1.4 Add tombstone and env-hook tests
     - New `skeleton/test/tombstone.test.js` (jsdom): shadow-root markup and the data attribute; placeholder output for each duration band and for singular forms; a title containing `<img src=x onerror=…>` rendered as text; a scripted `click()` (untrusted) never calls `onAction`; re-render after a visibility change; fade and instant undo; byte-for-byte restoration of `documentElement.outerHTML`; Rot applied alongside never changes tombstone text.
     - Append to `skeleton/test/index.test.js`: `readMeter` returns live meter values; `env.onAction` forwards to the callback and contains a thrown error; omitting the callback is a no-op.
     - jsdom cannot create trusted events, so the trusted-click path is verified by the real click in task 7.3.
