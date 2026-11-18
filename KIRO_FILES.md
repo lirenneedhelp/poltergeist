@@ -215,3 +215,12 @@ package failures expected until task 2.3). Break-it checks: accepting
 script clicks, rendering the title as HTML, a wrong hours/days cutoff,
 leaking listeners on undo, and an escaping callback error each failed at
 least one test.
+
+## 2026-11-19: tab-graveyard-app Tasks 2.1–2.3
+**What happened:** shared package checks moved into one module; one sync
+script now builds either app's skeleton copy; Doomscroll's manifest exposes
+the new tombstone module.
+**Evidence:** commits 4ad6d39, 4fef407, 2b766a4, 9e11fe8; 366 tests pass;
+Doomscroll browser tests still pass. Old Doomscroll build/check commands
+behave identically (rebuild is a no-op; extra permission and a stale file
+both still fail the check).
