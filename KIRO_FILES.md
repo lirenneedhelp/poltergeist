@@ -199,3 +199,19 @@ resets it.
 tests still pass. Break-it checks: dropping to 0 on return failed 8 tests;
 holding the latest instead of the longest absence failed 2; not restarting
 on reset failed 2; no missed-event correction failed 1.
+
+## 2026-11-19: tab-graveyard-app Tasks 1.3–1.4
+**Kiro feature:** spec tasks; Opus 5.5 High for the tombstone (1.3)
+**What happened:** new `tombstone` effect: a full-page "Here lies {title},
+abandoned for {duration}" card with a Resurrect button, in a shadow root so
+page styles can't reach it. Effects can now read meters and report button
+actions to the app.
+**What Kiro caught:** the spec both required registering the new effect and
+forbade editing the test that pins the effect list to four. Kiro stopped and
+asked; I approved a one-line test edit and the exception was written into
+the requirements.
+**Evidence:** commits 18cba8f, 8966bc9; 363 tests pass (3 Doomscroll
+package failures expected until task 2.3). Break-it checks: accepting
+script clicks, rendering the title as HTML, a wrong hours/days cutoff,
+leaking listeners on undo, and an escaping callback error each failed at
+least one test.
