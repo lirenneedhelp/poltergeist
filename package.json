@@ -3,8 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs",
-    "check:doomscroll": "node scripts/sync-doomscroll-skeleton.mjs --check",
+    "build:doomscroll": "node scripts/sync-skeleton.mjs --app doomscroll",
+    "check:doomscroll": "node scripts/sync-skeleton.mjs --check --app doomscroll",
+    "build:graveyard": "node scripts/sync-skeleton.mjs --app graveyard",
+    "check:graveyard": "node scripts/sync-skeleton.mjs --check --app graveyard",
+    "build:skeletons": "node scripts/sync-skeleton.mjs",
+    "check:skeletons": "node scripts/sync-skeleton.mjs --check",
     "test": "npm run check:doomscroll && vitest --run",
     "test:browser": "playwright test"
   },

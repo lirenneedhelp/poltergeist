@@ -47,13 +47,13 @@ Constraints for every task:
     - Run the full `npm test` and confirm every existing skeleton and Doomscroll test passes unchanged.
     - **Validates: Requirements 4.1–4.11, 3.13, 10.3**
 
-- [ ] 2. Generalise packaging without changing Doomscroll's contract
+- [x] 2. Generalise packaging without changing Doomscroll's contract
   - [x] 2.1 Extract shared package checks
     - Move `stripJsComments`, `extractStaticSpecifiers`, `resolveGraph`, `expandWar`, `scanSource`, and the file walker verbatim into `scripts/package-checks.mjs`.
     - Make `scripts/validate-doomscroll-package.mjs` import them and re-export every name its tests import. Its validation logic and messages must not change.
     - _Requirements: 9.7_
 
-  - [ ] 2.2 Add `scripts/sync-skeleton.mjs` and the Doomscroll wrapper
+  - [x] 2.2 Add `scripts/sync-skeleton.mjs` and the Doomscroll wrapper
     - Implement the `APPS` registry, `check(repoRoot, appKey)`, `build(repoRoot, appKey)` with the per-app target guard, the shared copy policy, and the CLI `[--check] [--app <key>]...` (all apps when `--app` is omitted; unknown arguments exit 2).
     - Run each processed app's validator through a dynamic import after a build or a passing check; exit 1 on any drift or validation error; print messages from each app's `label` and `buildScript`.
     - Rewrite `scripts/sync-doomscroll-skeleton.mjs` as a thin wrapper that keeps its exports (`REPO_ROOT`, `isExcluded`, `listFiles`, `compareFileMaps`, `formatDiagnostics`, `check`, `build`), its `--check` CLI, and its exact messages.

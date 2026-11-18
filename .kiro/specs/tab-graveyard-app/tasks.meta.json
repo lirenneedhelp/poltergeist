@@ -84,6 +84,25 @@
         "chatSessionId": "sess_0ba77edf-a6cd-477c-b587-4a1a914d1efd",
         "timestamp": 1795027105840
       }
+    ],
+    "2.2 Add `scripts/sync-skeleton.mjs` and the Doomscroll wrapper": [
+      {
+        "executionId": "6c31ca96-973b-4e0d-9b65-6e2eb38392ac",
+        "chatSessionId": "sess_50947d3b-6859-46df-9784-b10b6e6b9cae",
+        "timestamp": 1795027171174
+      },
+      {
+        "executionId": "6c31ca96-973b-4e0d-9b65-6e2eb38392ac",
+        "chatSessionId": "sess_50947d3b-6859-46df-9784-b10b6e6b9cae",
+        "timestamp": 1795027333871
+      }
+    ],
+    "2. Generalise packaging without changing Doomscroll's contract": [
+      {
+        "executionId": "6c31ca96-973b-4e0d-9b65-6e2eb38392ac",
+        "chatSessionId": "sess_50947d3b-6859-46df-9784-b10b6e6b9cae",
+        "timestamp": 1795027333941
+      }
     ]
   }
 }
