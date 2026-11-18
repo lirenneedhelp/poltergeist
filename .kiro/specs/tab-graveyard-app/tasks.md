@@ -16,7 +16,7 @@ Constraints for every task:
 ## Tasks
 
 - [ ] 1. Add the generic skeleton pieces
-  - [ ] 1.1 Add the `timeAway` meter in `skeleton/meters.js`
+  - [x] 1.1 Add the `timeAway` meter in `skeleton/meters.js`
     - Add `heldAway` and `awayStartedAt`, the creation seeding rules for `initial.timeAway` and `initial.timeAwayCurrent`, start/end on the existing visibility listener, missed-event correction in `update()`, and `timeAway` in `values()` measured to `lastTick`.
     - Add `reset(name)`: for `timeAway`, zero the held value, restart any Absence in progress, and return true; return false for any other name.
     - Sanitise seeds (missing, negative, non-finite, or non-number → 0). Add no Chrome API reference.

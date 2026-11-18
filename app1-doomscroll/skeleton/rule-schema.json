@@ -1,7 +1,7 @@
 {
   "$id": "poltergeist/rule-schema.json",
   "title": "Poltergeist rule file",
-  "description": "A rules.json file: either an array of rules or an object with a 'rules' array. Time meters are in seconds, scrollDistance is in pixels. JSON Schema draft-07 style.",
+  "description": "A rules.json file: either an array of rules or an object with a 'rules' array. Time meters (timeOnSite, timeSinceActive, timeAway) are in seconds, scrollDistance is in pixels. timeAway is the longest time the page was hidden since the last reset. JSON Schema draft-07 style.",
   "oneOf": [
     { "type": "array", "items": { "$ref": "#/definitions/rule" } },
     {
@@ -32,7 +32,7 @@
           "required": ["meter", "threshold"],
           "additionalProperties": false,
           "properties": {
-            "meter": { "enum": ["timeOnSite", "scrollDistance", "timeSinceActive"] },
+            "meter": { "enum": ["timeOnSite", "scrollDistance", "timeSinceActive", "timeAway"] },
             "threshold": { "type": "number", "minimum": 0, "description": "Rule fires when meter >= threshold" },
             "rampTo": {
               "type": "number",

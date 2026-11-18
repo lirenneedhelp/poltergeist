@@ -181,3 +181,10 @@ running the suite itself, so I ran `npm run test:browser` twice myself:
 content; the file lists are correct. Break-it checks: ignoring pause failed
 1 test; disabling rot's observer failed 1; changing the block message
 failed 4.
+
+**Update (2026-11-19):** the hook does fire, on saves made by Kiro's agent.
+During tab-graveyard-app task 1.1 it ran once per skeleton file Kiro saved
+(5 runs). My earlier manual editor saves never triggered it, so my test
+method was wrong, not the hook. Overlapping runs during a task are harmless;
+I still run the build and `npm test` at the end, and the drift check stays
+the guarantee.

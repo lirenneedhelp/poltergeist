@@ -5,7 +5,7 @@
 import { isValidPattern } from './match.js';
 import { builtinEffects } from './effects/index.js';
 
-export const METERS = ['timeOnSite', 'scrollDistance', 'timeSinceActive'];
+export const METERS = ['timeOnSite', 'scrollDistance', 'timeSinceActive', 'timeAway'];
 export const EFFECT_TYPES = Object.freeze(Object.keys(builtinEffects));
 export const UNDO_MODES = ['instant', 'fade'];
 
