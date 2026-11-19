@@ -67,13 +67,13 @@ Constraints for every task:
     - Run `npm run check:doomscroll`, the full Vitest suite, and the Doomscroll Playwright project; all must pass unchanged.
     - _Requirements: 9.10, 10.10_
 
-- [ ] 3. Add the Tab Graveyard package
+- [x] 3. Add the Tab Graveyard package
   - [x] 3.1 Create `app2-tab-graveyard/manifest.json` and `rules.json`
     - Manifest per Requirement 1: MV3, `permissions: ["storage"]`, no `host_permissions`, `incognito: "not_allowed"`, module worker, popup, one classic top-frame `content.js` at `document_idle` on the Web_Scope, and one web-accessible-resource entry for `rules.json` plus the reachable skeleton graph with `use_dynamic_url: false`.
     - Rules exactly as in the design's data model (fog 1800→7200, rot 14400→43200, tombstone 86400).
     - _Requirements: 1.1–1.5, 2.1–2.5_
 
-  - [ ] 3.2 Add the Graveyard_Validator, build the mirror, and add packaging tests
+  - [x] 3.2 Add the Graveyard_Validator, build the mirror, and add packaging tests
     - Implement `scripts/validate-graveyard-package.mjs` with the shared checks and graveyard constants (`WEB_SCOPE`, `EXPECTED_RULES`).
     - Run `npm run build:graveyard` and commit `app2-tab-graveyard/skeleton/`; confirm Git does not ignore it.
     - Add `app2-tab-graveyard/test/**/*.test.js` to `vitest.config.js`.
