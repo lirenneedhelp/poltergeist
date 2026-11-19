@@ -6,7 +6,7 @@ import { defineConfig } from 'vitest/config';
 // Suites that need a DOM opt in per file with `// @vitest-environment jsdom`.
 export default defineConfig({
   test: {
-    include: ['skeleton/test/**/*.test.js', 'app1-doomscroll/test/**/*.test.js'],
+    include: ['skeleton/test/**/*.test.js', 'app1-doomscroll/test/**/*.test.js', 'app2-tab-graveyard/test/**/*.test.js'],
     exclude: ['**/*.pw.js', '**/node_modules/**'],
   },
 });

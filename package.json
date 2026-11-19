@@ -9,6 +9,7 @@
     "check:graveyard": "node scripts/sync-skeleton.mjs --check --app graveyard",
     "build:skeletons": "node scripts/sync-skeleton.mjs",
     "check:skeletons": "node scripts/sync-skeleton.mjs --check",
+    "pretest": "npm run check:graveyard",
     "test": "npm run check:doomscroll && vitest --run",
     "test:browser": "playwright test"
   },
