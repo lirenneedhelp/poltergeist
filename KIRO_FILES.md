@@ -233,3 +233,13 @@ packages before running Vitest.
 checks: adding `tabs`, adding host_permissions, an <all_urls> match,
 use_dynamic_url true, a changed threshold, and a stale skeleton copy were
 all rejected by `check:graveyard`.
+
+## 2026-11-20: tab-graveyard-app Task 5 (content script)
+**What happened:** each page loads the skeleton, gets its abandonment time
+from the service worker (so a discarded-and-reloaded tab keeps its decay),
+and wires the tombstone's Resurrect button through the worker.
+**Evidence:** commits 41238ae, 74311b2; tests 462 → 495. Break-it checks:
+clearing decay without worker confirmation, dropping the generation check,
+not resetting the meter on Resurrect, and ignoring the worker's stored
+absence on load each failed 1–6 tests. Gap found: double-clicking Resurrect
+isn't guarded in the page (harmless; the worker reset is idempotent).
