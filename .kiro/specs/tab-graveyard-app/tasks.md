@@ -82,7 +82,7 @@ Constraints for every task:
     - **Property 6: Generated mirrors are exact for both apps**
     - **Validates: Requirements 1.3–1.7, 2.1, 9.1–9.9, 10.1, 10.6**
 
-- [ ] 4. Implement the service worker
+- [x] 4. Implement the service worker
   - [x] 4.1 Implement the Activity_Tracker in `app2-tab-graveyard/background.js`
     - Follow Doomscroll's shape: `createBackground(chromeApi, { now })`, `registerBackground`, and guarded synchronous top-level registration.
     - Implement the storage keys, the Tab_Record, `awayMs`, `completeAbsence`, and `stage`, plus the serialized `enqueue` queue.
@@ -98,7 +98,7 @@ Constraints for every task:
     - Reject unknown or malformed messages with `{ok:false}` and no side effects.
     - _Requirements: 5.9, 7.2, 7.5–7.14, 8.2, 8.3_
 
-  - [ ] 4.3 Add `app2-tab-graveyard/test/background.test.js`
+  - [x] 4.3 Add `app2-tab-graveyard/test/background.test.js`
     - Mock only the Chrome APIs used, with an in-memory `storage` and an injected clock.
     - Cover every tracker event, the moved-tab guard, stub creation, discard replacement, removal cleanup, demo epochs and the demo Register start time, report caps and stale-epoch rejection, a restarted worker reading stored state, and concurrency through the queue.
     - Cover Bury: deadness re-check, save-before-remove ordering, save failure closing nothing, partial `tabs.remove` failure, the cap, and truncation. Cover Reopen with a valid URL, a `javascript:` URL, and a `tabs.create` failure.
