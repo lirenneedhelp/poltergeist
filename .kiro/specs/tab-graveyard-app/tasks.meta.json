@@ -103,6 +103,18 @@
         "chatSessionId": "sess_50947d3b-6859-46df-9784-b10b6e6b9cae",
         "timestamp": 1795027333941
       }
+    ],
+    "3.1 Create `app2-tab-graveyard/manifest.json` and `rules.json`": [
+      {
+        "executionId": "2390aa62-f991-490f-82ce-7ae9b020d0d4",
+        "chatSessionId": "sess_7eff21bf-89fa-4688-8861-0a9ef60d20f0",
+        "timestamp": 1795101143836
+      },
+      {
+        "executionId": "2390aa62-f991-490f-82ce-7ae9b020d0d4",
+        "chatSessionId": "sess_7eff21bf-89fa-4688-8861-0a9ef60d20f0",
+        "timestamp": 1795101296938
+      }
     ]
   }
 }

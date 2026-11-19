@@ -1,0 +1,38 @@
+{
+  "rules": [
+    {
+      "id": "graveyard-fog",
+      "enabled": true,
+      "match": ["http://*/*", "https://*/*"],
+      "trigger": { "meter": "timeAway", "threshold": 1800, "rampTo": 7200 },
+      "effect": { "type": "fog", "params": { "maxBlur": 4, "maxGrayscale": 0.8 } },
+      "undo": { "mode": "fade", "durationMs": 400 }
+    },
+    {
+      "id": "graveyard-rot",
+      "enabled": true,
+      "match": ["http://*/*", "https://*/*"],
+      "trigger": { "meter": "timeAway", "threshold": 14400, "rampTo": 43200 },
+      "effect": { "type": "rot", "params": { "maxFraction": 0.45, "glyphs": "░▒·_ " } },
+      "undo": { "mode": "instant" }
+    },
+    {
+      "id": "graveyard-tombstone",
+      "enabled": true,
+      "match": ["http://*/*", "https://*/*"],
+      "trigger": { "meter": "timeAway", "threshold": 86400 },
+      "effect": {
+        "type": "tombstone",
+        "params": {
+          "heading": "Here lies {title}",
+          "message": "Abandoned for {duration}.",
+          "actionLabel": "Resurrect",
+          "action": "resurrect",
+          "durationMeter": "timeAway",
+          "maxOpacity": 0.96
+        }
+      },
+      "undo": { "mode": "fade", "durationMs": 600 }
+    }
+  ]
+}

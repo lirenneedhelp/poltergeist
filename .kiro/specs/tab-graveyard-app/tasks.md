@@ -68,7 +68,7 @@ Constraints for every task:
     - _Requirements: 9.10, 10.10_
 
 - [ ] 3. Add the Tab Graveyard package
-  - [ ] 3.1 Create `app2-tab-graveyard/manifest.json` and `rules.json`
+  - [x] 3.1 Create `app2-tab-graveyard/manifest.json` and `rules.json`
     - Manifest per Requirement 1: MV3, `permissions: ["storage"]`, no `host_permissions`, `incognito: "not_allowed"`, module worker, popup, one classic top-frame `content.js` at `document_idle` on the Web_Scope, and one web-accessible-resource entry for `rules.json` plus the reachable skeleton graph with `use_dynamic_url: false`.
     - Rules exactly as in the design's data model (fog 1800→7200, rot 14400→43200, tombstone 86400).
     - _Requirements: 1.1–1.5, 2.1–2.5_
