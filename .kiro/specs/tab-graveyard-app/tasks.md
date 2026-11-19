@@ -108,7 +108,7 @@ Constraints for every task:
     - **Property 3: Nothing closes without Bury**
     - **Validates: Requirements 5.1–5.14, 7.5–7.14, 8.1–8.5, 10.4**
 
-- [ ] 5. Implement the content script
+- [x] 5. Implement the content script
   - [x] 5.1 Implement the loader and Runtime_Controller in `app2-tab-graveyard/content.js`
     - Keep it a classic script with `graveyardCreateDemoProfile`, `graveyardCreateController`, and a contained async bootstrap; cache one package Promise for the import and the rules fetch.
     - Implement serialized `refresh()` with a generation token: request state, build and validate the profile, stop the old instance (fault if `stop` throws), and start with the seeds, `tickMs: 1000`, and `onAction`.
@@ -117,7 +117,7 @@ Constraints for every task:
     - Report one `[poltergeist:graveyard]` diagnostic per failure kind, without titles or URLs.
     - _Requirements: 2.6, 2.7, 6.1–6.3, 6.7–6.13, 8.4, 8.5_
 
-  - [ ] 5.2 Add `app2-tab-graveyard/test/content.test.js`
+  - [x] 5.2 Add `app2-tab-graveyard/test/content.test.js`
     - Evaluate `content.js` in a VM context with fake Chrome, fetch, and module boundaries, as the Doomscroll tests do.
     - Cover: exact 1/3600 scaling and immutability; seeds passed to `startPoltergeist`; no start before a reply; reports with the right epoch and the deferred held value; Resurrect commit-then-reset and the failure path; apply-reset; demo restarts; rapid triggers with deferred loads leaving one instance; `pagehide`/`pageshow`; stop and start failures; and diagnostics.
     - **Property 4: Demo scaling preserves shape and order**
