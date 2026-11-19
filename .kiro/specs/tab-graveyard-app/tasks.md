@@ -91,7 +91,7 @@ Constraints for every task:
     - Handle `graveyard:content-state`, `graveyard:report` (epoch check and cap), and `graveyard:resurrect` with sender validation (own id, top frame, http/https `sender.url`, integer tab id).
     - _Requirements: 5.1–5.14, 6.2, 6.3, 8.1, 8.4, 8.5_
 
-  - [ ] 4.2 Implement the popup protocol, Bury, Reopen, and demo
+  - [x] 4.2 Implement the popup protocol, Bury, Reopen, and demo
     - Handle `graveyard:popup-state`, `graveyard:resurrect-tab` (reset, then `apply-reset`, return `delivered`), `graveyard:set-demo` (write the flag, bump the profile epoch), `graveyard:bury`, and `graveyard:reopen`, all requiring an extension-page sender.
     - Bury: validate ids, re-check deadness now, save entries first (cap 200, title ≤ 300, URL ≤ 2048), then remove each tab individually and report `notClosed`. Close nothing if thresholds or the save fail.
     - Reopen: accept only `http:`/`https:` URLs, create the tab, then remove the entry.

@@ -4,6 +4,8 @@
 // only the demo flag and the buried list. The worker never reads url, pendingUrl,
 // title, or favIconUrl from a Tab object: the URL comes from MessageSender.url and
 // the title from the content script's payload. It does not import the skeleton.
+// Tabs are closed only while handling graveyard:bury from an extension page, after
+// their Buried_Entries are saved; no timer, event, or content message closes a tab.
 
 export const MESSAGE = Object.freeze({
   CONTENT_STATE: 'graveyard:content-state', // content -> worker
@@ -21,10 +23,17 @@ export const TAB_KEY_PREFIX = 'graveyard.tab.'; //       session: Tab_Record
 export const WINDOW_KEY_PREFIX = 'graveyard.window.'; // session: active tab id of a window
 export const PROFILE_KEY = 'graveyard.profile'; //       session: { epoch, startedAt }
 export const DEMO_KEY = 'graveyard.demoMode'; //         local: Boolean
+export const BURIED_KEY = 'graveyard.buried'; //         local: Buried_Entry[], newest first
 
 /** One hour of normal timing per second of demo timing. */
 export const DEMO_TIME_SCALE = 3600;
 export const MAX_TITLE_LENGTH = 300;
+export const MAX_URL_LENGTH = 2048;
+/** Buried_Entries kept; the oldest are dropped beyond this. */
+export const MAX_BURIED = 200;
+/** Largest tabIds array a graveyard:bury message may carry. */
+export const MAX_BURY_IDS = 500;
+const MAX_ENTRY_ID_LENGTH = 128;
 
 /** Rule ids in rules.json whose trigger thresholds mark the start of each Stage. */
 export const RULE_IDS = Object.freeze({ fog: 'graveyard-fog', rot: 'graveyard-rot', dead: 'graveyard-tombstone' });
@@ -116,6 +125,29 @@ export function normalizeProfile(raw) {
   if (!isObject(raw) || !Number.isInteger(raw.epoch) || raw.epoch < 0) return DEFAULT_PROFILE;
   if (!isFiniteNumber(raw.startedAt) || raw.startedAt < 0) return DEFAULT_PROFILE;
   return { epoch: raw.epoch, startedAt: raw.startedAt };
+}
+
+/**
+ * A record can be buried only when a content script reported its URL and the URL fits
+ * in a Buried_Entry. Truncating a URL would make Reopen open a different page, so a
+ * longer URL keeps its tab out of the Graveyard instead.
+ */
+export function isBuryable(record) {
+  return isObject(record) && typeof record.url === 'string' && record.url.length <= MAX_URL_LENGTH;
+}
+
+/** Coerce one stored Buried_Entry, or null when it is not one. The URL protocol is checked by Reopen. */
+export function normalizeBuriedEntry(raw) {
+  if (!isObject(raw) || typeof raw.id !== 'string' || raw.id === '' || raw.id.length > MAX_ENTRY_ID_LENGTH) return null;
+  if (typeof raw.url !== 'string' || raw.url === '' || raw.url.length > MAX_URL_LENGTH) return null;
+  if (!isFiniteNumber(raw.buriedAt)) return null;
+  return { id: raw.id, title: truncateTitle(raw.title), url: raw.url, buriedAt: raw.buriedAt, awaySeconds: nonNegative(raw.awaySeconds) };
+}
+
+/** Coerce the stored buried list: malformed entries are dropped and at most MAX_BURIED kept. */
+export function normalizeBuried(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.map(normalizeBuriedEntry).filter((e) => e !== null).slice(0, MAX_BURIED);
 }
 
 /** Held_Absence of the Register for `mode`, in ms. A demo Register from another epoch counts as 0. */
@@ -224,10 +256,15 @@ export function scaleThresholds(base, demoMode) {
 /**
  * Build the tracker around an injected Chrome API object so it can be tested with
  * mocks. Nothing is registered here; see registerBackground.
- *   now:   clock in epoch ms (default Date.now)
- *   fetch: fetch used for the packaged rules.json (default globalThis.fetch)
+ *   now:      clock in epoch ms (default Date.now)
+ *   fetch:    fetch used for the packaged rules.json (default globalThis.fetch)
+ *   randomId: id source for Buried_Entries (default crypto.randomUUID)
  */
-export function createBackground(chromeApi, { now = () => Date.now(), fetch: fetchFn = (url) => globalThis.fetch(url) } = {}) {
+export function createBackground(chromeApi, {
+  now = () => Date.now(),
+  fetch: fetchFn = (url) => globalThis.fetch(url),
+  randomId = () => globalThis.crypto.randomUUID(),
+} = {}) {
   const session = chromeApi.storage.session;
   const local = chromeApi.storage.local;
   const tabs = chromeApi.tabs;
@@ -291,14 +328,83 @@ export function createBackground(chromeApi, { now = () => Date.now(), fetch: fet
     return thresholdsPromise;
   }
 
-  /** Active-profile thresholds in seconds, or null (with one diagnostic) when rules.json is unusable. */
-  async function readThresholds(demoMode) {
+  /** Normal_Profile thresholds in seconds, or null (with one diagnostic) when rules.json is unusable. */
+  async function readBaseThresholds() {
     try {
-      return scaleThresholds(await loadThresholds(), demoMode);
+      return await loadThresholds();
     } catch (err) {
       logFailure('rules.json load', err);
       return null;
     }
+  }
+
+  /** Active-profile thresholds in seconds, or null (with one diagnostic) when rules.json is unusable. */
+  async function readThresholds(demoMode) {
+    const base = await readBaseThresholds();
+    return base ? scaleThresholds(base, demoMode) : null;
+  }
+
+  async function readBuried() {
+    return normalizeBuried(await readKey(local, BURIED_KEY));
+  }
+
+  /** Tab_Records in a full session snapshot, keyed by tab id. */
+  function recordsIn(stored) {
+    const out = new Map();
+    for (const [key, value] of Object.entries(stored)) {
+      if (!key.startsWith(TAB_KEY_PREFIX)) continue;
+      const suffix = key.slice(TAB_KEY_PREFIX.length);
+      const tabId = Number(suffix);
+      if (!isTabId(tabId) || String(tabId) !== suffix) continue;
+      const record = normalizeRecord(value);
+      if (record) out.set(tabId, record);
+    }
+    return out;
+  }
+
+  /** Away_Time (whole seconds) and Stage of a record now. Stage is null without thresholds. */
+  function assess(record, demoMode, profile, thresholds, t) {
+    const ms = awayMs(record, modeOf(demoMode), profile, t);
+    return { awaySeconds: Math.floor(ms / 1000), stage: stage(ms / 1000, thresholds) };
+  }
+
+  /** Ids of open non-incognito tabs, or null when the query fails (then nothing is filtered). Reads only id and incognito. */
+  async function openTabIds() {
+    try {
+      const all = await tabs.query({});
+      return new Set((Array.isArray(all) ? all : []).filter((tab) => isObject(tab) && isTabId(tab.id) && tab.incognito !== true).map((tab) => tab.id));
+    } catch (err) {
+      logFailure('tabs.query', err);
+      return null;
+    }
+  }
+
+  /** The tab's `active` flag when it is open and not incognito, otherwise null. Reads only active and incognito. */
+  async function openTabActive(tabId) {
+    let tab;
+    try {
+      tab = await tabs.get(tabId);
+    } catch {
+      return null;
+    }
+    if (!isObject(tab) || tab.incognito === true) return null;
+    return tab.active !== false;
+  }
+
+  /** Send a message to a tab's top-frame content script; resolves undefined when no receiver answers. */
+  async function sendToTab(tabId, message) {
+    try {
+      return await tabs.sendMessage(tabId, message, { frameId: 0 });
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** True for this extension's own pages (popup, control page), false for content scripts and other senders. */
+  function isExtensionPage(sender) {
+    if (!isObject(sender) || sender.id !== runtime.id) return false;
+    const base = runtime.getURL('');
+    return typeof sender.url === 'string' && sender.url.startsWith(base);
   }
 
   /**
@@ -370,11 +476,173 @@ export function createBackground(chromeApi, { now = () => Date.now(), fetch: fet
     });
   }
 
+  /**
+   * Everything the popup shows. Read-only. `rulesLoaded` is false when rules.json is
+   * unusable; then no Stage is known and the Graveyard lists no Dead_Tabs.
+   */
+  async function popupState(message, sender) {
+    if (!isExtensionPage(sender)) return fail('popup-state requires an extension page sender');
+    if (!isTabId(message.tabId)) return fail('tabId must be a non-negative integer');
+    const base = await readBaseThresholds();
+    return enqueue(async () => {
+      const t = now();
+      const [demoMode, profile, stored, buried, open] = await Promise.all([readDemo(), readProfile(), readAllSession(), readBuried(), openTabIds()]);
+      const thresholds = base ? scaleThresholds(base, demoMode) : null;
+      const records = recordsIn(stored);
+
+      const own = records.get(message.tabId);
+      const current = own?.url
+        ? { known: true, ...assess(own, demoMode, profile, thresholds, t) }
+        : { known: false, stage: null, awaySeconds: 0 };
+
+      const dead = [];
+      for (const [tabId, record] of records) {
+        if (!isBuryable(record) || (open && !open.has(tabId))) continue;
+        const { awaySeconds, stage: s } = assess(record, demoMode, profile, thresholds, t);
+        if (s === 'dead') dead.push({ tabId, title: record.title, url: record.url, awaySeconds });
+      }
+      dead.sort((a, b) => b.awaySeconds - a.awaySeconds || a.tabId - b.tabId);
+
+      return { ok: true, demoMode, rulesLoaded: base !== null, current, dead, buried };
+    });
+  }
+
+  /** Popup Resurrect: reset the tab's Registers, then tell its page to clear the decay. */
+  async function resurrectTab(message, sender) {
+    if (!isExtensionPage(sender)) return fail('resurrect-tab requires an extension page sender');
+    const { tabId } = message;
+    if (!isTabId(tabId)) return fail('tabId must be a non-negative integer');
+    const committed = await enqueue(async () => {
+      const record = await readRecord(tabId);
+      if (!record) return fail('unknown tab');
+      const active = await openTabActive(tabId);
+      if (active === null) return fail('tab is not open');
+      const t = now();
+      const profile = await readProfile();
+      await writeRecord(tabId, resetRecord(record, profile, t, active));
+      return { ok: true };
+    });
+    if (!committed.ok) return committed;
+    // Sent after the commit and outside the queue: a discarded tab has no receiver,
+    // and its reload seeds 0 from the reset record.
+    const reply = await sendToTab(tabId, { type: MESSAGE.APPLY_RESET });
+    return { ok: true, delivered: isObject(reply) && reply.ok === true };
+  }
+
+  /**
+   * Switch Demo_Mode. Only an actual transition writes anything. The new Profile_Epoch
+   * is saved before the flag: if the flag write then fails, the extra epoch only zeroes
+   * the demo Registers, whereas a flag saved without a new epoch would turn demo on with
+   * demo Registers that already hold real absences. Normal Registers are never touched.
+   * Content scripts converge through chrome.storage.onChanged on the flag; their
+   * content-state requests queue behind this job, so they see both writes.
+   */
+  async function setDemo(message, sender) {
+    if (!isExtensionPage(sender)) return fail('set-demo requires an extension page sender');
+    const { enabled } = message;
+    if (typeof enabled !== 'boolean') return fail('enabled must be a Boolean');
+    return enqueue(async () => {
+      if ((await readDemo()) === enabled) return { ok: true, demoMode: enabled };
+      const t = now();
+      const profile = await readProfile();
+      try {
+        await session.set({ [PROFILE_KEY]: { epoch: profile.epoch + 1, startedAt: t } });
+        await local.set({ [DEMO_KEY]: enabled });
+      } catch (err) {
+        logFailure('demo mode save', err);
+        return fail('could not save demo mode');
+      }
+      return { ok: true, demoMode: enabled };
+    });
+  }
+
+  /**
+   * Bury: save a Buried_Entry for every requested tab that is a Dead_Tab now, then close
+   * those tabs one by one. Nothing closes when rules.json is unusable or the save fails.
+   * At most MAX_BURIED tabs are taken per call, so every closed tab's entry fits in the list.
+   */
+  async function bury(message, sender) {
+    if (!isExtensionPage(sender)) return fail('bury requires an extension page sender');
+    const { tabIds } = message;
+    if (!Array.isArray(tabIds) || tabIds.length > MAX_BURY_IDS || !tabIds.every(isTabId)) {
+      return fail(`tabIds must be an array of at most ${MAX_BURY_IDS} tab ids`);
+    }
+    const base = await readBaseThresholds();
+    if (!base) return fail('rules unavailable');
+    return enqueue(async () => {
+      const t = now();
+      const [demoMode, profile, stored, existing] = await Promise.all([readDemo(), readProfile(), readAllSession(), readBuried()]);
+      const thresholds = scaleThresholds(base, demoMode);
+      const records = recordsIn(stored);
+
+      const kept = [];
+      for (const tabId of new Set(tabIds)) {
+        if (kept.length >= MAX_BURIED) break;
+        const record = records.get(tabId);
+        if (!isBuryable(record)) continue;
+        const { awaySeconds, stage: s } = assess(record, demoMode, profile, thresholds, t);
+        if (s !== 'dead' || (await openTabActive(tabId)) === null) continue;
+        kept.push({ tabId, entry: { id: randomId(), title: record.title, url: record.url, buriedAt: t, awaySeconds } });
+      }
+      if (kept.length === 0) return { ok: true, buried: [], notClosed: [] };
+
+      try {
+        await local.set({ [BURIED_KEY]: [...kept.map((k) => k.entry), ...existing].slice(0, MAX_BURIED) });
+      } catch (err) {
+        logFailure('buried list save', err);
+        return fail('could not save buried tabs');
+      }
+
+      // The only place the extension closes tabs: after the entries are saved, one call per tab.
+      // A tab that fails to close keeps its entry and is reported in notClosed.
+      const results = await Promise.allSettled(kept.map(async ({ tabId }) => tabs.remove(tabId)));
+      const buried = [];
+      const notClosed = [];
+      results.forEach((r, i) => (r.status === 'fulfilled' ? buried : notClosed).push(kept[i].tabId));
+      if (notClosed.length > 0) logFailure('tab close', new Error(`${notClosed.length} tab(s) could not be closed`));
+      return { ok: true, buried, notClosed };
+    });
+  }
+
+  /** Reopen a Buried_Entry in a new active tab; the entry is removed only after the tab exists. */
+  async function reopen(message, sender) {
+    if (!isExtensionPage(sender)) return fail('reopen requires an extension page sender');
+    const { entryId } = message;
+    if (typeof entryId !== 'string' || entryId === '' || entryId.length > MAX_ENTRY_ID_LENGTH) {
+      return fail('entryId must be a non-empty string');
+    }
+    return enqueue(async () => {
+      const buried = await readBuried();
+      const entry = buried.find((e) => e.id === entryId);
+      if (!entry) return fail('unknown entry');
+      if (!isWebUrl(entry.url)) return fail('unsupported url');
+      try {
+        await tabs.create({ url: entry.url, active: true });
+      } catch (err) {
+        logFailure('tabs.create', err);
+        return fail('could not open tab');
+      }
+      try {
+        await local.set({ [BURIED_KEY]: buried.filter((e) => e.id !== entryId) });
+      } catch (err) {
+        // The tab is open; the entry stays listed and the popup can show it again.
+        logFailure('buried list save', err);
+        return { ok: true, entryRemoved: false };
+      }
+      return { ok: true, entryRemoved: true };
+    });
+  }
+
   // Worker-handled message types. A type without a handler is rejected with no side effects.
   const handlers = new Map([
     [MESSAGE.CONTENT_STATE, contentState],
     [MESSAGE.REPORT, report],
     [MESSAGE.RESURRECT, resurrect],
+    [MESSAGE.POPUP_STATE, popupState],
+    [MESSAGE.RESURRECT_TAB, resurrectTab],
+    [MESSAGE.SET_DEMO, setDemo],
+    [MESSAGE.BURY, bury],
+    [MESSAGE.REOPEN, reopen],
   ]);
 
   /** Dispatch one message. Always resolves to {ok:true,...} or {ok:false,error}. */
@@ -511,6 +779,7 @@ export function createBackground(chromeApi, { now = () => Date.now(), fetch: fet
     readRecord,
     readProfile,
     readDemo,
+    readBuried,
     loadThresholds,
     readThresholds,
   };

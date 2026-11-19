@@ -150,6 +150,18 @@
         "chatSessionId": "sess_fb2c5e88-0ee8-4de5-89f4-febc1d7ec84e",
         "timestamp": 1795102998057
       }
+    ],
+    "4.2 Implement the popup protocol, Bury, Reopen, and demo": [
+      {
+        "executionId": "b34c6ef9-45a8-40df-a4f0-1dd7d33c70d8",
+        "chatSessionId": "sess_9fac726d-bb0b-4886-b143-06f935123b1c",
+        "timestamp": 1795103143821
+      },
+      {
+        "executionId": "b34c6ef9-45a8-40df-a4f0-1dd7d33c70d8",
+        "chatSessionId": "sess_9fac726d-bb0b-4886-b143-06f935123b1c",
+        "timestamp": 1795103514134
+      }
     ]
   }
 }
