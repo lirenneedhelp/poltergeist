@@ -83,7 +83,7 @@ Constraints for every task:
     - **Validates: Requirements 1.3–1.7, 2.1, 9.1–9.9, 10.1, 10.6**
 
 - [ ] 4. Implement the service worker
-  - [ ] 4.1 Implement the Activity_Tracker in `app2-tab-graveyard/background.js`
+  - [x] 4.1 Implement the Activity_Tracker in `app2-tab-graveyard/background.js`
     - Follow Doomscroll's shape: `createBackground(chromeApi, { now })`, `registerBackground`, and guarded synchronous top-level registration.
     - Implement the storage keys, the Tab_Record, `awayMs`, `completeAbsence`, and `stage`, plus the serialized `enqueue` queue.
     - Handle `tabs.onActivated` (with the `tabs.get` guard and stub creation), `onInstalled`/`onStartup` seeding, `onReplaced`, `onRemoved`, and `windows.onRemoved`.

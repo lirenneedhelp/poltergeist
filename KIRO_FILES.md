@@ -224,3 +224,12 @@ the new tombstone module.
 Doomscroll browser tests still pass. Old Doomscroll build/check commands
 behave identically (rebuild is a no-op; extra permission and a stale file
 both still fail the check).
+
+## 2026-11-19: tab-graveyard-app Task 3 (App 2 package)
+**What happened:** App 2's manifest, rules, package validator, generated
+skeleton copy and packaging tests. `npm test` now checks both apps'
+packages before running Vitest.
+**Evidence:** commits 61376bc, 2952827, 77b0839; tests 366 → 400. Break-it
+checks: adding `tabs`, adding host_permissions, an <all_urls> match,
+use_dynamic_url true, a changed threshold, and a stale skeleton copy were
+all rejected by `check:graveyard`.
