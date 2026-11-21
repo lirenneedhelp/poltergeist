@@ -54,7 +54,7 @@ Constraints for every task:
     - New tests: `weathered` default gives gradient-only `background-image`, a `clip-path`, and a crack with no child nodes; `weathered: false` gives `rgb(58, 58, 63)`, the old border and radius, no gradient, no `clip-path`, no crack; `mark` default `R.I.P.` in a `div` before the `h1`, `Ci-gît {title}` stays literal, `''` removes an earlier mark, non-string gives the default; exactly one `h1`, `p`, and `button`, and no other element except the mark has a text-node child; fixed px font sizes; Rise_In duration 800 and 1 iteration, override 300, none with reduced motion, none with 0; created while hidden starts nothing until the first `visible` event, then exactly once; re-apply with reduced motion while pending or running ends it; undo while running or pending cancels it, no later start, snapshot restored; `vi.getTimerCount()` is 0 after each `apply`
     - _Requirements: 3.1 to 3.13, 5.11, 9.1, 9.3, 9.7, 9.8_
 
-- [ ] 4. Fog tint, noise, and Drift
+- [x] 4. Fog tint, noise, and Drift
   - [x] 4.1 Add tint, noise, and Drift to `skeleton/effects/fog.js`
     - New params: `tint` (default `#9eb2a4`; non-string falls back to the default), `noise` (`numberIn` 0 to 1, default 0.3), `driftMs` (0 or 1000 to 600000, default 20000); constants `TINT_MAX_OPACITY = 0.22`, `DRIFT_PX = 240`
     - `acceptedTint`: reject `\ ; { }` and `var( env( attr( url(` (any case) before the detached-element `style.color` probe; set an accepted colour only as `tintEl.style.backgroundColor`
@@ -65,7 +65,7 @@ Constraints for every task:
   - [x] 4.2 Add `skeleton/test/polish-fog.test.js`
     - Tint default `rgb(158, 178, 164)` at opacity 0.22 × i (0 at intensity 0), override `rgb(120, 140, 200)`, `''` gives no tint layer; noise default 0.3 × i with gradient-only `background-image`, override 0.5, 0 gives no layer; `tint ''` with `noise 0` leaves no child nodes and no background; Drift default duration 20000, `Infinity` iterations, keyframes ending at `translate(240px, 240px)`, override 5000, 0 gives none, 500 falls back to 20000; reduced motion gives none; re-apply with reduced motion cancels, re-apply without starts again, re-apply while running makes no new call; a fake `matchMedia` `change` to reduce stops the Drift, and undo removes the listener; re-apply keeps one overlay and the same layers; `backdrop-filter` string unchanged; fade undo puts `opacity 500ms linear` on both layers; every layer has `pointer-events: none`
     - _Requirements: 4.1 to 4.12, 9.1, 9.7, 9.8_
-  - [ ] 4.3 Add the cross-effect `skeleton/test/polish-safety.test.js`
+  - [x] 4.3 Add the cross-effect `skeleton/test/polish-safety.test.js`
     - Source scan of `fog.js`, `block.js`, `tombstone.js`: no `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `DOMParser`, `createContextualFragment`, `document.write`, `url(`, `image-set(`, `@import`, `@font-face`; the SVG namespace appears only as `createElementNS('http://www.w3.org/2000/svg'`
     - DOM scan after apply (light and shadow): no `img`, `image`, `[href]`, `[src]`, and no `url(` in any `style` attribute; no change to `head`, `body`, `adoptedStyleSheets`, or `html`/`body` attributes
     - Every invalid value in the Requirement 5.6 table, including `null`, renders like the default; hostile `tint` values (`red;background:url(https://example.com/x.png)`, `var(--x)`, `u\\rl(x)`, `{}`) give no tint layer and no error
