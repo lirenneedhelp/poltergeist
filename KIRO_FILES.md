@@ -243,3 +243,17 @@ clearing decay without worker confirmation, dropping the generation check,
 not resetting the meter on Resurrect, and ignoring the worker's stored
 absence on load each failed 1–6 tests. Gap found: double-clicking Resurrect
 isn't guarded in the page (harmless; the worker reset is idempotent).
+
+## 2026-11-21: tab-graveyard-app Task 6 (popup)
+**Kiro feature:** spec tasks; Opus 5.5 High for the popup (6.1)
+**What happened:** popup shows this tab's stage and away time, a Bury all
+button for dead tabs, the buried list with Reopen, and the demo toggle.
+**What I caught:** Kiro's subagent added four partial-result notices the
+spec didn't ask for (e.g. "some tabs couldn't be closed"). I checked that the
+service worker really sends those fields, kept the notices, had them tested,
+and updated requirement 7 to match. Kiro's tests also showed "1 day" can
+never appear (hours run to 48), so I fixed the example in requirement 4.5.
+**Evidence:** commit dfcb1d4 (6.1 and 6.2 together); tests 495 → 564.
+Break-it checks: titles as HTML, no double-click guard, hiding the
+undelivered and rules-missing notices, and Bury enabled with no dead tabs
+each failed 1–3 tests.

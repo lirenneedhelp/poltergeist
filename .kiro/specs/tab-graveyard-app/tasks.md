@@ -137,7 +137,7 @@ Constraints for every task:
     - **Validates: Requirements 7.1–7.6, 7.13, 10.5**
 
 - [ ] 7. Add unpacked-extension browser verification
-  - [ ] 7.1 Add the Playwright project
+  - [x] 7.1 Add the Playwright project
     - Add a `graveyard-extension` project with `testDir: 'app2-tab-graveyard/test/browser'` and `channel: 'chromium'`; leave the two existing projects unchanged.
     - _Requirements: 10.7_
 
