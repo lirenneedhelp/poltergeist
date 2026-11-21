@@ -144,7 +144,7 @@ Constraints for every task:
   - [x] 8.2 Make the Block second line the punchline in `skeleton/effects/block.js`
     - Change only `DETAIL_CSS` to `margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;`; message stays `700 40px`
     - _Requirements: 2.15_
-  - [ ] 8.3 Update and add the tests for fog-visibility
+  - [x] 8.3 Update and add the tests for fog-visibility
     - In `skeleton/test/polish-fog.test.js`, change only the expected values of the four cases in the design's "Test changes for fog-visibility" table (tint 0.19/0.38, tint override 0.38, noise 0.25/0.5, re-apply 0.304/0.4) and rename the two titles that name 0.22 and 0.3; leave every other case, including the child counts, `spy.calls` lengths, and the Requirement 4.7 case, unedited
     - Append `describe('fog: grain and mist (fog-visibility)')` with the design's cases: speck radii, alphas, colours, and tile sizes; `noise` override 0.8; no Mist_Layer for the default and for invalid `mist` values `null`, -0.1, 1.5, `NaN`, `'0.5'`; the `mist` 0.5 layer, its order, style, and opacity 0.3, and override 1 giving 0.6; the mist Drift at 60000 ms with keyframes to `translate(1200px, 0px)`, 15000 ms for `driftMs` 5000, none for `driftMs` 0 or reduced motion; no restart on re-apply; stop and restart on re-apply and on the `change` event; removal for `mist` 0; fade and instant undo cancelling both parts and restoring the snapshot
     - Add `skeleton/test/polish-punchline.test.js` (jsdom) for the detail line: 24 px against a 40 px message, weight `600`, colour `rgb(255, 255, 255)`, empty inline opacity, and only the Fade_In animating it

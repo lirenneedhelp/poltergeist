@@ -263,6 +263,18 @@
         "chatSessionId": "sess_bf2d951e-1831-4e26-b230-68c8ad92c7cc",
         "timestamp": 1795273598969
       }
+    ],
+    "8.3 Update and add the tests for fog-visibility": [
+      {
+        "executionId": "86852a73-b967-48df-95b2-d4b2695c5bc6",
+        "chatSessionId": "sess_cc669722-89e7-4e0b-bb67-7bfa05339819",
+        "timestamp": 1795273716290
+      },
+      {
+        "executionId": "86852a73-b967-48df-95b2-d4b2695c5bc6",
+        "chatSessionId": "sess_cc669722-89e7-4e0b-bb67-7bfa05339819",
+        "timestamp": 1795273960457
+      }
     ]
   }
 }

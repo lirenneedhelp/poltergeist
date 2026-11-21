@@ -80,15 +80,15 @@ afterEach(() => {
 });
 
 describe('fog: tint (4.1, 5.4)', () => {
-  it('uses the default green-grey tint at 0.22 x intensity', () => {
+  it('uses the default green-grey tint at 0.38 x intensity', () => {
     const e = makeEnv();
     const h = fg(e, {}, 0.5);
     expect(h.tintEl).not.toBeNull();
     expect(h.tintEl.parentNode).toBe(h.el);
     expect(h.tintEl.style.backgroundColor).toBe('rgb(158, 178, 164)');
-    expect(op(h.tintEl)).toBe(0.11);
+    expect(op(h.tintEl)).toBe(0.19);
     fg(e, {}, 1, h);
-    expect(op(h.tintEl)).toBe(0.22);
+    expect(op(h.tintEl)).toBe(0.38);
     fg(e, {}, 0, h);
     expect(h.tintEl.style.opacity).toBe('0');
   });
@@ -101,7 +101,7 @@ describe('fog: tint (4.1, 5.4)', () => {
   it('uses a tint override', () => {
     const h = fg(makeEnv(), { tint: 'rgb(120, 140, 200)' }, 1);
     expect(h.tintEl.style.backgroundColor).toBe('rgb(120, 140, 200)');
-    expect(op(h.tintEl)).toBe(0.22);
+    expect(op(h.tintEl)).toBe(0.38);
   });
 
   it('renders no tint layer for tint ""', () => {
@@ -118,12 +118,12 @@ describe('fog: tint (4.1, 5.4)', () => {
 });
 
 describe('fog: noise texture (4.2)', () => {
-  it('shows the default noise at 0.3 x intensity, made only from gradients', () => {
+  it('shows the default noise at 0.5 x intensity, made only from gradients', () => {
     const e = makeEnv();
     const h = fg(e, {}, 0.5);
     expect(h.noiseEl).not.toBeNull();
     expect(h.noiseEl.parentNode).toBe(h.el);
-    expect(op(h.noiseEl)).toBe(0.15);
+    expect(op(h.noiseEl)).toBe(0.25);
     const image = h.noiseEl.style.backgroundImage;
     expect(image).not.toBe('');
     expect(image).not.toMatch(/url\(/i);
@@ -131,7 +131,7 @@ describe('fog: noise texture (4.2)', () => {
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) expect(item).toMatch(/^(?:repeating-)?(?:linear|radial|conic)-gradient\(.*\)$/);
     fg(e, {}, 1, h);
-    expect(op(h.noiseEl)).toBe(0.3);
+    expect(op(h.noiseEl)).toBe(0.5);
   });
 
   it('uses a noise override of 0.5', () => {
@@ -261,8 +261,8 @@ describe('fog: re-apply and overlay contract (4.6, 4.10, 4.11, 4.12)', () => {
     expect(h.tintEl).toBe(tintEl);
     expect(h.noiseEl).toBe(noiseEl);
     expect(h.el.children).toHaveLength(2);
-    expect(op(h.tintEl)).toBe(0.176);
-    expect(op(h.noiseEl)).toBe(0.24);
+    expect(op(h.tintEl)).toBe(0.304);
+    expect(op(h.noiseEl)).toBe(0.4);
   });
 
   it('keeps the backdrop-filter string unchanged', () => {
@@ -330,5 +330,205 @@ describe('fog: undo (4.8, 4.9)', () => {
     expect(overlays()).toHaveLength(0);
     expect(snap()).toEqual(before);
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('fog: grain and mist (fog-visibility)', () => {
+  const MIST = { mist: 0.5 };
+  const MIST_DRIFT = { duration: 60000, iterations: Infinity };
+  const SPECK = /^radial-gradient\(.*rgba\(\s*(255|0)\s*,\s*\1\s*,\s*\1\s*,\s*([\d.]+)\s*\)\s+0\s+([\d.]+)px/;
+  const callsOn = (el) => (el ? spy.on(el) : []);
+
+  it('builds the grain from at least four coarse white and black specks on tiles that divide 240 px (4.2)', () => {
+    const h = fg(makeEnv(), {}, 1);
+    const specks = topLevelItems(h.noiseEl.style.backgroundImage)
+      .map((item) => item.match(SPECK))
+      .filter(Boolean);
+    expect(specks.length).toBeGreaterThanOrEqual(4);
+    for (const [, , alpha, radius] of specks) {
+      expect(Number(radius)).toBeGreaterThanOrEqual(1.5);
+      expect(Number(radius)).toBeLessThanOrEqual(2.5);
+      expect(Number(alpha)).toBeGreaterThanOrEqual(0.7);
+      expect(Number(alpha)).toBeLessThanOrEqual(0.85);
+    }
+    expect(specks.some(([, c]) => c === '255')).toBe(true);
+    expect(specks.some(([, c]) => c === '0')).toBe(true);
+    const sizes = topLevelItems(h.noiseEl.style.backgroundSize);
+    expect(sizes.length).toBeGreaterThan(0);
+    for (const size of sizes) {
+      for (const part of size.split(/\s+/)) {
+        const px = Number(part.replace(/px$/, ''));
+        expect(part).toMatch(/^\d+px$/);
+        expect(240 % px).toBe(0);
+      }
+    }
+  });
+
+  it('uses a noise override of 0.8', () => {
+    const h = fg(makeEnv(), { noise: 0.8 }, 1);
+    expect(op(h.noiseEl)).toBe(0.8);
+  });
+
+  it('renders no Mist_Layer and no mist Drift for the default mist 0', () => {
+    const h = fg(makeEnv(), {}, 1);
+    expect(h.mistEl).toBeNull();
+    expect(h.mistDrift).toBeNull();
+    expect(spy.calls.every((c) => c.target === h.noiseEl)).toBe(true);
+  });
+
+  it.each([null, -0.1, 1.5, NaN, '0.5'])('renders mist %s like the default (5.6)', (mist) => {
+    const d = fg(makeEnv(), {}, 1);
+    const defaultHtml = d.el.outerHTML;
+    const defaultAnims = spy.calls.map((c) => [c.options.duration, c.options.iterations]);
+    fog.undo(d, { durationMs: 0 });
+    spy.calls.length = 0;
+    const h = fg(makeEnv(), { mist }, 1);
+    expect(h.mistEl).toBeNull();
+    expect(h.el.outerHTML).toBe(defaultHtml);
+    expect(spy.calls.map((c) => [c.options.duration, c.options.iterations])).toEqual(defaultAnims);
+  });
+
+  it('shows one unmarked, gradient-only Mist_Layer after the noise layer for mist 0.5 (4.13)', () => {
+    const e = makeEnv();
+    const h = fg(e, MIST, 1);
+    expect(h.mistEl).not.toBeNull();
+    expect([...h.el.children]).toEqual([h.tintEl, h.noiseEl, h.mistEl]);
+    expect(h.el.lastElementChild).toBe(h.mistEl);
+    expect(h.mistEl.hasAttribute('data-poltergeist')).toBe(false);
+    expect(h.mistEl.style.pointerEvents).toBe('none');
+    const image = h.mistEl.style.backgroundImage;
+    expect(image).not.toMatch(/url\(/i);
+    const items = topLevelItems(image);
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) expect(item).toMatch(/^(?:repeating-)?(?:linear|radial|conic)-gradient\(.*\)$/);
+    expect(h.mistEl.style.backgroundSize).toBe('1200px 100%');
+    expect(h.mistEl.style.backgroundRepeat).toBe('repeat-x');
+    expect(h.mistEl.style.left).toBe('-1200px');
+    expect(op(h.mistEl)).toBe(0.3);
+    fg(e, MIST, 0.5, h);
+    expect(op(h.mistEl)).toBe(0.15);
+    expect(document.documentElement.querySelectorAll('[data-poltergeist]')).toHaveLength(1);
+  });
+
+  it('uses a mist override of 1, giving opacity 0.6 at intensity 1', () => {
+    const h = fg(makeEnv(), { mist: 1 }, 1);
+    expect(op(h.mistEl)).toBe(0.6);
+  });
+
+  it('rolls the mist left to right over 3 x driftMs with infinite iterations (4.14)', () => {
+    const h = fg(makeEnv(), MIST, 1);
+    expect(isPlaying(spy, h.mistEl, MIST_DRIFT)).toBe(true);
+    const [anim] = spy.on(h.mistEl);
+    expect(anim.options.easing).toBe('linear');
+    expect(anim.keyframes[0].transform).toBe('translate(0px, 0px)');
+    expect(anim.keyframes.at(-1).transform).toBe('translate(1200px, 0px)');
+    expect(isPlaying(spy, h.noiseEl, DRIFT)).toBe(true);
+    expect(h.mistDrift).toBe(anim);
+  });
+
+  it('uses 15000 ms for driftMs 5000', () => {
+    const h = fg(makeEnv(), { ...MIST, driftMs: 5000 }, 1);
+    expect(isPlaying(spy, h.mistEl, { duration: 15000, iterations: Infinity })).toBe(true);
+  });
+
+  it('keeps the mist bands fixed for driftMs 0 and under reduced motion (4.15)', () => {
+    const a = fg(makeEnv(), { ...MIST, driftMs: 0 }, 1);
+    expect(a.mistEl).not.toBeNull();
+    expect(isStill(spy, a.mistEl)).toBe(true);
+    const b = fg(makeEnv({ reducedMotion: true }), MIST, 1);
+    expect(b.mistEl).not.toBeNull();
+    expect(isStill(spy, b.mistEl)).toBe(true);
+    expect(spy.calls).toHaveLength(0);
+  });
+
+  it('makes no new mist call on a re-apply while it runs', () => {
+    const e = makeEnv();
+    const h = fg(e, MIST, 0.4);
+    const [first] = spy.on(h.mistEl);
+    fg(e, MIST, 0.7, h);
+    fg(e, MIST, 1, h);
+    expect(spy.on(h.mistEl)).toHaveLength(1);
+    expect(first.cancel).not.toHaveBeenCalled();
+    expect(h.mistDrift).toBe(first);
+  });
+
+  it('stops both parts on a re-apply with reducedMotion true and starts both again without (4.5)', () => {
+    const h = fg(makeEnv(), MIST, 1);
+    const [noise] = spy.on(h.noiseEl);
+    const [mist] = spy.on(h.mistEl);
+    fg(makeEnv({ reducedMotion: true }), MIST, 1, h);
+    expect(noise.cancel).toHaveBeenCalledTimes(1);
+    expect(mist.cancel).toHaveBeenCalledTimes(1);
+    expect(h.drift).toBeNull();
+    expect(h.mistDrift).toBeNull();
+    fg(makeEnv(), MIST, 1, h);
+    expect(spy.on(h.noiseEl)).toHaveLength(2);
+    expect(spy.on(h.mistEl)).toHaveLength(2);
+    expect(h.mistDrift).toBe(spy.on(h.mistEl)[1]);
+    expect(h.mistDrift.options).toMatchObject(MIST_DRIFT);
+  });
+
+  it('stops and restarts both parts on the reduced-motion change event (4.16)', () => {
+    const q = fakeMotionQuery();
+    let rm = false;
+    const e = makeEnv({ window: { matchMedia: vi.fn(() => q.mql) } });
+    Object.defineProperty(e, 'reducedMotion', { configurable: true, enumerable: true, get: () => rm });
+    const h = fg(e, MIST, 1);
+    const [noise] = spy.on(h.noiseEl);
+    const [mist] = spy.on(h.mistEl);
+    rm = true;
+    q.fire(true);
+    expect(noise.cancel).toHaveBeenCalledTimes(1);
+    expect(mist.cancel).toHaveBeenCalledTimes(1);
+    expect(h.mistDrift).toBeNull();
+    rm = false;
+    q.fire(false);
+    expect(spy.on(h.mistEl)).toHaveLength(2);
+    expect(h.mistDrift).toBe(spy.on(h.mistEl)[1]);
+    expect(h.drift).toBe(spy.on(h.noiseEl)[1]);
+  });
+
+  it('removes the Mist_Layer and stops the mist Drift on a re-apply with mist 0 (4.17)', () => {
+    const e = makeEnv();
+    const h = fg(e, MIST, 1);
+    const mistEl = h.mistEl;
+    const [mist] = spy.on(mistEl);
+    const [noise] = spy.on(h.noiseEl);
+    fg(e, { mist: 0 }, 1, h);
+    expect(mist.cancel).toHaveBeenCalledTimes(1);
+    expect(mistEl.isConnected).toBe(false);
+    expect(h.mistEl).toBeNull();
+    expect(h.mistDrift).toBeNull();
+    expect(noise.cancel).not.toHaveBeenCalled();
+    expect([...h.el.children]).toEqual([h.tintEl, h.noiseEl]);
+  });
+
+  it('fade undo fades the Mist_Layer and cancels both parts after durationMs (4.8)', () => {
+    const before = snap();
+    const h = fg(makeEnv(), MIST, 1);
+    const [noise] = spy.on(h.noiseEl);
+    const [mist] = spy.on(h.mistEl);
+    fog.undo(h, { durationMs: 500 });
+    expect(h.mistEl.style.transition).toBe('opacity 500ms linear');
+    expect(h.mistEl.style.opacity).toBe('0');
+    vi.advanceTimersByTime(500);
+    expect(noise.playState).toBe('idle');
+    expect(mist.playState).toBe('idle');
+    expect(overlays()).toHaveLength(0);
+    expect(snap()).toEqual(before);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('instant undo cancels both parts and restores the snapshot before returning (4.9)', () => {
+    const before = snap();
+    const h = fg(makeEnv(), MIST, 1);
+    const [noise] = spy.on(h.noiseEl);
+    const [mist] = spy.on(h.mistEl);
+    fog.undo(h, { durationMs: 0 });
+    expect(noise.cancel).toHaveBeenCalledTimes(1);
+    expect(mist.cancel).toHaveBeenCalledTimes(1);
+    expect(h.mistEl.isConnected).toBe(false);
+    expect(snap()).toEqual(before);
+    expect(callsOn(h.mistEl)).toHaveLength(1);
   });
 });
