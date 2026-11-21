@@ -141,7 +141,7 @@ Constraints for every task:
     - `undo`: the begin step fades `mistEl` opacity with `opacity <d>ms linear`; the finish step cancels `mistDrift` with the noise Drift
     - Keep no `url(`, no `data-poltergeist` on layers, nothing on `html` or `body`
     - _Requirements: 4.1, 4.2, 4.5, 4.7, 4.8, 4.9, 4.11, 4.12, 4.13, 4.14, 4.15, 4.16, 4.17, 5.1, 5.2, 5.5, 5.6, 5.7_
-  - [ ] 8.2 Make the Block second line the punchline in `skeleton/effects/block.js`
+  - [x] 8.2 Make the Block second line the punchline in `skeleton/effects/block.js`
     - Change only `DETAIL_CSS` to `margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;`; message stays `700 40px`
     - _Requirements: 2.15_
   - [ ] 8.3 Update and add the tests for fog-visibility

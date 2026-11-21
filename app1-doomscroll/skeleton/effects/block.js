@@ -11,7 +11,7 @@ const HOST_CSS =
   'opacity:0;pointer-events:none;';
 const STAGE_CSS = 'display:flex;flex-direction:column;align-items:center;gap:24px;max-width:960px;';
 const MESSAGE_CSS = 'font:700 40px/1.25 system-ui,sans-serif;';
-const DETAIL_CSS = 'margin:0;font:400 24px/1.4 system-ui,sans-serif;color:#d4d4dc;';
+const DETAIL_CSS = 'margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;';
 const FADE_KEYFRAMES = [{ opacity: 0 }, { opacity: 1 }];
 const FADE_TIMING = { easing: 'ease-out', iterations: 1 }; // duration = fadeInMs
 
