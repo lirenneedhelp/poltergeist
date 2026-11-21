@@ -151,7 +151,7 @@ Constraints for every task:
     - With Demo_Mode on: leave A for 3 s and return (Fog, no Tombstone); stay 5 s (Fog remains); leave A for 26 s and return (Tombstone text contains A's title and a duration); click `Resurrect` with a real Playwright click (every `[data-poltergeist]` gone, fixture text equal to the original, worker Registers zero).
     - _Requirements: 6.4, 6.5, 6.8, 10.9_
 
-  - [ ] 7.4 Verify decay survives reload or discard
+  - [x] 7.4 Verify decay survives reload or discard
     - Leave A for 26 s, discard it with `chrome.tabs.discard` from the worker and confirm `discarded: true`, then activate it and locate the reloaded page by URL; require the Tombstone. If discard cannot be driven reliably, reload A in the background instead and state which path the test uses.
     - _Requirements: 5.6, 6.6, 10.9_
 

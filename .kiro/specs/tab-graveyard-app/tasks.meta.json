@@ -287,6 +287,18 @@
         "chatSessionId": "sess_52e12de1-3459-4e77-9d80-cfcd5ff6bb2f",
         "timestamp": 1795248953189
       }
+    ],
+    "7.4 Verify decay survives reload or discard": [
+      {
+        "executionId": "5a5cc280-5a93-4da3-ac1f-8309be0413c7",
+        "chatSessionId": "sess_05a83056-0cf0-478f-a2a6-b910ad49fb28",
+        "timestamp": 1795249013371
+      },
+      {
+        "executionId": "5a5cc280-5a93-4da3-ac1f-8309be0413c7",
+        "chatSessionId": "sess_05a83056-0cf0-478f-a2a6-b910ad49fb28",
+        "timestamp": 1795249620310
+      }
     ]
   }
 }
