@@ -275,6 +275,18 @@
         "chatSessionId": "sess_cc669722-89e7-4e0b-bb67-7bfa05339819",
         "timestamp": 1795273960457
       }
+    ],
+    "8.4 Update both Fog rules and both `EXPECTED_RULES`, then regenerate the skeletons": [
+      {
+        "executionId": "4a3f73cc-4a2c-4150-b613-7a84e1d77514",
+        "chatSessionId": "sess_43206a1b-d9e5-486c-87ec-d4614d89a0dd",
+        "timestamp": 1795274027277
+      },
+      {
+        "executionId": "4a3f73cc-4a2c-4150-b613-7a84e1d77514",
+        "chatSessionId": "sess_43206a1b-d9e5-486c-87ec-d4614d89a0dd",
+        "timestamp": 1795274076766
+      }
     ]
   }
 }

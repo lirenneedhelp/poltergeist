@@ -150,7 +150,7 @@ Constraints for every task:
     - Add `skeleton/test/polish-punchline.test.js` (jsdom) for the detail line: 24 px against a 40 px message, weight `600`, colour `rgb(255, 255, 255)`, empty inline opacity, and only the Fade_In animating it
     - Do not edit `polish-block.test.js`, `polish-safety.test.js`, or any other existing test file; add no property-based tests
     - _Requirements: 2.15, 4.1, 4.2, 4.13, 4.14, 4.15, 4.16, 4.17, 5.6, 9.1, 9.3, 9.7, 9.8, 9.9_
-  - [ ] 8.4 Update both Fog rules and both `EXPECTED_RULES`, then regenerate the skeletons
+  - [x] 8.4 Update both Fog rules and both `EXPECTED_RULES`, then regenerate the skeletons
     - `app1-doomscroll/rules.json` `doomscroll-fog` params: `{ "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }`
     - `app2-tab-graveyard/rules.json` `graveyard-fog` params: `{ "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }`
     - Make the Fog entries of `EXPECTED_RULES` in `scripts/validate-doomscroll-package.mjs` and `scripts/validate-graveyard-package.mjs` match, in the same key order; change nothing else in either validator, `package-checks.mjs`, or the sync scripts
