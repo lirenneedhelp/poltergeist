@@ -29,7 +29,7 @@ Constraints for every task:
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.8, 1.10, 9.1_
 
 - [ ] 2. Block finale
-  - [ ] 2.1 Rebuild `skeleton/effects/block.js` with a shadow root, ghost, detail line, and Fade_In
+  - [x] 2.1 Rebuild `skeleton/effects/block.js` with a shadow root, ghost, detail line, and Fade_In
     - Resolve new params without mutating `params`: `figure` (`ghost`/`none`, default `ghost`, read at creation), `detail` (string, default `''`), `durationMeter` (string, default `timeOnSite`), `fadeInMs` (`numberIn` 0 to 10000, default 1500, read at creation), `durationScale`, `durationSuffix`
     - Keep the host contract: `div[data-poltergeist="block"][role="status"]`, existing `cssText`, light DOM holds exactly one text node equal to `message`, opacity `maxOpacity × intensity` to 3 decimals, `pointer-events` by `blockAt`
     - Open shadow root with the stage (flex column, gap 24px, max-width 960px): ghost `svg[aria-hidden="true"]` built only through one `createElementNS('http://www.w3.org/2000/svg', tag)` helper with the design's path and ellipses, then a `div` with a `<slot>` at `700 40px`, then a `p` at `400 24px` only when `detail` is non-empty, filled via `fill` + `durationText`; no shadow element sets `pointer-events`
