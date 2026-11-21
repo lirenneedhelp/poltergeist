@@ -263,6 +263,18 @@
         "chatSessionId": "sess_048c02d5-6b8b-4298-91ef-b2be7b7160c6",
         "timestamp": 1795246341314
       }
+    ],
+    "7.2 Create the fixture page and extension fixture": [
+      {
+        "executionId": "8abaed31-e20e-4dc7-bca0-cf406d84ec4e",
+        "chatSessionId": "sess_d4928b7d-5e92-40a5-913d-6ef19b179479",
+        "timestamp": 1795246442782
+      },
+      {
+        "executionId": "8abaed31-e20e-4dc7-bca0-cf406d84ec4e",
+        "chatSessionId": "sess_d4928b7d-5e92-40a5-913d-6ef19b179479",
+        "timestamp": 1795248560328
+      }
     ]
   }
 }

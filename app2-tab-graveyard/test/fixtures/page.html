@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Graveyard fixture page</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; background: #fafafa; color: #111; font: 16px/1.5 sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 16px 200px; }
+  h1 { font-size: 22px; margin: 0 0 16px; }
+  p { margin: 0 0 16px; }
+</style>
+<script>
+  // Fixture-only script (main world). The extension never reads it.
+  //
+  // Local deterministic page for the Tab Graveyard unpacked-extension suite. The
+  // router serves this same file at every fixture URL; the title comes from the
+  // URL's host and path, so each fixture tab has a unique, predictable title:
+  //   https://graveyard-a.test/page -> "Graveyard fixture graveyard-a.test/page"
+  // The extension fixture's fixtureTitle(url) computes the same string.
+  // No external resources are loaded: inline style and script only, data: icon.
+  (function () {
+    document.title = 'Graveyard fixture ' + location.host + location.pathname;
+
+    // Every visibility state this document has seen, starting with the state at parse time.
+    var visibility = [document.visibilityState];
+    document.addEventListener('visibilitychange', function () {
+      visibility.push(document.visibilityState);
+    });
+
+    window.graveyardFixture = Object.freeze({
+      /** The title this script set (tests compare against the tombstone text). */
+      title: document.title,
+      /** Current {id, text} of every fixture paragraph, in document order. */
+      paragraphs: function () {
+        return Array.prototype.map.call(document.querySelectorAll('[data-fixture-text]'), function (el) {
+          return { id: el.id, text: el.textContent };
+        });
+      },
+      /** Visibility states seen so far, oldest first. */
+      visibilityLog: function () {
+        return visibility.slice();
+      }
+    });
+  }());
+</script>
+</head>
+<body>
+<main id="fixture-main">
+  <h1 id="fixture-heading" data-fixture-text>Notes kept in an old browser tab</h1>
+  <p id="para-1" data-fixture-text>Paragraph one. The lecture began with a short history of the city's canals, how they were dug by hand in the seventeenth century, widened twice during the industrial boom, and finally left to quiet barges, rowing clubs, and the ducks that gather under every bridge in the late afternoon.</p>
+  <p id="para-2" data-fixture-text>Paragraph two. A reading list followed: three chapters on urban water systems, a long article about lock keepers and their families, and a set of maps that show where the old warehouses stood before the riverside was turned into a park with benches, lamps, and a small open-air market.</p>
+  <p id="para-3" data-fixture-text>Paragraph three. For the assignment, each student picks one bridge, sketches it from two sides, measures the span with a tape and a patient friend, and writes four hundred words about who crosses it at eight in the morning and who crosses it again at six in the evening.</p>
+  <p id="para-4" data-fixture-text>Paragraph four. The deadline is the second Friday of next month, drafts are welcome a week earlier, and the best sketches will hang in the department corridor beside the faded photographs of the flood that once filled the lower streets up to the windowsills.</p>
+  <p id="para-5" data-fixture-text>Paragraph five. Remember to bring a notebook, a soft pencil, a raincoat for the walk along the towpath, and enough patience to wait for the light to change, because the reflections on the water are what make the drawings come alive on the page.</p>
+</main>
+</body>
+</html>

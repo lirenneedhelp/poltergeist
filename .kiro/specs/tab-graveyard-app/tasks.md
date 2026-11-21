@@ -141,7 +141,7 @@ Constraints for every task:
     - Add a `graveyard-extension` project with `testDir: 'app2-tab-graveyard/test/browser'` and `channel: 'chromium'`; leave the two existing projects unchanged.
     - _Requirements: 10.7_
 
-  - [ ] 7.2 Create the fixture page and extension fixture
+  - [x] 7.2 Create the fixture page and extension fixture
     - Add `app2-tab-graveyard/test/fixtures/page.html`: a title taken from the URL path or host, several long text paragraphs, and no external resources.
     - Add `test/browser/extension-fixture.js`, modelled on Doomscroll's: run `check:graveyard` without building, launch only `app2-tab-graveyard/` in a fresh persistent context, route the three fixture origins, abort other requests, collect diagnostics, and clean up the profile with Windows-safe retries. Provide helpers: `sendControl` from an extension page, `tabIdOf`, `activate(page)`, and `readRecord(tabId)` through the worker.
     - First, verify that a backgrounded fixture page reports `document.visibilityState === 'hidden'` and that the worker sees `tabs.onActivated`. If headless Chromium does not hide background pages, switch activation to `chrome.tabs.update(id, {active:true})` from the worker, or run this project headed, and record the choice in the fixture header.
