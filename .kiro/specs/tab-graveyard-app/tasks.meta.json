@@ -275,6 +275,18 @@
         "chatSessionId": "sess_d4928b7d-5e92-40a5-913d-6ef19b179479",
         "timestamp": 1795248560328
       }
+    ],
+    "7.3 Verify the return flows and Resurrect in Playwright": [
+      {
+        "executionId": "feccde49-2480-402f-be61-14b687fe898d",
+        "chatSessionId": "sess_52e12de1-3459-4e77-9d80-cfcd5ff6bb2f",
+        "timestamp": 1795248652933
+      },
+      {
+        "executionId": "feccde49-2480-402f-be61-14b687fe898d",
+        "chatSessionId": "sess_52e12de1-3459-4e77-9d80-cfcd5ff6bb2f",
+        "timestamp": 1795248953189
+      }
     ]
   }
 }

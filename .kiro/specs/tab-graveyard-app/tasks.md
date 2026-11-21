@@ -147,7 +147,7 @@ Constraints for every task:
     - First, verify that a backgrounded fixture page reports `document.visibilityState === 'hidden'` and that the worker sees `tabs.onActivated`. If headless Chromium does not hide background pages, switch activation to `chrome.tabs.update(id, {active:true})` from the worker, or run this project headed, and record the choice in the fixture header.
     - _Requirements: 10.8_
 
-  - [ ] 7.3 Verify the return flows and Resurrect in Playwright
+  - [x] 7.3 Verify the return flows and Resurrect in Playwright
     - With Demo_Mode on: leave A for 3 s and return (Fog, no Tombstone); stay 5 s (Fog remains); leave A for 26 s and return (Tombstone text contains A's title and a duration); click `Resurrect` with a real Playwright click (every `[data-poltergeist]` gone, fixture text equal to the original, worker Registers zero).
     - _Requirements: 6.4, 6.5, 6.8, 10.9_
 
