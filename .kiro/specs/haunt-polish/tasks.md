@@ -17,7 +17,7 @@ Constraints for every task:
 ## Tasks
 
 - [ ] 1. Shared duration helpers and Tombstone duration params
-  - [ ] 1.1 Move and add helpers in `skeleton/effects/util.js` and use them in `skeleton/effects/tombstone.js`
+  - [x] 1.1 Move and add helpers in `skeleton/effects/util.js` and use them in `skeleton/effects/tombstone.js`
     - Move `formatDuration` and `fill` verbatim from `tombstone.js` into `util.js`; add `numberIn` and `durationText(env, meter, params)` exactly as in the design
     - `durationText`: `a while` with no suffix when `readMeter` is missing, returns a non-finite value, or the scaled value overflows; scale 1 unless `durationScale` is a finite number above 0; empty suffix unless `durationSuffix` is a string; scale applied before flooring
     - In `tombstone.js`, replace the local functions with `export { formatDuration } from './util.js'` and import `fill`/`durationText`; `render` fills `{duration}` with `durationText(env, params.durationMeter, params)`, keeping `{...DEFAULTS, ...params}` resolution and `{title}`-before-`{duration}` order

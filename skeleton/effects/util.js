@@ -62,3 +62,34 @@ export function teardown(handle, durationMs, begin, finish) {
   handle.dead = true;
   finish();
 }
+
+const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+
+/** Duration_Formatter, moved verbatim from tombstone.js. Non-finite input gives 'a while'. */
+export function formatDuration(seconds) {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return 'a while';
+  const s = Math.max(0, seconds);
+  if (s < 60) return plural(Math.floor(s), 'second');
+  if (s < 3600) return plural(Math.floor(s / 60), 'minute');
+  if (s < 48 * 3600) return plural(Math.floor(s / 3600), 'hour');
+  return plural(Math.floor(s / 86400), 'day');
+}
+
+/** Replace each {key} in order; split/join so "$&" stays literal. Moved verbatim from tombstone.js. */
+export const fill = (template, values) =>
+  Object.entries(values).reduce((s, [key, v]) => s.split(`{${key}}`).join(v), String(template));
+
+/** v if it is a finite number in [min, max], otherwise fallback. */
+export const numberIn = (v, min, max, fallback) =>
+  typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max ? v : fallback;
+
+/** Duration_Text for one {duration} (haunt-polish Requirement 1.2 to 1.5). */
+export function durationText(env, meter, params) {
+  const raw = typeof env.readMeter === 'function' ? env.readMeter(meter) : undefined;
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return 'a while';
+  const k = params.durationScale;
+  const scaled = raw * (typeof k === 'number' && Number.isFinite(k) && k > 0 ? k : 1);
+  if (!Number.isFinite(scaled)) return 'a while';
+  const suffix = typeof params.durationSuffix === 'string' ? params.durationSuffix : '';
+  return formatDuration(scaled) + suffix;
+}

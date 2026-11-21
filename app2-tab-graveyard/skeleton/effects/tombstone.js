@@ -1,4 +1,6 @@
-import { clamp01, teardown, handleState, LIVE } from './util.js';
+import { clamp01, teardown, handleState, LIVE, fill, durationText } from './util.js';
+
+export { formatDuration } from './util.js';
 
 export const description =
   'A full-page tombstone naming the page and how long it was left, with one action button; ' +
@@ -31,18 +33,6 @@ const BUTTON_CSS =
   'font:600 1rem system-ui,sans-serif;padding:0.6rem 1.4rem;border:0;border-radius:0.4rem;' +
   'background:#ece9e4;color:#1b1b1d;cursor:pointer;';
 
-const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
-
-/** Format seconds per Requirement 4.5; non-finite input gives 'a while'. */
-export function formatDuration(seconds) {
-  if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return 'a while';
-  const s = Math.max(0, seconds);
-  if (s < 60) return plural(Math.floor(s), 'second');
-  if (s < 3600) return plural(Math.floor(s / 60), 'minute');
-  if (s < 48 * 3600) return plural(Math.floor(s / 3600), 'hour');
-  return plural(Math.floor(s / 86400), 'day');
-}
-
 /** Trimmed title, then hostname, then 'this page'; at most 120 characters. */
 export function formatTitle(title, hostname) {
   const pick = [title, hostname].map((v) => (typeof v === 'string' ? v.trim() : '')).find(Boolean) ?? 'this page';
@@ -50,17 +40,14 @@ export function formatTitle(title, hostname) {
   return chars.length > MAX_TITLE ? chars.slice(0, MAX_TITLE - 1).join('').trimEnd() + ELLIPSIS : pick;
 }
 
-// split/join, not String.replace: a page title containing "$&" must stay literal.
-const fill = (template, values) =>
-  Object.entries(values).reduce((s, [key, v]) => s.split(`{${key}}`).join(v), String(template));
-
+// fill (util.js) uses split/join, not String.replace: a page title containing "$&" stays literal.
+// {title} is filled before {duration}, so a {title} inside durationSuffix stays literal.
 function render(handle) {
   const { env, params } = handle;
   const doc = env.document;
-  const read = typeof env.readMeter === 'function' ? env.readMeter(params.durationMeter) : undefined;
   const values = {
     title: formatTitle(doc.title, env.window?.location?.hostname),
-    duration: formatDuration(read),
+    duration: durationText(env, params.durationMeter, params),
   };
   handle.headingEl.textContent = fill(params.heading, values);
   handle.messageEl.textContent = fill(params.message, values);
