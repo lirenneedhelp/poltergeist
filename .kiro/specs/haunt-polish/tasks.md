@@ -84,7 +84,7 @@ Constraints for every task:
     - Replace `EXPECTED_RULES` in `scripts/validate-doomscroll-package.mjs` and `scripts/validate-graveyard-package.mjs` with the design's exact values; change nothing else in either validator, `package-checks.mjs`, or the sync scripts
     - Run `npm run build:skeletons`; confirm no `manifest.json` change is needed because no new module joins the import graph
     - _Requirements: 6.5, 6.10, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10, 7.12_
-  - [ ] 5.3 Add `app1-doomscroll/test/demo-time.test.js` and `app2-tab-graveyard/test/demo-time.test.js`
+  - [x] 5.3 Add `app1-doomscroll/test/demo-time.test.js` and `app2-tab-graveyard/test/demo-time.test.js`
     - Load `content.js` with `node:vm` as the existing `content.test.js` files do
     - Per app: the Duration_Rule gains `durationScale` (60 or 3600) and `durationSuffix ' (demo time)'`; every other rule and param equals the Normal_Profile apart from divided trigger times; Normal_Profile deep-equals a copy taken before the call and is unchanged after editing demo params; a synthetic Block or Tombstone rule without a string `durationMeter` (Graveyard also with `durationMeter: 5`) gains neither param; malformed rules do not throw; `validateRules(demo, builtinEffects)` is valid with `[]` errors; Normal_Profile has no duration params and exactly one Duration_Rule
     - End to end: Block with the demo params and `readMeter('timeOnSite') = 20` shows `You lost 20 minutes (demo time) to this feed.`; Tombstone with `readMeter('timeAway') = 33` shows `Abandoned for 33 hours (demo time).`
