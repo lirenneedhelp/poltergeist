@@ -191,6 +191,18 @@
         "chatSessionId": "sess_12f3f454-07a5-46f9-a1ca-a65f8becc044",
         "timestamp": 1795268971245
       }
+    ],
+    "6.1 Apply the tab-graveyard-app edits from the design's \"Earlier app spec edits\"": [
+      {
+        "executionId": "5f039f19-3daf-4378-aa70-bbe4ac28f502",
+        "chatSessionId": "sess_69e4220d-4636-4158-96d2-f5b64c5b4fe3",
+        "timestamp": 1795270033554
+      },
+      {
+        "executionId": "5f039f19-3daf-4378-aa70-bbe4ac28f502",
+        "chatSessionId": "sess_69e4220d-4636-4158-96d2-f5b64c5b4fe3",
+        "timestamp": 1795270202414
+      }
     ]
   }
 }

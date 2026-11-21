@@ -366,6 +366,8 @@ The wrapper keeps Doomscroll's messages, for example `Doomscroll skeleton mirror
 }
 ```
 
+Note (haunt-polish): The Rot glyphs are now `▓▒░█`. haunt-polish added new visual params to the Fog and Tombstone rules. haunt-polish `design.md` holds the current values.
+
 ### Schedules
 
 | Stage | Normal | Demo (÷ 3600) |
@@ -407,6 +409,8 @@ For every sequence of tracker events, content messages, popup messages other tha
 For every Normal_Profile rule, the Demo_Profile rule is deeply equal except `threshold / 3600` and `rampTo / 3600`, the order is preserved, and the Normal_Profile is unchanged.
 
 **Validates: Requirement 2.6**
+
+Note (haunt-polish): The `graveyard-tombstone` rule is a Duration_Rule (its params name a string `durationMeter`), so its Demo_Profile copy also gains `durationScale` 3600 and `durationSuffix` set to the Demo_Suffix ` (demo time)`. The property as written holds for every rule without a string `durationMeter`, and these are the only rules its test generator produces.
 
 ### Property 5: At most one live instance
 

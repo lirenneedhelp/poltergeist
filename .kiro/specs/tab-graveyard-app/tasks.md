@@ -12,6 +12,7 @@ Constraints for every task:
 - `storage` is the only permission. No `host_permissions`. Never read `url`, `pendingUrl`, `title`, or `favIconUrl` from a `Tab`.
 - `tabs.remove` is called only while handling `graveyard:bury`.
 - No site-specific selectors, no animation, no watch modes. Run `npm test` in full before marking a task done, not only the new files.
+  - Note (haunt-polish): haunt-polish allows the Fog Drift and the Tombstone Rise_In. Neither plays while `prefers-reduced-motion` is `reduce`.
 
 ## Tasks
 

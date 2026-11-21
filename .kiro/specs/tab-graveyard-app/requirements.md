@@ -63,11 +63,20 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 1. THE `rules.json` document SHALL pass `validateRules` with `builtinEffects` and SHALL contain exactly three enabled rules in this order: `graveyard-fog`, `graveyard-rot`, `graveyard-tombstone`.
 2. EVERY rule SHALL match exactly the Web_Scope and SHALL use the `timeAway` meter.
 3. THE `graveyard-fog` rule SHALL start at 1800 seconds (30 minutes), reach full intensity at 7200 seconds (2 hours), use effect `fog` with `maxBlur` 4 and `maxGrayscale` 0.8, and fade out over 400 milliseconds.
-4. THE `graveyard-rot` rule SHALL start at 14400 seconds (4 hours), reach full intensity at 43200 seconds (12 hours), use effect `rot` with `maxFraction` 0.45 and glyphs `░▒·_ `, and undo instantly.
+4. THE `graveyard-rot` rule SHALL start at 14400 seconds (4 hours), reach full intensity at 43200 seconds (12 hours), use effect `rot` with `maxFraction` 0.45 and glyphs `▓▒░█`, and undo instantly. (amended by haunt-polish)
+
+   Reason (haunt-polish): The old light glyphs `░▒·_ ` were hard to see at video resolution.
+
 5. THE `graveyard-tombstone` rule SHALL start at 86400 seconds (24 hours) with no `rampTo`, use effect `tombstone` with heading `Here lies {title}`, message `Abandoned for {duration}.`, action label `Resurrect`, action `resurrect`, duration meter `timeAway`, and `maxOpacity` 0.96, and fade out over 600 milliseconds.
+
+   Note (haunt-polish): haunt-polish Requirement 7 adds `tint`, `noise`, and `driftMs` to `graveyard-fog`, and `weathered`, `mark`, and `riseInMs` to `graveyard-tombstone`. The exact values are in haunt-polish `design.md`. The params listed in criteria 3 to 5 stay as stated, apart from the glyphs amended in criterion 4.
+
 6. THE Runtime_Controller SHALL build the Demo_Profile by deep-cloning the Normal_Profile and dividing every trigger `threshold` and `rampTo` by the Demo_Time_Scale, giving Fog from 0.5 to 2 seconds, Rot from 4 to 12 seconds, and the Tombstone at 24 seconds. Building it SHALL NOT mutate the Normal_Profile.
 7. THE Runtime_Controller SHALL validate the selected profile before starting it and SHALL treat a validation failure as a startup failure that leaves the page clean.
-8. THE app SHALL NOT use the `flicker` effect or any other animated effect, so `prefers-reduced-motion` needs no special case; fade-out on undo SHALL be the only transition.
+8. THE app SHALL NOT use the `flicker` effect. THE app's only animations and transitions SHALL be the fade-out on undo, the Fog Drift, and the Tombstone Rise_In defined in the haunt-polish spec. WHILE the user's `prefers-reduced-motion` preference is `reduce`, THE app's only animation or transition SHALL be the fade-out on undo. WHILE Demo_Mode is on, THE Tombstone SHALL fill `{duration}` with the Away_Time multiplied by the Demo_Time_Scale and followed by ` (demo time)`, as defined in haunt-polish Requirements 1 and 6 (for example `Abandoned for 33 hours (demo time).` after 33 seconds away). WHILE Demo_Mode is off, THE Tombstone `{duration}` text SHALL be the same as before haunt-polish. (amended by haunt-polish)
+
+   Reason (haunt-polish): The 3-minute demo video must show the Graveyard finale clearly, and a tombstone that appears in a single frame is easy to miss on camera. `prefers-reduced-motion` remains the safeguard, so users who ask for reduced motion see no new motion. Demo_Mode durations are labelled `(demo time)` so that viewers see realistic durations and know they are simulated.
+
 9. THE production thresholds SHALL NOT change because the extension is unpacked, under Playwright, or on a fixture; only Demo_Mode selects the Demo_Profile.
 
 ### Requirement 3: Time-away meter - SKELETON
@@ -99,13 +108,21 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 3. THE Tombstone_Effect SHALL use fixed full-viewport positioning, the same top z-index as Block, opacity `maxOpacity × intensity`, and SHALL intercept pointer input once intensity reaches `blockAt` (default 1).
 4. THE Tombstone_Effect SHALL replace `{title}` with the trimmed `document.title`, falling back to `location.hostname` and then to `this page`, truncated to 120 characters with an ellipsis.
 5. THE Tombstone_Effect SHALL replace `{duration}` with the value of the meter named by `durationMeter`, read through `env.readMeter`, formatted as whole seconds below 1 minute, whole minutes below 1 hour, whole hours below 48 hours, and whole days otherwise, with singular and plural forms (for example `1 hour`, `30 hours`, `2 days`). IF `env.readMeter` is missing or returns a non-finite value, THEN it SHALL use `a while`.
+
+   Note (haunt-polish): haunt-polish Requirement 1 extends this criterion with the `durationScale` and `durationSuffix` params. When both params are absent, as in the Normal_Profile, the inserted text is unchanged. In Demo_Mode the Tombstone shows demo time instead of seconds, for example `33 hours (demo time)` after 33 seconds away.
+
 6. THE Tombstone_Effect SHALL set all text with `textContent` and SHALL NOT parse the page title or params as HTML.
 7. THE Tombstone_Effect SHALL re-render its text on every `apply` and on the next timer turn after the document becomes visible, so a later and longer Absence updates the duration shown.
 8. WHEN the button receives a click whose `isTrusted` is true, THE Tombstone_Effect SHALL call `env.onAction(action)` once; IT SHALL ignore untrusted clicks, and IT SHALL contain any error thrown by `onAction`.
 9. WHEN undone, THE Tombstone_Effect SHALL remove its visibility listener and button listener and remove the host element, fading over `durationMs` when it is positive, and SHALL leave the page byte-for-byte as before apply.
-10. THE Tombstone_Effect SHALL show no animation when applied.
+10. WHEN applied without a live Handle while `env.reducedMotion` is false and `riseInMs` is greater than 0, THE Tombstone_Effect SHALL play the Rise_In defined in the haunt-polish spec once. WHEN applied without a live Handle while `env.reducedMotion` is true or `riseInMs` is 0, THE Tombstone_Effect SHALL show no animation. WHEN applied with a live Handle, THE Tombstone_Effect SHALL NOT replay the Rise_In or start any other animation. WHEN applied, THE Tombstone_Effect SHALL schedule no timer. (amended by haunt-polish)
+
+   Reason (haunt-polish): The 3-minute demo video must show the Graveyard finale clearly, and a tombstone that appears in a single frame is easy to miss on camera. `prefers-reduced-motion` remains the safeguard, so users who ask for reduced motion see no new motion.
+
 11. `startPoltergeist` SHALL accept an optional `onAction(name)` callback and SHALL add to the effect environment `readMeter(name)`, which returns the current meter value, and `onAction(name)`, which calls the callback inside a try/catch and does nothing when no callback was given.
 12. THE skeleton changes in Requirements 3 and 4 SHALL NOT change `skeleton/engine.js`, `skeleton/match.js`, or the behaviour of the `fog`, `flicker`, `rot`, and `block` effects.
+
+   Note (haunt-polish): This criterion limited only the skeleton changes made under this spec. haunt-polish deliberately changes the Fog, Block, and Tombstone effects and the Rot glyphs in both apps' rules, and leaves Flicker, `rot.js`, `engine.js`, and `match.js` unchanged.
 
 ### Requirement 5: Service-worker activity tracking - NEW
 **User Story:** As a user whose tabs Chrome discards to save memory, I want the extension to remember how long each tab was abandoned even when the page reloads, so that decay is not lost.

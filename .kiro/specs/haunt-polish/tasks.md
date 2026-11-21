@@ -96,7 +96,7 @@ Constraints for every task:
     - _Requirements: 6.7, 9.3_
 
 - [ ] 6. Earlier app spec amendments
-  - [ ] 6.1 Apply the tab-graveyard-app edits from the design's "Earlier app spec edits"
+  - [x] 6.1 Apply the tab-graveyard-app edits from the design's "Earlier app spec edits"
     - `.kiro/specs/tab-graveyard-app/requirements.md`: replace Requirement 2 criterion 4, criterion 8, and Requirement 4 criterion 10 with the exact amended texts and their `Reason (haunt-polish):` notes; add the `Note (haunt-polish):` paragraphs after Requirement 2 criterion 5, Requirement 4 criterion 5, and Requirement 4 criterion 12, indented 3 spaces
     - `.kiro/specs/tab-graveyard-app/design.md`: add the note after Property 4's `**Validates: Requirement 2.6**` line and the note after the `rules.json` JSON block, before "### Schedules", each as a top-level paragraph with one blank line before it
     - `.kiro/specs/tab-graveyard-app/tasks.md`: add the nested bullet (2-space indent) under the "no animation" item in "Constraints for every task"
