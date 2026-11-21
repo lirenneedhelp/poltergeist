@@ -68,8 +68,14 @@ No implementation code is changed by this spec phase.
 4. THE `doomscroll-fog` rule SHALL start at 120 seconds, ramp to full intensity at 300 seconds, use effect type `fog` with `maxBlur` 5 and `maxGrayscale` 0.8, and use fade undo with a duration of 400 milliseconds.
 5. THE `doomscroll-flicker` rule SHALL start at 300 seconds, ramp to full intensity at 600 seconds, use effect type `flicker` with `maxDepth` 0.22 and `periodMs` 1600, and use instant undo.
 6. WHEN the Flicker_Effect is applied or re-created while the user's `prefers-reduced-motion` preference is active, THE Flicker_Effect SHALL use the skeleton's static reduced-motion rendering and SHALL NOT animate.
-7. THE `doomscroll-rot` rule SHALL start at 600 seconds, ramp to full intensity at 900 seconds, use effect type `rot` with `maxFraction` 0.55 and nonempty glyph string `░▒·_ `, and use instant undo.
+7. THE `doomscroll-rot` rule SHALL start at 600 seconds, ramp to full intensity at 900 seconds, use effect type `rot` with `maxFraction` 0.55 and nonempty glyph string `▓▒░█`, and use instant undo. (amended by haunt-polish)
+
+   Reason (haunt-polish): The old light glyphs `░▒·_ ` were hard to see at video resolution.
+
 8. THE `doomscroll-block` rule SHALL start at 1200 seconds, ramp to full intensity at 1500 seconds, use effect type `block` with `maxOpacity` 0.96, `blockAt` 0.8, and the exact message `You have scrolled long enough. Close this tab and take a break.`, and use fade undo with a duration of 600 milliseconds.
+
+   Note (haunt-polish): haunt-polish Requirement 7 adds `tint`, `noise`, and `driftMs` to `doomscroll-fog`, and `figure`, `fadeInMs`, `detail`, and `durationMeter` to `doomscroll-block`. The exact values are in haunt-polish `design.md`. The params listed in criteria 4 and 8 stay as stated.
+
 9. BEFORE 120 seconds of Normal_Profile matched visible time, THE extension SHALL apply none of the four effects.
 10. THE Normal_Profile trigger configuration SHALL place every next stage at or after the preceding stage's `rampTo`; the Rot `rampTo` SHALL precede the Block threshold, and Block SHALL not intercept pointer input until its own applied intensity reaches `blockAt`.
 11. WHEN Demo_Mode changes from off to on, THE Runtime_Controller SHALL create the Demo_Profile by deep-cloning the unchanged Normal_Profile and dividing every trigger `threshold` and `rampTo` by exactly 60.

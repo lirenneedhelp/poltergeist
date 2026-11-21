@@ -203,6 +203,25 @@
         "chatSessionId": "sess_69e4220d-4636-4158-96d2-f5b64c5b4fe3",
         "timestamp": 1795270202414
       }
+    ],
+    "6.2 Apply the doomscroll-app edits from the design's \"Earlier app spec edits\"": [
+      {
+        "executionId": "03f4e33c-f2b0-40cb-b1ee-18e2da3f426d",
+        "chatSessionId": "sess_b8e8a03e-e7c6-4de1-952a-06df7b273ecd",
+        "timestamp": 1795270294266
+      },
+      {
+        "executionId": "03f4e33c-f2b0-40cb-b1ee-18e2da3f426d",
+        "chatSessionId": "sess_b8e8a03e-e7c6-4de1-952a-06df7b273ecd",
+        "timestamp": 1795270385968
+      }
+    ],
+    "6. Earlier app spec amendments": [
+      {
+        "executionId": "03f4e33c-f2b0-40cb-b1ee-18e2da3f426d",
+        "chatSessionId": "sess_b8e8a03e-e7c6-4de1-952a-06df7b273ecd",
+        "timestamp": 1795270386025
+      }
     ]
   }
 }

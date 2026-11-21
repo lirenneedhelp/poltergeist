@@ -309,6 +309,8 @@ All rules use `timeOnSite`. This matches the product principle that a haunt grow
 | `doomscroll-rot` | 600s → 900s | 10s → 15s | `maxFraction: 0.55`, `glyphs: "░▒·_ "` | instant |
 | `doomscroll-block` | 1200s → 1500s | 20s → 25s | `maxOpacity: 0.96`, `blockAt: 0.8`, required message | fade 600ms |
 
+Note (haunt-polish): The Rot glyphs are now `▓▒░█`. haunt-polish added new visual params to the Fog and Block rules. haunt-polish `design.md` holds the current values.
+
 Because `computeIntensity` yields a minimum active intensity of 0.01 at a threshold, Block first appears faintly at 20 minutes and grows. It begins intercepting pointers at 80% intensity:
 
 ```text

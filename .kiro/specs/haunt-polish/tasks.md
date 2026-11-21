@@ -95,14 +95,14 @@ Constraints for every task:
     - Change no other line in either file
     - _Requirements: 6.7, 9.3_
 
-- [ ] 6. Earlier app spec amendments
+- [x] 6. Earlier app spec amendments
   - [x] 6.1 Apply the tab-graveyard-app edits from the design's "Earlier app spec edits"
     - `.kiro/specs/tab-graveyard-app/requirements.md`: replace Requirement 2 criterion 4, criterion 8, and Requirement 4 criterion 10 with the exact amended texts and their `Reason (haunt-polish):` notes; add the `Note (haunt-polish):` paragraphs after Requirement 2 criterion 5, Requirement 4 criterion 5, and Requirement 4 criterion 12, indented 3 spaces
     - `.kiro/specs/tab-graveyard-app/design.md`: add the note after Property 4's `**Validates: Requirement 2.6**` line and the note after the `rules.json` JSON block, before "### Schedules", each as a top-level paragraph with one blank line before it
     - `.kiro/specs/tab-graveyard-app/tasks.md`: add the nested bullet (2-space indent) under the "no animation" item in "Constraints for every task"
     - No other text changes
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.11, 8.12, 8.14_
-  - [ ] 6.2 Apply the doomscroll-app edits from the design's "Earlier app spec edits"
+  - [x] 6.2 Apply the doomscroll-app edits from the design's "Earlier app spec edits"
     - `.kiro/specs/doomscroll-app/requirements.md`: replace Requirement 2 criterion 7 with the exact amended text and its `Reason (haunt-polish):` note; add the `Note (haunt-polish):` after Requirement 2 criterion 8
     - `.kiro/specs/doomscroll-app/design.md`: add the note after the `doomscroll-block` row of the "Rule profile" table, before the paragraph beginning "Because `computeIntensity` yields", with one blank line so the table stays intact
     - Leave `.kiro/specs/doomscroll-app/tasks.md` unchanged
