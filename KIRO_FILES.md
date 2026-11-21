@@ -274,3 +274,13 @@ the dead tabs (the front tab stays) with Reopen restoring one.
 browser tests pass twice in a row. Break-it checks: ignoring the worker's
 stored absence after a discard and skipping the Resurrect reset each fail a
 browser test.
+
+## 2026-11-21: haunt-polish Tasks 4–5 (fog, demo time, app rules)
+**What happened:** fog gets a green-grey tint and a drifting CSS noise
+texture; demo mode now labels durations as demo time ("Abandoned for 33
+hours (demo time)", "You lost 20 minutes (demo time) to this feed");
+heavier rot glyphs in both apps.
+**Evidence:** commits b5ea75e to 0dde814; tests 651 → 725; 10/10 extension
+browser tests pass. Break-it checks: `innerHTML` for the new text lines now
+fails 12 tests (task 4.3's scan closed the gap found after task 3); fog
+drifting under reduced motion fails 14; a wrong demo scale fails 2.

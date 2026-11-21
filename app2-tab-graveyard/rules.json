@@ -5,7 +5,7 @@
       "enabled": true,
       "match": ["http://*/*", "https://*/*"],
       "trigger": { "meter": "timeAway", "threshold": 1800, "rampTo": 7200 },
-      "effect": { "type": "fog", "params": { "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.3, "driftMs": 20000 } },
+      "effect": { "type": "fog", "params": { "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.5, "driftMs": 20000 } },
       "undo": { "mode": "fade", "durationMs": 400 }
     },
     {
