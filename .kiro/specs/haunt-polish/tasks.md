@@ -108,7 +108,7 @@ Constraints for every task:
     - Leave `.kiro/specs/doomscroll-app/tasks.md` unchanged
     - _Requirements: 8.5, 8.10, 8.11, 8.13, 8.15_
 
-- [ ] 7. Final check
+- [x] 7. Final check
   - [x] 7.1 Run the automated final check from the repository root, in order, each exiting 0
     - `npm test` (runs `check:graveyard` as `pretest`, then `check:doomscroll`, then `vitest --run`)
     - `npm run build:skeletons`, then `git status --porcelain` lists no modified, deleted, or untracked file under `app1-doomscroll/skeleton/` or `app2-tab-graveyard/skeleton/`
@@ -131,7 +131,7 @@ Constraints for every task:
     - With no DevTools animation slow-down, watch one full Fade_In (1.5 s), one full Rise_In (0.8 s), and one full Drift cycle (20 s); record `none`, or each stutter (a visible jump or pause) or clipping (part of the ghost, message, second line, Tombstone_Card, or noise texture cut off) seen
     - _Requirements: 9.5, 9.6_
 
-- [ ] 8. Fog visibility and Block punchline (amendment fog-visibility)
+- [x] 8. Fog visibility and Block punchline (amendment fog-visibility)
   - [x] 8.1 Make Fog read as fog in `skeleton/effects/fog.js`
     - `TINT_MAX_OPACITY` 0.22 → 0.38; tint colour stays `#9eb2a4`
     - Replace `NOISE_IMAGE` and `NOISE_SIZE` with the design's seven layers: five specks (radius 1.5 to 2.5 px, alpha 0.7 to 0.85, three white and two black) on 24, 20, 16, 40, and 48 px tiles, then the two existing 240 px soft ellipses; `DEFAULT_NOISE` 0.3 → 0.5
@@ -160,7 +160,7 @@ Constraints for every task:
     - Run the task 7.1 list from the repository root, in order, each exiting 0: `npm test`; `npm run build:skeletons` with `git status --porcelain` showing no change under either Generated_Skeleton; `npm run test:browser`; the `git diff --stat` list of unchanged files
     - Fix any failure in the task that caused it, then re-run the list from the start
     - _Requirements: 5.9, 7.8, 7.9, 9.3, 9.4_
-  - [ ] 8.6 Re-check the fog-visibility Screenshot_Checklist items by hand in Chrome with Demo_Mode on
+  - [x] 8.6 Re-check the fog-visibility Screenshot_Checklist items by hand in Chrome with Demo_Mode on
     - Doomscroll on YouTube, 5 to 9 s in, on one light and one dark page: Fog reads as fog, with the tint, the coarse grain, and at least one mist band visibly moving
     - Doomscroll, same moment: the page is still roughly readable (headings, video titles, layout)
     - Doomscroll Block finale: the second line reads as the punchline, white and bold beside the 40 px message

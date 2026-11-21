@@ -299,6 +299,32 @@
         "chatSessionId": "sess_55fcfd4b-7b4d-41e8-9a80-66fde4cfeb9c",
         "timestamp": 1795275707419
       }
+    ],
+    "8.6 Re-check the fog-visibility Screenshot_Checklist items by hand in Chrome with Demo_Mode on": [
+      {
+        "executionId": "bda90bce-95d6-4dfe-babc-19a075b2c953",
+        "chatSessionId": "sess_84f4acde-64f6-42c5-96d1-5d10137f62ad",
+        "timestamp": 1795276263657
+      },
+      {
+        "executionId": "bda90bce-95d6-4dfe-babc-19a075b2c953",
+        "chatSessionId": "sess_84f4acde-64f6-42c5-96d1-5d10137f62ad",
+        "timestamp": 1795276307196
+      }
+    ],
+    "8. Fog visibility and Block punchline (amendment fog-visibility)": [
+      {
+        "executionId": "bda90bce-95d6-4dfe-babc-19a075b2c953",
+        "chatSessionId": "sess_84f4acde-64f6-42c5-96d1-5d10137f62ad",
+        "timestamp": 1795276307262
+      }
+    ],
+    "7. Final check": [
+      {
+        "executionId": "bda90bce-95d6-4dfe-babc-19a075b2c953",
+        "chatSessionId": "sess_84f4acde-64f6-42c5-96d1-5d10137f62ad",
+        "timestamp": 1795276343009
+      }
     ]
   }
 }
