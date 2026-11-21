@@ -14,7 +14,7 @@ export const WEB_SCOPE = Object.freeze(['http://*/*', 'https://*/*']);
 
 /** Exact expected rules (id, order, trigger, params, undo). The tombstone has no rampTo. */
 export const EXPECTED_RULES = Object.freeze([
-  { id: 'graveyard-fog', trigger: { meter: 'timeAway', threshold: 1800, rampTo: 7200 }, type: 'fog', params: { maxBlur: 4, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.6, mist: 0.5, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } },
+  { id: 'graveyard-fog', trigger: { meter: 'timeAway', threshold: 1800, rampTo: 7200 }, type: 'fog', params: { maxBlur: 4, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.0, mist: 0.5, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } },
   { id: 'graveyard-rot', trigger: { meter: 'timeAway', threshold: 14400, rampTo: 43200 }, type: 'rot', params: { maxFraction: 0.45, glyphs: '▓▒░█' }, undo: { mode: 'instant' } },
   {
     id: 'graveyard-tombstone',

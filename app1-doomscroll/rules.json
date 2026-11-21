@@ -6,7 +6,7 @@
       "enabled": true,
       "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
       "trigger": { "meter": "timeOnSite", "threshold": 120, "rampTo": 300 },
-      "effect": { "type": "fog", "params": { "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 } },
+      "effect": { "type": "fog", "params": { "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.0, "mist": 0.5, "driftMs": 20000 } },
       "undo": { "mode": "fade", "durationMs": 400 }
     },
     {

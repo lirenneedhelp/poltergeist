@@ -156,7 +156,7 @@ Constraints for every task:
     - Make the Fog entries of `EXPECTED_RULES` in `scripts/validate-doomscroll-package.mjs` and `scripts/validate-graveyard-package.mjs` match, in the same key order; change nothing else in either validator, `package-checks.mjs`, or the sync scripts
     - Run `npm run build:skeletons`; no `manifest.json` change is needed because no module joins the import graph
     - _Requirements: 7.2, 7.5, 7.6, 7.9, 7.10, 7.13_
-  - [ ] 8.5 Re-run the automated final check
+  - [x] 8.5 Re-run the automated final check
     - Run the task 7.1 list from the repository root, in order, each exiting 0: `npm test`; `npm run build:skeletons` with `git status --porcelain` showing no change under either Generated_Skeleton; `npm run test:browser`; the `git diff --stat` list of unchanged files
     - Fix any failure in the task that caused it, then re-run the list from the start
     - _Requirements: 5.9, 7.8, 7.9, 9.3, 9.4_
