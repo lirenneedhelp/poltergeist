@@ -318,6 +318,25 @@
         "chatSessionId": "sess_857e9212-7ebb-42cf-a2f3-25090018a648",
         "timestamp": 1795250379434
       }
+    ],
+    "8.1 Verify both apps end to end": [
+      {
+        "executionId": "2711880a-4199-4ad8-b6e5-715b7092964f",
+        "chatSessionId": "sess_347c1f8f-36fa-4c4a-ad3d-77cb633aaacc",
+        "timestamp": 1795250921308
+      },
+      {
+        "executionId": "2711880a-4199-4ad8-b6e5-715b7092964f",
+        "chatSessionId": "sess_347c1f8f-36fa-4c4a-ad3d-77cb633aaacc",
+        "timestamp": 1795251383972
+      }
+    ],
+    "8. Final checkpoint": [
+      {
+        "executionId": "2711880a-4199-4ad8-b6e5-715b7092964f",
+        "chatSessionId": "sess_347c1f8f-36fa-4c4a-ad3d-77cb633aaacc",
+        "timestamp": 1795251384311
+      }
     ]
   }
 }

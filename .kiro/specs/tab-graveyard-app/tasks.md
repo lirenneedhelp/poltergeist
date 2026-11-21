@@ -160,8 +160,8 @@ Constraints for every task:
     - Assert no page, worker, or namespaced errors in every test.
     - _Requirements: 7.15, 10.9_
 
-- [ ] 8. Final checkpoint
-  - [ ] 8.1 Verify both apps end to end
+- [x] 8. Final checkpoint
+  - [x] 8.1 Verify both apps end to end
     - Re-read the diff: under `skeleton/`, only the files in the design's file plan changed; in Doomscroll, only the one manifest line and the regenerated mirror changed; no existing test file was edited.
     - Run `npm test` (pretest graveyard check, Doomscroll check, then Vitest), and confirm the test count went up and nothing failed.
     - Run `npm run build:skeletons` and confirm `git status` shows no content change; run `npm run check:skeletons`.

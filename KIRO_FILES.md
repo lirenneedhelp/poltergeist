@@ -257,3 +257,20 @@ never appear (hours run to 48), so I fixed the example in requirement 4.5.
 Break-it checks: titles as HTML, no double-click guard, hiding the
 undelivered and rules-missing notices, and Bury enabled with no dead tabs
 each failed 1–3 tests.
+
+## 2026-11-21: tab-graveyard-app Task 7 (browser tests)
+**Kiro feature:** spec tasks; Opus 5.5 High for the fixture (7.2)
+**What Kiro found:** under Playwright's standard extension launch, a
+background tab never reports `hidden`, headless or headed, because
+Playwright's per-page focus emulation keeps every page "in front". The
+spec's two fallbacks wouldn't fix it. Kiro launched Chromium directly and
+attached over CDP with `noDefaults`, verified it with a dedicated test, and
+documented why in the fixture header.
+**What happened:** real-browser tests for: fog on a short absence, the
+tombstone after a long one, a real Resurrect click restoring the page
+exactly, the tombstone surviving a tab discard, and Bury closing exactly
+the dead tabs (the front tab stays) with Reopen restoring one.
+**Evidence:** commits 494b2b6, 3d64053, d826606, f709bab, 1d79787; 6/6
+browser tests pass twice in a row. Break-it checks: ignoring the worker's
+stored absence after a discard and skipping the Resurrect reset each fail a
+browser test.
