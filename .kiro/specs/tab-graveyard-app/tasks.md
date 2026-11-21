@@ -136,7 +136,7 @@ Constraints for every task:
     - Cover the loading, error, unknown-tab, and populated states; the Bury count and disabled state; Bury success and failure; Reopen; Resurrect with `delivered: false`; the demo toggle; the duplicate-click guard; markup in titles shown as text; and a table pinning the popup duration formatter to the tombstone formatter's outputs.
     - **Validates: Requirements 7.1–7.6, 7.13, 10.5**
 
-- [ ] 7. Add unpacked-extension browser verification
+- [x] 7. Add unpacked-extension browser verification
   - [x] 7.1 Add the Playwright project
     - Add a `graveyard-extension` project with `testDir: 'app2-tab-graveyard/test/browser'` and `channel: 'chromium'`; leave the two existing projects unchanged.
     - _Requirements: 10.7_
@@ -155,7 +155,7 @@ Constraints for every task:
     - Leave A for 26 s, discard it with `chrome.tabs.discard` from the worker and confirm `discarded: true`, then activate it and locate the reloaded page by URL; require the Tombstone. If discard cannot be driven reliably, reload A in the background instead and state which path the test uses.
     - _Requirements: 5.6, 6.6, 10.9_
 
-  - [ ] 7.5 Verify Bury and Reopen
+  - [x] 7.5 Verify Bury and Reopen
     - Open A, B, and C; leave A and B for 26 s with C in front; open `popup.html` as a page. Require the Graveyard to list exactly A and B, and the tab count to be unchanged before the click. Click `Bury all`: A and B close, C stays open, and two Buried_Entries appear. Click `Reopen` on A: a tab opens at A's URL and the entry disappears.
     - Assert no page, worker, or namespaced errors in every test.
     - _Requirements: 7.15, 10.9_

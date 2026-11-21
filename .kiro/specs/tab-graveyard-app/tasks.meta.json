@@ -299,6 +299,25 @@
         "chatSessionId": "sess_05a83056-0cf0-478f-a2a6-b910ad49fb28",
         "timestamp": 1795249620310
       }
+    ],
+    "7.5 Verify Bury and Reopen": [
+      {
+        "executionId": "10728736-044e-4bee-a236-36cebfc1d06e",
+        "chatSessionId": "sess_857e9212-7ebb-42cf-a2f3-25090018a648",
+        "timestamp": 1795249819306
+      },
+      {
+        "executionId": "10728736-044e-4bee-a236-36cebfc1d06e",
+        "chatSessionId": "sess_857e9212-7ebb-42cf-a2f3-25090018a648",
+        "timestamp": 1795250379372
+      }
+    ],
+    "7. Add unpacked-extension browser verification": [
+      {
+        "executionId": "10728736-044e-4bee-a236-36cebfc1d06e",
+        "chatSessionId": "sess_857e9212-7ebb-42cf-a2f3-25090018a648",
+        "timestamp": 1795250379434
+      }
     ]
   }
 }
