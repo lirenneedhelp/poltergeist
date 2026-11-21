@@ -28,7 +28,7 @@ Constraints for every task:
     - Tests: `tombstone.formatDuration === util.formatDuration` and the existing pinned table; `33 hours (demo time)` at scale 3600, meter 33; `2 days (demo time)` at meter 48; `a while` with no suffix when `readMeter` is missing or returns `NaN`; scale 1 for `durationScale` 0, -1, `"60"`; empty suffix for `durationSuffix` 5 and `null`; suffix `" {title}"` stays literal; re-apply and re-render after `visibilitychange` use the latest params and meter
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.8, 1.10, 9.1_
 
-- [ ] 2. Block finale
+- [x] 2. Block finale
   - [x] 2.1 Rebuild `skeleton/effects/block.js` with a shadow root, ghost, detail line, and Fade_In
     - Resolve new params without mutating `params`: `figure` (`ghost`/`none`, default `ghost`, read at creation), `detail` (string, default `''`), `durationMeter` (string, default `timeOnSite`), `fadeInMs` (`numberIn` 0 to 10000, default 1500, read at creation), `durationScale`, `durationSuffix`
     - Keep the host contract: `div[data-poltergeist="block"][role="status"]`, existing `cssText`, light DOM holds exactly one text node equal to `message`, opacity `maxOpacity × intensity` to 3 decimals, `pointer-events` by `blockAt`
@@ -36,7 +36,7 @@ Constraints for every task:
     - `startFade` on creation (after `syncDetail`): `animate([{opacity:0},{opacity:1}], { easing:'ease-out', iterations:1, duration: fadeInMs })` on figure, message, and detail when `animate` exists, skipped when `env.reducedMotion` is true or `fadeInMs` is 0; re-apply never replays; re-apply with reduced motion calls `finish()` on each and clears the list
     - `undo` finish step cancels every `handle.fade` entry before removing the host; existing begin step and `teardown` timing unchanged
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.11, 2.12, 2.13, 2.14, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.11, 7.11_
-  - [ ] 2.2 Add `skeleton/test/polish-block.test.js` and the Block half of `skeleton/test/polish-duration.test.js`
+  - [x] 2.2 Add `skeleton/test/polish-block.test.js` and the Block half of `skeleton/test/polish-duration.test.js`
     - Block tests: open shadow root, no light-DOM child elements, `textContent === message` with `{duration}` left literal; one `aria-hidden` `svg` before the message by default and none for `figure: 'none'`; no `p` by default, one `p` after the message with filled text for a set `detail`; `durationMeter` default `timeOnSite` and override `scrollDistance`; message font size at least 36px, detail 24px; re-apply keeps the same overlay, figure, and `p`, updates text, and does not replay; Fade_In on figure, message, and detail with duration 1500 and 1 iteration, override 400, none with reduced motion, none with `fadeInMs` 0; re-apply with reduced motion calls `finish()`; overlay opacity and `pointer-events` unchanged during the Fade_In; undo during the Fade_In cancels it and restores the snapshot, instantly and after `durationMs`
     - Duration tests for Block: `20 minutes (demo time)` at meter 20 and `30 seconds (demo time)` at meter 0.5 with scale 60; the same `a while`, invalid-scale, and invalid-suffix cases as task 1.2; latest params and meter on re-apply
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.9, 1.10, 2.1 to 2.9, 2.11, 2.13, 2.14, 5.11, 9.1, 9.7, 9.8_

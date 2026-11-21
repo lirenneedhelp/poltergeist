@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 // haunt-polish Requirement 1: demo-scalable duration text.
-// Example-based only (Requirement 9.1). The Block half is added by task 2.2.
+// Example-based only (Requirement 9.1). Covers the Tombstone_Effect and the Block_Effect.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as tombstone from '../effects/tombstone.js';
+import * as block from '../effects/block.js';
 import * as util from '../effects/util.js';
 import { makeEnv } from './polish-helpers.js';
 
@@ -140,5 +141,83 @@ describe('tombstone: duration params (1.3 to 1.5, 1.8, 1.10)', () => {
     expect(h.messageEl.textContent).toBe('Abandoned for 33 hours (demo time).');
     vi.advanceTimersByTime(0);
     expect(h.messageEl.textContent).toBe('Abandoned for 2 days (demo time).');
+  });
+});
+
+describe('block: duration params (1.2 to 1.5, 1.9, 1.10)', () => {
+  const DETAIL = 'You lost {duration} to this feed.';
+  let meterValue;
+  let created;
+  const env = (overrides = {}) =>
+    makeEnv({ readMeter: (name) => (name === 'timeOnSite' ? meterValue : undefined), ...overrides });
+  const bl = (e, params, ...rest) => {
+    const h = block.apply(e, { detail: DETAIL, ...params }, ...rest);
+    created.push(h);
+    return h;
+  };
+  const demo = { durationScale: 60, durationSuffix: DEMO_SUFFIX };
+
+  beforeEach(() => {
+    meterValue = 20;
+    created = [];
+  });
+  afterEach(() => {
+    for (const h of created) block.undo(h, { durationMs: 0 });
+  });
+
+  it('shows "20 minutes (demo time)" for 20 seconds at scale 60', () => {
+    const h = bl(env(), demo, 1);
+    expect(h.detailEl.textContent).toBe('You lost 20 minutes (demo time) to this feed.');
+  });
+
+  it('shows "30 seconds (demo time)" for 0.5 seconds at scale 60, scaling before rounding down', () => {
+    meterValue = 0.5;
+    const h = bl(env(), demo, 1);
+    expect(h.detailEl.textContent).toBe('You lost 30 seconds (demo time) to this feed.');
+  });
+
+  it('shows "a while" with no suffix when readMeter is missing', () => {
+    const e = env();
+    delete e.readMeter;
+    const h = bl(e, demo, 1);
+    expect(h.detailEl.textContent).toBe('You lost a while to this feed.');
+  });
+
+  it('shows "a while" with no suffix when readMeter returns NaN', () => {
+    meterValue = NaN;
+    const h = bl(env(), demo, 1);
+    expect(h.detailEl.textContent).toBe('You lost a while to this feed.');
+  });
+
+  it.each([[0], [-1], ['60']])('uses scale 1 for durationScale %s', (durationScale) => {
+    meterValue = 120;
+    const h = bl(env(), { durationScale, durationSuffix: DEMO_SUFFIX }, 1);
+    expect(h.detailEl.textContent).toBe('You lost 2 minutes (demo time) to this feed.');
+  });
+
+  it.each([[5], [null]])('uses an empty suffix for durationSuffix %s', (durationSuffix) => {
+    const h = bl(env(), { durationScale: 60, durationSuffix }, 1);
+    expect(h.detailEl.textContent).toBe('You lost 20 minutes to this feed.');
+  });
+
+  it('takes the suffix literally, so a {duration} inside it is not replaced', () => {
+    const h = bl(env(), { durationScale: 60, durationSuffix: ' {duration}' }, 1);
+    expect(h.detailEl.textContent).toBe('You lost 20 minutes {duration} to this feed.');
+  });
+
+  it('leaves the light-DOM message untouched by the duration params', () => {
+    const h = bl(env(), { ...demo, message: 'Stop after {duration}' }, 1);
+    expect(h.el.textContent).toBe('Stop after {duration}');
+  });
+
+  it('re-apply uses the latest params and meter value', () => {
+    const e = env();
+    const h = bl(e, demo, 1);
+    expect(h.detailEl.textContent).toBe('You lost 20 minutes (demo time) to this feed.');
+    meterValue = 40;
+    bl(e, { durationScale: H, durationSuffix: ' (sim)' }, 1, h);
+    expect(h.detailEl.textContent).toBe('You lost 40 hours (sim) to this feed.');
+    bl(e, {}, 1, h);
+    expect(h.detailEl.textContent).toBe('You lost 40 seconds to this feed.');
   });
 });

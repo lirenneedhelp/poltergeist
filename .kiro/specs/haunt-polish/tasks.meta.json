@@ -43,6 +43,25 @@
         "chatSessionId": "sess_658a8599-dbe9-4c94-a868-766ee13207e8",
         "timestamp": 1795266191011
       }
+    ],
+    "2.2 Add `skeleton/test/polish-block.test.js` and the Block half of `skeleton/test/polish-duration.test.js`": [
+      {
+        "executionId": "2e883106-d196-4d03-9892-e468bfe9c061",
+        "chatSessionId": "sess_5030d27c-e7cd-4c83-8e09-7837b52922d8",
+        "timestamp": 1795266244291
+      },
+      {
+        "executionId": "2e883106-d196-4d03-9892-e468bfe9c061",
+        "chatSessionId": "sess_5030d27c-e7cd-4c83-8e09-7837b52922d8",
+        "timestamp": 1795266404371
+      }
+    ],
+    "2. Block finale": [
+      {
+        "executionId": "2e883106-d196-4d03-9892-e468bfe9c061",
+        "chatSessionId": "sess_5030d27c-e7cd-4c83-8e09-7837b52922d8",
+        "timestamp": 1795266404430
+      }
     ]
   }
 }
