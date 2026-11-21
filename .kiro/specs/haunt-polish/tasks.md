@@ -55,7 +55,7 @@ Constraints for every task:
     - _Requirements: 3.1 to 3.13, 5.11, 9.1, 9.3, 9.7, 9.8_
 
 - [ ] 4. Fog tint, noise, and Drift
-  - [ ] 4.1 Add tint, noise, and Drift to `skeleton/effects/fog.js`
+  - [x] 4.1 Add tint, noise, and Drift to `skeleton/effects/fog.js`
     - New params: `tint` (default `#9eb2a4`; non-string falls back to the default), `noise` (`numberIn` 0 to 1, default 0.3), `driftMs` (0 or 1000 to 600000, default 20000); constants `TINT_MAX_OPACITY = 0.22`, `DRIFT_PX = 240`
     - `acceptedTint`: reject `\ ; { }` and `var( env( attr( url(` (any case) before the detached-element `style.color` probe; set an accepted colour only as `tintEl.style.backgroundColor`
     - Overlay keeps every existing inline style and `backdrop-filter` string, adds `overflow: hidden`; unmarked tint layer (prepended, inset 0, opacity 0.22 × i) and noise layer (top/left -240px, `NOISE_IMAGE` gradients with tile sizes dividing 240, opacity `noise × i`); both `pointer-events: none`; neither carries `data-poltergeist`; `tint ''` with `noise 0` leaves no child nodes
