@@ -109,11 +109,38 @@ describe('tombstone: markup (4.2, 4.3, 4.10)', () => {
     expect(s.pointerEvents).toBe('auto');
   });
 
-  it('shows no animation and schedules no timers when applied', () => {
-    ts(makeEnv(), {}, 1);
-    expect(hostEl().style.transition).toBe('');
-    expect(hostEl().style.animation).toBe('');
-    expect(vi.getTimerCount()).toBe(0);
+  it('plays the Rise_In only when motion is allowed and schedules no timers when applied', () => {
+    const calls = [];
+    Object.defineProperty(Element.prototype, 'animate', {
+      configurable: true,
+      writable: true,
+      value: vi.fn(function animate(keyframes, options) {
+        const anim = { target: this, keyframes, options, cancel: vi.fn(), finish: vi.fn() };
+        calls.push(anim);
+        return anim;
+      }),
+    });
+    try {
+      for (const [params, reducedMotion, plays] of [[{}, false, true], [{}, true, false], [{ riseInMs: 0 }, false, false]]) {
+        calls.length = 0;
+        const h = ts(makeEnv({ reducedMotion }), params, 1);
+        expect(hostEl().style.transition).toBe('');
+        expect(hostEl().style.animation).toBe('');
+        expect(['', 'none']).toContain(h.card.style.animation);
+        const onCard = calls.filter((c) => c.target === h.card);
+        if (plays) {
+          expect(onCard).toHaveLength(1);
+          expect(onCard[0].options).toMatchObject({ duration: 800, iterations: 1 });
+        } else {
+          expect(onCard).toHaveLength(0);
+        }
+        expect(calls.filter((c) => c.target === hostEl())).toHaveLength(0);
+        expect(vi.getTimerCount()).toBe(0);
+        tombstone.undo(h, { durationMs: 0 });
+      }
+    } finally {
+      delete Element.prototype.animate;
+    }
   });
 });
 

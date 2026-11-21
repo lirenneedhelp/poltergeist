@@ -74,6 +74,25 @@
         "chatSessionId": "sess_ec2bd44c-564f-4035-85d8-a7e4af3f60f0",
         "timestamp": 1795266604104
       }
+    ],
+    "3.2 Rewrite one case in `skeleton/test/tombstone.test.js` and add `skeleton/test/polish-tombstone.test.js`": [
+      {
+        "executionId": "b11ef197-9131-4889-a040-544661fe1313",
+        "chatSessionId": "sess_7cfaa17f-2a32-4a1c-9958-b0d9d7a9bb85",
+        "timestamp": 1795266694363
+      },
+      {
+        "executionId": "b11ef197-9131-4889-a040-544661fe1313",
+        "chatSessionId": "sess_7cfaa17f-2a32-4a1c-9958-b0d9d7a9bb85",
+        "timestamp": 1795266973348
+      }
+    ],
+    "3. Tombstone finale": [
+      {
+        "executionId": "b11ef197-9131-4889-a040-544661fe1313",
+        "chatSessionId": "sess_7cfaa17f-2a32-4a1c-9958-b0d9d7a9bb85",
+        "timestamp": 1795266973404
+      }
     ]
   }
 }

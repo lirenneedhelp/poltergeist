@@ -41,7 +41,7 @@ Constraints for every task:
     - Duration tests for Block: `20 minutes (demo time)` at meter 20 and `30 seconds (demo time)` at meter 0.5 with scale 60; the same `a while`, invalid-scale, and invalid-suffix cases as task 1.2; latest params and meter on re-apply
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.9, 1.10, 2.1 to 2.9, 2.11, 2.13, 2.14, 5.11, 9.1, 9.7, 9.8_
 
-- [ ] 3. Tombstone finale
+- [x] 3. Tombstone finale
   - [x] 3.1 Add the stone card, mark, and Rise_In in `skeleton/effects/tombstone.js`
     - New params after `{...DEFAULTS, ...params}`: `weathered` (boolean, default `true`, read at creation), `mark` (string, default `R.I.P.`, every apply), `riseInMs` (`numberIn` 0 to 10000, default 800)
     - Shadow tree per design: card `div[role="dialog"]` with `CARD_STONE` (gradient-only `background-image`, `CHIP_CLIP` `clip-path`, plus an empty `aria-hidden` crack `div` with `CRACK_CSS`) or `CARD_FLAT` (pre-polish `#3a3a3f` background, `2px solid #55555c` border, old radius); host keeps `HOST_CSS` and no light-DOM children
@@ -49,7 +49,7 @@ Constraints for every task:
     - Rise_In: on creation, skip when reduced motion or `riseInMs` is 0; start `card.animate(RISE_KEYFRAMES, { ...RISE_TIMING, duration: riseInMs })` when visible, else set `risePending`; the existing `onVisible` listener starts a pending Rise_In once (re-checking reduced motion) before its existing re-render timer; re-apply with reduced motion calls `endRise` (`finish()`, clear pending); `apply` schedules no timer; host `transition` and `animation` stay empty
     - `undo`: begin step clears `risePending`; finish step calls `handle.rise?.cancel()`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 5.1, 5.2, 5.3, 5.5, 5.6, 5.7, 5.11_
-  - [ ] 3.2 Rewrite one case in `skeleton/test/tombstone.test.js` and add `skeleton/test/polish-tombstone.test.js`
+  - [x] 3.2 Rewrite one case in `skeleton/test/tombstone.test.js` and add `skeleton/test/polish-tombstone.test.js`
     - Replace "shows no animation and schedules no timers when applied" in place with the design's "plays the Rise_In only when motion is allowed and schedules no timers when applied"; change nothing else in that file
     - New tests: `weathered` default gives gradient-only `background-image`, a `clip-path`, and a crack with no child nodes; `weathered: false` gives `rgb(58, 58, 63)`, the old border and radius, no gradient, no `clip-path`, no crack; `mark` default `R.I.P.` in a `div` before the `h1`, `Ci-gît {title}` stays literal, `''` removes an earlier mark, non-string gives the default; exactly one `h1`, `p`, and `button`, and no other element except the mark has a text-node child; fixed px font sizes; Rise_In duration 800 and 1 iteration, override 300, none with reduced motion, none with 0; created while hidden starts nothing until the first `visible` event, then exactly once; re-apply with reduced motion while pending or running ends it; undo while running or pending cancels it, no later start, snapshot restored; `vi.getTimerCount()` is 0 after each `apply`
     - _Requirements: 3.1 to 3.13, 5.11, 9.1, 9.3, 9.7, 9.8_
