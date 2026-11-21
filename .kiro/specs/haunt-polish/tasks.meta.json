@@ -62,6 +62,18 @@
         "chatSessionId": "sess_5030d27c-e7cd-4c83-8e09-7837b52922d8",
         "timestamp": 1795266404430
       }
+    ],
+    "3.1 Add the stone card, mark, and Rise_In in `skeleton/effects/tombstone.js`": [
+      {
+        "executionId": "c52e5829-6860-4ed3-972d-e3c46bbd6de2",
+        "chatSessionId": "sess_ec2bd44c-564f-4035-85d8-a7e4af3f60f0",
+        "timestamp": 1795266460312
+      },
+      {
+        "executionId": "c52e5829-6860-4ed3-972d-e3c46bbd6de2",
+        "chatSessionId": "sess_ec2bd44c-564f-4035-85d8-a7e4af3f60f0",
+        "timestamp": 1795266604104
+      }
     ]
   }
 }

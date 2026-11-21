@@ -42,7 +42,7 @@ Constraints for every task:
     - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.9, 1.10, 2.1 to 2.9, 2.11, 2.13, 2.14, 5.11, 9.1, 9.7, 9.8_
 
 - [ ] 3. Tombstone finale
-  - [ ] 3.1 Add the stone card, mark, and Rise_In in `skeleton/effects/tombstone.js`
+  - [x] 3.1 Add the stone card, mark, and Rise_In in `skeleton/effects/tombstone.js`
     - New params after `{...DEFAULTS, ...params}`: `weathered` (boolean, default `true`, read at creation), `mark` (string, default `R.I.P.`, every apply), `riseInMs` (`numberIn` 0 to 10000, default 800)
     - Shadow tree per design: card `div[role="dialog"]` with `CARD_STONE` (gradient-only `background-image`, `CHIP_CLIP` `clip-path`, plus an empty `aria-hidden` crack `div` with `CRACK_CSS`) or `CARD_FLAT` (pre-polish `#3a3a3f` background, `2px solid #55555c` border, old radius); host keeps `HOST_CSS` and no light-DOM children
     - `syncMark`: mark `div[aria-hidden="true"]` with `MARK_CSS` before the `h1`, literal `textContent`, removed when `mark` is `''`; fixed px fonts for mark, heading, message, and button
