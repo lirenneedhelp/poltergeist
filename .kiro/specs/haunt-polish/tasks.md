@@ -116,7 +116,7 @@ Constraints for every task:
     - `git diff --stat <commit before task 1>` shows no change to `skeleton/engine.js`, `skeleton/match.js`, `skeleton/meters.js`, `skeleton/validator.js`, `skeleton/rule-schema.json`, `skeleton/index.js`, `skeleton/effects/index.js`, `skeleton/effects/flicker.js`, `skeleton/effects/rot.js`, either `manifest.json`, `scripts/package-checks.mjs`, the sync scripts, or `.kiro/specs/doomscroll-app/tasks.md`
     - Fix any failure in the task that caused it, then re-run this list from the start
     - _Requirements: 5.9, 7.8, 7.9, 7.10, 8.5, 9.3, 9.4_
-  - [ ] 7.2 Take the Screenshot_Checklist by hand in Chrome with Demo_Mode on
+  - [x] 7.2 Take the Screenshot_Checklist by hand in Chrome with Demo_Mode on
     - Mark each item as taken or record the defect seen. Doomscroll times count visible seconds since Demo_Mode was turned on with the page in front; Graveyard times are absences from the tab. A light page has a mostly light background and a dark page a mostly dark one.
     - Doomscroll on an approved host, 3 to 5 s in: Fog with tint and texture, on one light and one dark page
     - Doomscroll, 13 to 19 s in: Rot with the heavier glyphs readable on camera, on one light and one dark page
@@ -131,12 +131,51 @@ Constraints for every task:
     - With no DevTools animation slow-down, watch one full Fade_In (1.5 s), one full Rise_In (0.8 s), and one full Drift cycle (20 s); record `none`, or each stutter (a visible jump or pause) or clipping (part of the ghost, message, second line, Tombstone_Card, or noise texture cut off) seen
     - _Requirements: 9.5, 9.6_
 
+- [ ] 8. Fog visibility and Block punchline (amendment fog-visibility)
+  - [ ] 8.1 Make Fog read as fog in `skeleton/effects/fog.js`
+    - `TINT_MAX_OPACITY` 0.22 → 0.38; tint colour stays `#9eb2a4`
+    - Replace `NOISE_IMAGE` and `NOISE_SIZE` with the design's seven layers: five specks (radius 1.5 to 2.5 px, alpha 0.7 to 0.85, three white and two black) on 24, 20, 16, 40, and 48 px tiles, then the two existing 240 px soft ellipses; `DEFAULT_NOISE` 0.3 → 0.5
+    - Add the `mist` param (`numberIn` 0 to 1, `DEFAULT_MIST` 0), the constants `MIST_MAX_OPACITY` 0.6, `MIST_PX` 1200, `MIST_PERIOD_FACTOR` 3, and the design's `MIST_IMAGE`, `MIST_SIZE`, `MIST_KEYFRAMES`, `MIST_TIMING`
+    - Add `syncMist`: create the unmarked `mistEl` last (absolute, top/bottom 0, left -1200px, right 0, `pointer-events: none`, `will-change: transform`, `repeat-x`), set opacity `mist × 0.6 × i`, and cancel the mist Drift and remove the layer when `mist` is 0; insert a new noise layer before an existing `mistEl`
+    - Extend `syncDrift` to reconcile the mist part into `handle.mistDrift` with duration `driftMs × 3`, after the noise part and with the same wanted rule; the existing `watchMotion` listener then covers it
+    - `undo`: the begin step fades `mistEl` opacity with `opacity <d>ms linear`; the finish step cancels `mistDrift` with the noise Drift
+    - Keep no `url(`, no `data-poltergeist` on layers, nothing on `html` or `body`
+    - _Requirements: 4.1, 4.2, 4.5, 4.7, 4.8, 4.9, 4.11, 4.12, 4.13, 4.14, 4.15, 4.16, 4.17, 5.1, 5.2, 5.5, 5.6, 5.7_
+  - [ ] 8.2 Make the Block second line the punchline in `skeleton/effects/block.js`
+    - Change only `DETAIL_CSS` to `margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;`; message stays `700 40px`
+    - _Requirements: 2.15_
+  - [ ] 8.3 Update and add the tests for fog-visibility
+    - In `skeleton/test/polish-fog.test.js`, change only the expected values of the four cases in the design's "Test changes for fog-visibility" table (tint 0.19/0.38, tint override 0.38, noise 0.25/0.5, re-apply 0.304/0.4) and rename the two titles that name 0.22 and 0.3; leave every other case, including the child counts, `spy.calls` lengths, and the Requirement 4.7 case, unedited
+    - Append `describe('fog: grain and mist (fog-visibility)')` with the design's cases: speck radii, alphas, colours, and tile sizes; `noise` override 0.8; no Mist_Layer for the default and for invalid `mist` values `null`, -0.1, 1.5, `NaN`, `'0.5'`; the `mist` 0.5 layer, its order, style, and opacity 0.3, and override 1 giving 0.6; the mist Drift at 60000 ms with keyframes to `translate(1200px, 0px)`, 15000 ms for `driftMs` 5000, none for `driftMs` 0 or reduced motion; no restart on re-apply; stop and restart on re-apply and on the `change` event; removal for `mist` 0; fade and instant undo cancelling both parts and restoring the snapshot
+    - Add `skeleton/test/polish-punchline.test.js` (jsdom) for the detail line: 24 px against a 40 px message, weight `600`, colour `rgb(255, 255, 255)`, empty inline opacity, and only the Fade_In animating it
+    - Do not edit `polish-block.test.js`, `polish-safety.test.js`, or any other existing test file; add no property-based tests
+    - _Requirements: 2.15, 4.1, 4.2, 4.13, 4.14, 4.15, 4.16, 4.17, 5.6, 9.1, 9.3, 9.7, 9.8, 9.9_
+  - [ ] 8.4 Update both Fog rules and both `EXPECTED_RULES`, then regenerate the skeletons
+    - `app1-doomscroll/rules.json` `doomscroll-fog` params: `{ "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }`
+    - `app2-tab-graveyard/rules.json` `graveyard-fog` params: `{ "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }`
+    - Make the Fog entries of `EXPECTED_RULES` in `scripts/validate-doomscroll-package.mjs` and `scripts/validate-graveyard-package.mjs` match, in the same key order; change nothing else in either validator, `package-checks.mjs`, or the sync scripts
+    - Run `npm run build:skeletons`; no `manifest.json` change is needed because no module joins the import graph
+    - _Requirements: 7.2, 7.5, 7.6, 7.9, 7.10, 7.13_
+  - [ ] 8.5 Re-run the automated final check
+    - Run the task 7.1 list from the repository root, in order, each exiting 0: `npm test`; `npm run build:skeletons` with `git status --porcelain` showing no change under either Generated_Skeleton; `npm run test:browser`; the `git diff --stat` list of unchanged files
+    - Fix any failure in the task that caused it, then re-run the list from the start
+    - _Requirements: 5.9, 7.8, 7.9, 9.3, 9.4_
+  - [ ] 8.6 Re-check the fog-visibility Screenshot_Checklist items by hand in Chrome with Demo_Mode on
+    - Doomscroll on YouTube, 5 to 9 s in, on one light and one dark page: Fog reads as fog, with the tint, the coarse grain, and at least one mist band visibly moving
+    - Doomscroll, same moment: the page is still roughly readable (headings, video titles, layout)
+    - Doomscroll Block finale: the second line reads as the punchline, white and bold beside the 40 px message
+    - Graveyard Fog after an absence of 2 to 3 s, tab kept in front: watch one full 60 s mist cycle and one 20 s noise cycle; record `none`, or each stutter (including a jump at the end of the mist cycle) or clipping seen
+    - With `prefers-reduced-motion: reduce` emulated: the grain and mist bands stay still
+    - Mark each item as taken or record the defect seen
+    - _Requirements: 4.15, 9.5, 9.6_
+
 ## Notes
 
 - No task is optional, and no task adds property-based tests (Requirement 9.1). The design's invariants are checked by the example-based tests named in each task and by the existing suites, including the Restoration_Suite, Doomscroll Property 2, and Graveyard Property 4, which run unedited.
 - Tasks 1.2 and 2.2 both write `skeleton/test/polish-duration.test.js`; they run in different waves.
 - Several tasks run `npm run build:skeletons`. When tasks in the same wave run in parallel, rebuild once more after the wave before `npm test`.
 - Task 7.2 is a manual pass and cannot be automated; record its results in the task when done.
+- Task 8 is the fog-visibility amendment, added after tasks 1 to 7 were complete. It follows the same constraints as every other task. No task 8 sub-task is optional. Tasks 8.1 and 8.2 touch different files and run in parallel; 8.3 and 8.4 also touch different files. Task 8.6 is manual, like 7.2.
 
 ## Task Dependency Graph
 
@@ -149,7 +188,11 @@ Constraints for every task:
     { "id": 3, "tasks": ["3.2", "5.2"] },
     { "id": 4, "tasks": ["4.3", "5.3", "5.4"] },
     { "id": 5, "tasks": ["7.1"] },
-    { "id": 6, "tasks": ["7.2"] }
+    { "id": 6, "tasks": ["7.2"] },
+    { "id": 7, "tasks": ["8.1", "8.2"] },
+    { "id": 8, "tasks": ["8.3", "8.4"] },
+    { "id": 9, "tasks": ["8.5"] },
+    { "id": 10, "tasks": ["8.6"] }
   ]
 }
 ```

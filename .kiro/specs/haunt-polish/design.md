@@ -13,6 +13,19 @@ The design favours the smallest change per criterion:
 
 This spec adds no property-based tests (Requirement 9.1). Verification is Vitest example-based tests, the existing unit and browser suites, and the manual Screenshot_Checklist.
 
+### Amendment fog-visibility
+
+A real-Chrome review of the Doomscroll demo on YouTube found two problems after tasks 1 to 7 shipped. Fog read as a blurry grey page, because the tint (0.22 at peak) and the fine grain disappeared under the blur and grayscale. The Block second line read like a footnote, at weight 400 in `#d4d4dc`, although it is the punchline.
+
+The amendment changes only `skeleton/effects/fog.js`, the `DETAIL_CSS` constant in `skeleton/effects/block.js`, both `rules.json` Fog rules, both `EXPECTED_RULES` Fog entries, four value-pinning cases in `skeleton/test/polish-fog.test.js`, and adds new example-based cases. Sections it changes are marked "(amended: fog-visibility)". The summary:
+
+- Tint maximum 0.22 → 0.38. Colour stays `#9eb2a4`.
+- Noise grain: coarser, higher-contrast specks. The effect default `noise` goes 0.3 → 0.5, and both rules go 0.5 → 0.6.
+- New Mist_Layer: large soft gradients on a 1200 px tile that roll left to right in `3 × driftMs`. New param `mist`, effect default 0, set to 0.5 in both rules.
+- Block detail line: weight 600, colour `#fff`, size 24 px unchanged, message 40 px unchanged.
+
+The import graph, the manifests, the engine, and every other effect stay unchanged.
+
 ### Research findings
 
 - **Web Animations API.** `Element.animate(keyframes, options)` creates and plays an `Animation` and returns it. `options.iterations: Infinity` repeats without end. `Animation.cancel()` removes the effect at once and `Animation.finish()` jumps to the end state ([MDN: Element.animate()](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate), [MDN: Using the Web Animations API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API)). With the default `fill: 'none'`, a finished or cancelled animation leaves the element at its base style. All three motions therefore keep the final state as the base style, so `finish()`, `cancel()`, and "no animation at all" all show the final state.
@@ -42,6 +55,13 @@ This spec adds no property-based tests (Requirement 9.1). Verification is Vitest
 | D6 | `figure` (Block) and `weathered` (Tombstone) are read when the effect creates its element. Later applies keep the elements created then. | Add or remove the elements on every apply | Rules are static. Requirement 2.6 forbids a second figure. Fewer code paths. |
 | D7 | Fog also listens for `change` on the reduced-motion query and stops the Drift at once | Rely on the next `apply` only | In Tab Graveyard, Fog is not re-applied while the tab stays visible, so a running Drift would otherwise survive a switch to `reduce`. The amended tab-graveyard-app Requirement 2.8 (Requirement 8.1) forbids that. Block and Tombstone motions are one-shot (at most 10 s), and Doomscroll already restarts its haunt when the preference changes. |
 | D8 | Tombstone keeps resolving `durationMeter` exactly as before (`{...DEFAULTS, ...params}`). Block treats a non-string `durationMeter` as `timeOnSite`. | Same fallback for both | Requirement 1.7 requires unchanged Tombstone text. `durationMeter` is a new param only for Block (Requirement 5.6 covers params this spec introduces). |
+| D9 (amended: fog-visibility) | `TINT_MAX_OPACITY` 0.38, tint colour `#9eb2a4` kept | 0.3 (too faint under a 5 px blur on camera); 0.5 (contrast at a mist band falls below 3:1) | `#9eb2a4` is mid-tone, so it greens a white page and lifts a black page toward grey, and both read as fog. With sRGB compositing, black text on white behind a 0.38 tint is about (60,68,62) on (218,226,220), roughly 7.6:1. White on black gives the same ratio. |
+| D10 (amended: fog-visibility) | Noise grain: five solid specks of radius 1.5 to 2.5 px at alpha 0.7 to 0.85, three white and two black, on 16, 20, 24, 40, and 48 px tiles, plus the two existing 240 px soft ellipses. Effect default `noise` 0.5, rules 0.6. | Keep the 0.8 to 1.2 px specks and raise only `noise` | Sub-1.5 px dots are averaged away by video compression and by the backdrop blur under them. Every tile divides 240, so the one-period Drift stays seamless. Each dot ends inside its tile, so no dot is cut at a tile edge. The specks cover about 16 % of the area, so 0.6 × that adds roughly 0.1 average coverage. |
+| D11 (amended: fog-visibility) | Separate Mist_Layer element, appended after the noise layer, with its own `animate()` call | Add the mist gradients to the noise layer | The mist needs a different tile (1200 px, full height), a different direction (horizontal only), and a slower period. One element per motion keeps each loop exactly one tile period, so each ends where it started. |
+| D12 (amended: fog-visibility) | Effect default `mist` 0; both rules set `mist` 0.5 explicitly | Effect default 0.5, as recommended | Concrete conflict: `polish-safety.test.js` stays unedited, and it asserts that `fog.apply(env, {}, 1)` makes exactly one animation (`counts.fog = 1`) and that the default Fog picture has animation durations `[20000]`. A default of 0.5 would add a second animation and fail both. Default 0 also keeps the polish-fog child counts, `spy.calls` lengths, and the Requirement 4.7 case valid, so the shipped apps get mist and the test edits stay as small as the user asked. |
+| D13 (amended: fog-visibility) | Mist tile `MIST_PX` 1200, `background-size: 1200px 100%`, `repeat-x`, layer from `left: -1200px` to `right: 0`; mist Drift `translate(0px, 0px)` → `translate(1200px, 0px)` over `3 × driftMs` (60 s for the rules) | Same period as the noise Drift (20 s) | One tile period per cycle is seamless. A 60 s roll moves at 20 px/s, slow enough to read as mist and fast enough to be visible in a 10 s demo shot. Each radial band ends inside the tile, and the linear band is constant along x, so the tile edges show no seam. Deriving the period from `driftMs` adds no new param and keeps `driftMs` 0 meaning "no motion". |
+| D14 (amended: fog-visibility) | Readability budget at intensity 1 with the rules' values: tint 0.38, noise 0.6 over sparse specks, mist up to 0.3 at band centres and near 0 between bands | Stronger mist (0.8 × 0.6 = 0.48 peak) | Approximate stacked coverage: about 0.4 to 0.45 between bands, about 0.55 at a mist band centre (1 − 0.62 × 0.73), and about 0.67 at the rare overlap with a noise ellipse centre. Body-text contrast is about 7.6:1 under the tint alone, about 3.9:1 at a band centre, and about 2.5:1 at the overlap. Doomscroll Fog peaks at 300 s and the Block starts at 1200 s; Graveyard Fog peaks at 7200 s and the Tombstone at 86400 s. In between, the page stays roughly readable: large text and layout stay legible, while small text is already softened by the blur. The Screenshot_Checklist confirms this by eye. |
+| D15 (amended: fog-visibility) | Block `DETAIL_CSS` `margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;`, message kept at 40 px | 20 px (exactly half) | The user kept the message at 40 px. 24 px is 0.6 of the message, the closest to "about half" without shrinking the line, and it keeps `polish-block.test.js` (which pins 24 px) unedited. White at weight 600 with no opacity makes the punchline as strong as the message. |
 
 ## Architecture
 
@@ -56,7 +76,7 @@ flowchart LR
   SP --> ENG["engine.js<br/>unchanged"]
   ENG -->|"apply(env, params, intensity, handle)"| FX
   subgraph FX["skeleton/effects"]
-    FOG["fog.js<br/>tint, noise, Drift"]
+    FOG["fog.js<br/>tint, noise, mist, Drift"]
     BLK["block.js<br/>shadow root: ghost, slot, detail, Fade_In"]
     TMB["tombstone.js<br/>stone card, mark, crack, Rise_In"]
     UTIL["util.js<br/>teardown, formatDuration, fill,<br/>durationText, numberIn"]
@@ -87,18 +107,18 @@ stateDiagram-v2
   Final --> Removed: undo finish step
 ```
 
-The Drift has no Final state. It is running or stopped, and `syncDrift` reconciles it on every Fog `apply` and on every reduced-motion `change` event (D7).
+The Drift has no Final state. Each of its two parts (noise and mist, amended: fog-visibility) is running or stopped, and `syncDrift` reconciles both on every Fog `apply` and on every reduced-motion `change` event (D7).
 
-### Reduced-motion matrix
+### Reduced-motion matrix (amended: fog-visibility)
 
-| Situation | Fade_In (Block) | Rise_In (Tombstone) | Drift (Fog) |
+| Situation | Fade_In (Block) | Rise_In (Tombstone) | Drift (Fog: noise and mist) |
 |-----------|-----------------|---------------------|-------------|
-| Created with RM false, duration > 0 | Plays once | Plays once if visible, else waits for first visible | Runs while `noise > 0` |
-| Created with RM true, or duration 0 | None, content at opacity 1 | None, card in final place at opacity 1 | None, texture fixed |
-| Re-apply with RM true | `finish()` on all, never restarts | `finish()`, pending cleared, never restarts | `cancel()` |
-| Re-apply with RM false | Nothing (never replays) | Nothing (never replays) | Starts if stopped, else left running |
-| RM `change` event, no apply | No reaction | No reaction (pending Rise_In re-checks RM when visible) | `syncDrift` stops or starts it |
-| Undo with `durationMs > 0` | Existing overlay opacity fade; Fade_In cancelled in finish | Existing host opacity fade; Rise_In cancelled in finish | Opacity and `backdrop-filter` fade; Drift cancelled in finish |
+| Created with RM false, duration > 0 | Plays once | Plays once if visible, else waits for first visible | Noise part runs while `noise > 0`; mist part runs while `mist > 0` |
+| Created with RM true, or duration 0 | None, content at opacity 1 | None, card in final place at opacity 1 | None, texture and bands fixed |
+| Re-apply with RM true | `finish()` on all, never restarts | `finish()`, pending cleared, never restarts | `cancel()` on both parts |
+| Re-apply with RM false | Nothing (never replays) | Nothing (never replays) | Each part starts if stopped and its layer exists, else is left running |
+| RM `change` event, no apply | No reaction | No reaction (pending Rise_In re-checks RM when visible) | `syncDrift` stops or starts both parts |
+| Undo with `durationMs > 0` | Existing overlay opacity fade; Fade_In cancelled in finish | Existing host opacity fade; Rise_In cancelled in finish | Opacity of tint, noise, and mist layers and `backdrop-filter` fade; both parts cancelled in finish |
 
 ## Components and Interfaces
 
@@ -271,10 +291,12 @@ Style constants:
 ```js
 const STAGE_CSS = 'display:flex;flex-direction:column;align-items:center;gap:24px;max-width:960px;';
 const MESSAGE_CSS = 'font:700 40px/1.25 system-ui,sans-serif;';
-const DETAIL_CSS = 'margin:0;font:400 24px/1.4 system-ui,sans-serif;color:#d4d4dc;';
+const DETAIL_CSS = 'margin:0;font:600 24px/1.4 system-ui,sans-serif;color:#fff;'; // amended: fog-visibility
 const FADE_KEYFRAMES = [{ opacity: 0 }, { opacity: 1 }];
 const FADE_TIMING = { easing: 'ease-out', iterations: 1 }; // duration = fadeInMs
 ```
+
+Second line (amended: fog-visibility): `DETAIL_CSS` was `margin:0;font:400 24px/1.4 system-ui,sans-serif;color:#d4d4dc;`. It is now weight 600 and `#fff`, so the punchline is as strong as the message (D15). The size stays 24 px, 0.6 of the 40 px message. `DETAIL_CSS` sets no `opacity`, so the only opacity change on the `p` is the Fade_In's own `animate()` call, which ends at 1 (Requirement 2.15). In jsdom, `detailEl.style.fontWeight` reads `'600'`, `detailEl.style.color` reads `'rgb(255, 255, 255)'`, and `detailEl.style.opacity` reads `''`. No other line of `block.js` changes.
 
 `apply` flow:
 
@@ -298,46 +320,67 @@ export function apply(env, params = {}, intensity, handle) {
 - `undo` keeps the existing begin step. The finish step runs `cancel()` on every `handle.fade` entry, clears the list, and removes the host (Requirement 2.13, 2.14).
 - A second line that first appears on a later apply is shown at full opacity. It was not part of the Fade_In.
 
-### `skeleton/effects/fog.js` (changed)
+### `skeleton/effects/fog.js` (changed; amended: fog-visibility)
 
-New params:
+New params (amended: fog-visibility):
 
 | Param | Valid set | Default | Notes |
 |-------|-----------|---------|-------|
-| `tint` | any string; a non-empty one must pass the tint check | `'#9eb2a4'` (faint green-grey) | a failing string is treated as `''` (Requirement 5.10) |
-| `noise` | finite 0 to 1 | `0.3` | 0 means no noise layer |
-| `driftMs` | 0, or finite 1000 to 600000 | `20000` | 0 means a fixed texture |
+| `tint` | any string; a non-empty one must pass the tint check | `'#9eb2a4'` (mid-tone green-grey) | a failing string is treated as `''` (Requirement 5.10) |
+| `noise` | finite 0 to 1 | `0.5` (was 0.3) | 0 means no noise layer |
+| `mist` | finite 0 to 1 | `0` (D12) | added by fog-visibility; 0 means no Mist_Layer; both rules set 0.5 |
+| `driftMs` | 0, or finite 1000 to 600000 | `20000` | 0 means a fixed texture and fixed mist; the mist period is `3 × driftMs` |
 
-Fixed constants: `TINT_MAX_OPACITY = 0.22` and `DRIFT_PX = 240`.
+Fixed constants (amended: fog-visibility): `TINT_MAX_OPACITY = 0.38` (was 0.22), `DRIFT_PX = 240`, `MIST_MAX_OPACITY = 0.6`, `MIST_PX = 1200`, and `MIST_PERIOD_FACTOR = 3`. `DEFAULT_NOISE` becomes 0.5 and `DEFAULT_MIST` is 0.
 
-DOM (the overlay keeps every existing inline style and adds `overflow: hidden` so the oversized noise layer never adds scrollable area):
+DOM (the overlay keeps every existing inline style and adds `overflow: hidden` so the oversized noise and mist layers never add scrollable area; amended: fog-visibility):
 
 ```
 div[data-poltergeist="fog"]          backdrop-filter unchanged; pointer-events none; z-index 2147483645
 ├─ div (handle.tintEl)               only for an accepted non-empty tint
-│                                    inset 0; pointer-events none; backgroundColor = tint; opacity = 0.22 × i
-└─ div (handle.noiseEl)              only when noise > 0
-                                     top/left -240px, right/bottom 0; pointer-events none; will-change transform
-                                     background-image = NOISE_IMAGE; opacity = noise × i; Drift target
+│                                    inset 0; pointer-events none; backgroundColor = tint; opacity = 0.38 × i
+├─ div (handle.noiseEl)              only when noise > 0
+│                                    top/left -240px, right/bottom 0; pointer-events none; will-change transform
+│                                    background-image = NOISE_IMAGE; opacity = noise × i; noise Drift target
+└─ div (handle.mistEl)               only when mist > 0 (added: fog-visibility)
+                                     top 0, bottom 0, left -1200px, right 0; pointer-events none; will-change transform
+                                     background-image = MIST_IMAGE; background-size 1200px 100%; background-repeat repeat-x
+                                     opacity = mist × 0.6 × i; mist Drift target
 ```
 
-Neither child carries `data-poltergeist`, so light-DOM marker counts stay at one Fog element.
+No child carries `data-poltergeist`, so light-DOM marker counts stay at one Fog element and `pause-resume.pw.js` keeps passing. Children stay in the order tint, noise, mist: the tint is prepended, the noise is inserted before the mist layer when the mist exists, and the mist is appended last.
 
 ```js
-const NOISE_IMAGE = [ // every tile size divides DRIFT_PX (240), so one Drift cycle ends where it started
-  'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.55) 0 1px, transparent 1.6px)',
-  'radial-gradient(circle at 70% 20%, rgba(0,0,0,0.45) 0 1px, transparent 1.6px)',
-  'radial-gradient(circle at 55% 75%, rgba(255,255,255,0.4) 0 0.8px, transparent 1.4px)',
-  'radial-gradient(circle at 15% 85%, rgba(0,0,0,0.35) 0 1.2px, transparent 1.8px)',
-  'radial-gradient(ellipse 60% 40% at 30% 40%, rgba(235,242,238,0.45), transparent 70%)',
-  'radial-gradient(ellipse 50% 35% at 75% 70%, rgba(220,232,226,0.35), transparent 70%)',
+// amended: fog-visibility. Every tile size divides DRIFT_PX (240), so one noise Drift cycle ends where it started.
+// Each speck ends inside its tile, so no dot is cut at a tile edge.
+const NOISE_IMAGE = [
+  'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.85) 0 2px, transparent 2.6px)',   // 24 px tile
+  'radial-gradient(circle at 70% 25%, rgba(0,0,0,0.8) 0 1.8px, transparent 2.4px)',         // 20 px tile
+  'radial-gradient(circle at 50% 70%, rgba(255,255,255,0.75) 0 1.5px, transparent 2.1px)', // 16 px tile
+  'radial-gradient(circle at 20% 80%, rgba(0,0,0,0.75) 0 2.5px, transparent 3.1px)',        // 40 px tile
+  'radial-gradient(circle at 80% 60%, rgba(255,255,255,0.7) 0 2.2px, transparent 2.8px)',   // 48 px tile
+  'radial-gradient(ellipse 60% 40% at 30% 40%, rgba(235,242,238,0.45), transparent 70%)',   // 240 px tile, kept
+  'radial-gradient(ellipse 50% 35% at 75% 70%, rgba(220,232,226,0.35), transparent 70%)',   // 240 px tile, kept
 ].join(', ');
-const NOISE_SIZE = '24px 24px, 30px 30px, 16px 16px, 40px 40px, 240px 240px, 240px 240px';
+const NOISE_SIZE = '24px 24px, 20px 20px, 16px 16px, 40px 40px, 48px 48px, 240px 240px, 240px 240px';
 const DRIFT_KEYFRAMES = [{ transform: 'translate(0px, 0px)' }, { transform: 'translate(240px, 240px)' }];
 const DRIFT_TIMING = { easing: 'linear', iterations: Infinity }; // duration = driftMs
+
+// added: fog-visibility. One 1200 px wide, full-height tile, repeated along x only.
+// Each radial band fades out inside the tile (centre ± 0.7 × radius stays within 0 to 1200 px
+// and 0 % to 100 %), and the linear band is constant along x, so tile edges show no seam.
+const MIST_IMAGE = [
+  'radial-gradient(ellipse 30% 28% at 25% 35%, rgba(232,240,236,0.9), transparent 70%)',
+  'radial-gradient(ellipse 28% 24% at 70% 62%, rgba(226,236,231,0.85), transparent 70%)',
+  'radial-gradient(ellipse 22% 20% at 50% 15%, rgba(238,244,240,0.75), transparent 70%)',
+  'linear-gradient(180deg, transparent 0%, rgba(228,236,232,0.5) 42%, rgba(228,236,232,0.5) 58%, transparent 100%)',
+].join(', ');
+const MIST_SIZE = '1200px 100%';
+const MIST_KEYFRAMES = [{ transform: 'translate(0px, 0px)' }, { transform: 'translate(1200px, 0px)' }];
+const MIST_TIMING = { easing: 'linear', iterations: Infinity }; // duration = driftMs × 3
 ```
 
-The screenshot pass may tune gradient stops and colours. Every tile size must keep dividing 240 px.
+The screenshot pass may tune gradient stops and colours. Every noise tile size must keep dividing 240 px, every speck must keep a radius from 1.5 to 2.5 px and an alpha from 0.7 to 0.85 (Requirement 4.2), and every mist radial band must keep ending inside the 1200 px tile. The mist layer spans from 1200 px left of the viewport to its right edge, so during the whole roll from `translate(0px, 0px)` to `translate(1200px, 0px)` it covers the viewport.
 
 Tint check (Requirement 5.4), run on every apply:
 
@@ -353,20 +396,21 @@ function acceptedTint(doc, value) {
 
 An accepted colour is written only as `tintEl.style.backgroundColor = t`, never into `cssText`, a style element, or a gradient.
 
-`apply` flow on a live handle:
+`apply` flow on a live handle (amended: fog-visibility):
 
 1. Set the `backdrop-filter` and `-webkit-backdrop-filter` exactly as before (Requirement 4.6).
-2. `syncTint`: create the tint layer with `prepend` so it stays below the noise, update it, or remove it.
-3. `syncNoise`: create, update, or remove the noise layer. Removing it cancels the Drift first.
-4. Store `handle.driftMs`.
-5. `syncDrift(handle, env)`: the Drift is wanted when `noiseEl` exists, `env.reducedMotion` is false, `driftMs` is greater than 0, and `noiseEl.animate` is a function. A wanted Drift that is not running starts. An unwanted running Drift gets `cancel()`. A running wanted Drift is left alone, so its cycle never restarts (Requirement 4.5).
+2. `syncTint`: create the tint layer with `prepend` so it stays below the noise, update it to `0.38 × i`, or remove it.
+3. `syncNoise`: create, update, or remove the noise layer. Removing it cancels the noise Drift first. A new noise layer is inserted before `handle.mistEl` when one exists, otherwise appended.
+4. `syncMist(handle, numberIn(p.mist, 0, 1, DEFAULT_MIST), i)` (added): when `mist` is not above 0, cancel the mist Drift and remove the Mist_Layer (Requirement 4.17). Otherwise create the layer if missing (absolute, `top: 0`, `bottom: 0`, `left: -1200px`, `right: 0`, `pointer-events: none`, `will-change: transform`, `backgroundImage = MIST_IMAGE`, `backgroundSize = MIST_SIZE`, `backgroundRepeat = 'repeat-x'`, appended last), then set `opacity = opacityFor(mist × MIST_MAX_OPACITY × i)` (Requirement 4.13).
+5. Store `handle.driftMs`.
+6. `syncDrift(handle, env)` (amended) reconciles both parts with one rule. A part is wanted when its layer exists, `env.reducedMotion` is false, `driftMs` is greater than 0, and the layer's `animate` is a function. A wanted part that is not running starts: `noiseEl.animate(DRIFT_KEYFRAMES, { ...DRIFT_TIMING, duration: driftMs })` into `handle.drift`, and `mistEl.animate(MIST_KEYFRAMES, { ...MIST_TIMING, duration: driftMs * MIST_PERIOD_FACTOR })` into `handle.mistDrift`. An unwanted running part gets `cancel()` and is cleared. A running wanted part is left alone, so its cycle never restarts (Requirement 4.5, 4.14, 4.15). The noise part is reconciled first, so with `mist` 0 the call order and count are exactly as before the amendment.
 
-At creation the handle also gets `unwatch = watchMotion(env, () => { if (handleState(handle) === LIVE) syncDrift(handle, handle.env); })`. `watchMotion` is a small local function in `fog.js`. It calls `env.window?.matchMedia?.('(prefers-reduced-motion: reduce)')`, adds a `change` listener when `addEventListener` exists, and returns the remover, or a no-op function when there is no `matchMedia` (jsdom, and the skeleton browser env).
+At creation the handle also gets `unwatch = watchMotion(env, () => { if (handleState(handle) === LIVE) syncDrift(handle, handle.env); })`. `watchMotion` is a small local function in `fog.js`. It calls `env.window?.matchMedia?.('(prefers-reduced-motion: reduce)')`, adds a `change` listener when `addEventListener` exists, and returns the remover, or a no-op function when there is no `matchMedia` (jsdom, and the skeleton browser env). Because `syncDrift` now covers both parts, the same listener stops and restarts the mist Drift with no extra code (Requirement 4.16).
 
-`undo`:
+`undo` (amended: fog-visibility):
 
-- Begin step (`durationMs > 0`): keep the existing overlay transition and zero `backdrop-filter`. On each existing layer, set `transition = opacity <d>ms linear` and `opacity = '0'`. All four values fade linearly over the same `durationMs` (Requirement 4.8).
-- Finish step (after `durationMs`, or at once): `unwatch()`, `drift?.cancel()`, then remove the overlay together with its layers (Requirement 4.9).
+- Begin step (`durationMs > 0`): keep the existing overlay transition and zero `backdrop-filter`. On each existing layer (tint, noise, and mist), set `transition = opacity <d>ms linear` and `opacity = '0'`. All five values fade linearly over the same `durationMs` (Requirement 4.8).
+- Finish step (after `durationMs`, or at once): `unwatch()`, `drift?.cancel()`, `mistDrift?.cancel()`, then remove the overlay together with its layers (Requirement 4.9).
 
 ### App Demo_Builders (changed)
 
@@ -413,11 +457,13 @@ Existing property tests stay valid without edits:
 
 The Package_Validators compare params with `JSON.stringify`, so key order matters. Both apps use the same Fog visual values.
 
+Amended: fog-visibility. Both Fog rules now use the key order `maxBlur`, `maxGrayscale`, `tint`, `noise`, `mist`, `driftMs`. The committed `rules.json` files and `EXPECTED_RULES` carry `noise` 0.5, not this table's original 0.3; the amendment sets it to 0.6 and adds `mist` 0.5. `doomscroll-fog` peaks at a tint of 0.38, noise 0.6, and mist 0.3 (D14).
+
 `app1-doomscroll/rules.json` (only `effect.params` change; every other field stays as is):
 
 | Rule | `effect.params` |
 |------|-----------------|
-| `doomscroll-fog` | `{ "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.3, "driftMs": 20000 }` |
+| `doomscroll-fog` | `{ "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }` (amended: fog-visibility) |
 | `doomscroll-flicker` | unchanged: `{ "maxDepth": 0.22, "periodMs": 1600 }` |
 | `doomscroll-rot` | `{ "maxFraction": 0.55, "glyphs": "▓▒░█" }` |
 | `doomscroll-block` | `{ "maxOpacity": 0.96, "blockAt": 0.8, "message": "You have scrolled long enough. Close this tab and take a break.", "detail": "You lost {duration} to this feed.", "durationMeter": "timeOnSite", "figure": "ghost", "fadeInMs": 1500 }` |
@@ -426,7 +472,7 @@ The Package_Validators compare params with `JSON.stringify`, so key order matter
 
 | Rule | `effect.params` |
 |------|-----------------|
-| `graveyard-fog` | `{ "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.3, "driftMs": 20000 }` |
+| `graveyard-fog` | `{ "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.6, "mist": 0.5, "driftMs": 20000 }` (amended: fog-visibility) |
 | `graveyard-rot` | `{ "maxFraction": 0.45, "glyphs": "▓▒░█" }` |
 | `graveyard-tombstone` | `{ "heading": "Here lies {title}", "message": "Abandoned for {duration}.", "actionLabel": "Resurrect", "action": "resurrect", "durationMeter": "timeAway", "maxOpacity": 0.96, "weathered": true, "mark": "R.I.P.", "riseInMs": 800 }` |
 
@@ -438,7 +484,7 @@ Neither file contains `durationScale` or `durationSuffix` (Requirement 6.5). Eac
 
 ```js
 export const EXPECTED_RULES = Object.freeze([
-  { id: 'doomscroll-fog', threshold: 120, rampTo: 300, type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.3, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } },
+  { id: 'doomscroll-fog', threshold: 120, rampTo: 300, type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.6, mist: 0.5, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } }, // amended: fog-visibility
   { id: 'doomscroll-flicker', threshold: 300, rampTo: 600, type: 'flicker', params: { maxDepth: 0.22, periodMs: 1600 }, undo: { mode: 'instant' } },
   { id: 'doomscroll-rot', threshold: 600, rampTo: 900, type: 'rot', params: { maxFraction: 0.55, glyphs: '▓▒░█' }, undo: { mode: 'instant' } },
   { id: 'doomscroll-block', threshold: 1200, rampTo: 1500, type: 'block', params: { maxOpacity: 0.96, blockAt: 0.8, message: MESSAGE, detail: 'You lost {duration} to this feed.', durationMeter: 'timeOnSite', figure: 'ghost', fadeInMs: 1500 }, undo: { mode: 'fade', durationMs: 600 } },
@@ -449,7 +495,7 @@ export const EXPECTED_RULES = Object.freeze([
 
 ```js
 export const EXPECTED_RULES = Object.freeze([
-  { id: 'graveyard-fog', trigger: { meter: 'timeAway', threshold: 1800, rampTo: 7200 }, type: 'fog', params: { maxBlur: 4, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.3, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } },
+  { id: 'graveyard-fog', trigger: { meter: 'timeAway', threshold: 1800, rampTo: 7200 }, type: 'fog', params: { maxBlur: 4, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.6, mist: 0.5, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } }, // amended: fog-visibility
   { id: 'graveyard-rot', trigger: { meter: 'timeAway', threshold: 14400, rampTo: 43200 }, type: 'rot', params: { maxFraction: 0.45, glyphs: '▓▒░█' }, undo: { mode: 'instant' } },
   {
     id: 'graveyard-tombstone',
@@ -478,7 +524,7 @@ Resulting demo text: `You lost 20 minutes (demo time) to this feed.` at `timeOnS
 |--------|---------------------|
 | Block | `stage`, `figureEl` (or `null`), `messageEl`, `detailEl` (or `null`), `fade: Animation[]` |
 | Tombstone | `card`, `markEl` (or `null`), `crackEl` (or `null`), `rise: Animation \| null`, `risePending: boolean` |
-| Fog | `tintEl`, `noiseEl` (each or `null`), `drift: Animation \| null`, `driftMs`, `unwatch: () => void` |
+| Fog | `tintEl`, `noiseEl`, `mistEl` (each or `null`; `mistEl` added by fog-visibility), `drift: Animation \| null`, `mistDrift: Animation \| null` (added by fog-visibility), `driftMs`, `unwatch: () => void` |
 
 All handles keep `env`, `dead`, `fading`, and `timer`, and use `teardown` exactly as before.
 
@@ -626,13 +672,17 @@ This spec adds no property-based tests: no new `fast-check` import and no new `f
 
 Every Fog, Block, and Tombstone handle, with motion running or not, leaves the Restoration_Suite snapshot equal to the snapshot before the first apply. This holds after an instant undo, and after a fade undo once `durationMs` has passed. A second undo changes nothing. Checked by the existing `restoration.test.js` (including the 24-order test) and by `polish-safety.test.js` "undo cancels every animation and restores the snapshot", which runs with the animate spy installed.
 
-**Validates: Requirements 2.13, 2.14, 3.13, 4.8, 4.9, 5.7**
+Amended: fog-visibility. The Mist_Layer and the mist Drift are covered by the same rule. Because `mist` defaults to 0, the existing suites exercise the amended Fog without a Mist_Layer; the new `polish-fog.test.js` mist cases check undo with `mist` 0.5.
+
+**Validates: Requirements 2.13, 2.14, 3.13, 4.8, 4.9, 4.17, 5.7**
 
 ### Invariant 2: No motion under reduced motion
 
 For each of the three effects, applying with `reducedMotion` true starts no animation, and re-applying with `reducedMotion` true ends or stops any running one. Checked in `polish-block.test.js`, `polish-tombstone.test.js`, `polish-fog.test.js` (cases "Fade_In / Rise_In / Drift do not play when reducedMotion is true" and "re-apply with reducedMotion true ends it"), and by the rewritten `tombstone.test.js` case.
 
-**Validates: Requirements 2.8, 3.7, 4.4, 4.5, 5.5, 5.11**
+Amended: fog-visibility. The mist Drift follows the same rule, including the reduced-motion `change` event.
+
+**Validates: Requirements 2.8, 3.7, 4.4, 4.5, 4.15, 4.16, 5.5, 5.11**
 
 ### Invariant 3: Unchanged default text
 
@@ -696,6 +746,38 @@ The helper lives under `skeleton/test/`, which the Skeleton_Sync excludes, so it
 
 App tests load `content.js` with `node:vm`, as the existing `content.test.js` files do. Each existing "passes every package check" test remains the evidence that the updated `rules.json` matches `EXPECTED_RULES` (Requirement 9.2).
 
+### Test changes for fog-visibility (amended: fog-visibility)
+
+Edited cases in `skeleton/test/polish-fog.test.js` (expected values only; Requirement 9.3):
+
+| Case | Old expectation | New expectation |
+|------|-----------------|-----------------|
+| "uses the default green-grey tint at 0.22 x intensity" (renamed to 0.38) | 0.11 at i 0.5, 0.22 at i 1 | 0.19 at i 0.5, 0.38 at i 1 (`'0'` at i 0 unchanged) |
+| "uses a tint override" | 0.22 | 0.38 |
+| "shows the default noise at 0.3 x intensity, made only from gradients" (renamed to 0.5) | 0.15 at i 0.5, 0.3 at i 1 | 0.25 at i 0.5, 0.5 at i 1 |
+| "keeps one overlay and the same layers on re-apply" | tint 0.176, noise 0.24 at i 0.8 | tint 0.304, noise 0.4 at i 0.8 |
+
+Every other polish-fog case stays as it is. With `mist` defaulting to 0 (D12), `fog.apply(env, {}, i)` still renders exactly the tint and noise layers and one Drift animation, so the child counts of 2, the `spy.calls` lengths of 1 and 2, the "tint '' gives one child" case, and the Requirement 4.7 case (`{ tint: '', noise: 0 }`) all still hold. The "noise override of 0.5" case still expects 0.5.
+
+Unedited suites checked against the amendment:
+
+- `polish-safety.test.js`: the source scan passes because `MIST_IMAGE` and `NOISE_IMAGE` contain no `url(`. The Requirement 5.6 table compares each invalid `noise` value with the default render, which is now 0.5; the string `'0.5'` is still invalid and renders like it. The default Fog picture keeps one animation of 20000 ms. "undo cancels every animation" keeps `counts.fog = 1`. Its invalid-value table has no `mist` row, so the new polish-fog case below covers invalid `mist`.
+- `polish-block.test.js`: pins only the 24 px detail size, which stays.
+- `effects.test.js`, `restoration.test.js`, `pause-resume.pw.js`, `effects.pw.js`: they apply Fog with `{}` or the rules, add no marked element, and check `backdrop-filter`, marker counts, and restoration, which the amendment keeps.
+- `package.test.js` in both apps: pass once both `rules.json` files and both `EXPECTED_RULES` carry the same new Fog params (task 8.4).
+
+New cases appended to `skeleton/test/polish-fog.test.js` as `describe('fog: grain and mist (fog-visibility)')`:
+
+- The noise `background-image` has at least four speck gradients matching `rgba(255, 255, 255, a) 0 Rpx` or `rgba(0, 0, 0, a) 0 Rpx` with R from 1.5 to 2.5 and a from 0.7 to 0.85, at least one of each colour (the pattern allows optional spaces after commas, because jsdom may normalise the serialisation); every `background-size` entry divides 240.
+- A `noise` override of 0.8 gives opacity 0.8 at i 1. The existing "uses a noise override of 0.5" case now passes the default value, so this case supplies the override that Requirement 9.1 asks for.
+- Default `mist` 0: `h.mistEl` is `null` and no `animate()` call targets a mist layer. Invalid `mist` values `null`, -0.1, 1.5, `NaN`, and `'0.5'` render the same overlay `outerHTML` and the same animation list as the default.
+- `mist` 0.5: one unmarked `mistEl` as the last child after `noiseEl`, `pointer-events: none`, `background-image` made only of gradients and without `url(`, `background-size` `1200px 100%`, `background-repeat` `repeat-x`, `left` `-1200px`; opacity 0.3 at i 1 and 0.15 at i 0.5. Override `mist` 1 gives 0.6 at i 1.
+- Mist Drift with `mist` 0.5: `isPlaying(spy, mistEl, { duration: 60000, iterations: Infinity })`, linear easing, keyframes from `translate(0px, 0px)` to `translate(1200px, 0px)`; `driftMs` 5000 gives 15000; `driftMs` 0 and RM true give `isStill`.
+- Re-apply while running makes no new mist call; re-apply with RM true cancels both parts and re-apply with RM false starts both again; the fake `matchMedia` `change` stops and restarts both parts; re-apply with `mist` 0 cancels the mist Drift and removes `mistEl`.
+- Fade undo with 500 ms puts `opacity 500ms linear` and opacity `'0'` on `mistEl`; after 500 ms both parts are `idle` and the snapshot equals the one before apply; instant undo cancels both parts before returning.
+
+New file `skeleton/test/polish-punchline.test.js` (jsdom), so that `polish-block.test.js` stays unedited: apply Block with `{ message, detail: 'You lost {duration} to this feed.' }` and check `detailEl.style.fontSize` `'24px'`, `parseFloat` of the message size 40 and detail size ≥ half of it, `detailEl.style.fontWeight` `'600'`, `detailEl.style.color` `'rgb(255, 255, 255)'`, and `detailEl.style.opacity` `''`; with the animate spy, the only `animate()` call on `detailEl` is the Fade_In ending at opacity 1.
+
 ### Geometry and visuals
 
 jsdom has no layout. Unit tests check DOM order and the flex-column style. The Screenshot_Checklist in the final task checks that:
@@ -729,6 +811,7 @@ This spec adds no new Playwright test. The existing browser suites keep checking
 | 7 Packaging | Data Models (rules, `EXPECTED_RULES`), D2 | both `package.test.js` "passes every package check", `check:skeletons`, `build:skeletons` with no diff |
 | 8 Docs | Earlier app spec edits | Review of the five edited files against the exact text, and no diff in doomscroll-app `tasks.md` |
 | 9 Verification | Testing Strategy, Implementation plan | Final check commands and Screenshot_Checklist |
+| 2.15, 4.1, 4.2, 4.13 to 4.17, 7.13, 9.9 (fog-visibility) | fog.js, block.js `DETAIL_CSS`, Data Models, "Test changes for fog-visibility" | edited and new `polish-fog.test.js` cases, `polish-punchline.test.js`, both `package.test.js`, task 8.6 checklist items |
 
 ## Implementation plan outline
 
@@ -760,3 +843,10 @@ Each task ends with `npm run build:skeletons` and a full `npm test`. Tasks 1 and
      - Graveyard, with `prefers-reduced-motion: reduce` emulated in DevTools on the tab before returning: the card in its final position at full opacity at once, with no Rise_In.
      - Graveyard: the page after Resurrect, with no Fog, Rot, or Tombstone left.
      - With no DevTools animation slow-down, watch one full Fade_In (1.5 s), one full Rise_In (0.8 s), and one full Drift cycle (20 s). Record `none`, or each stutter (a visible jump or pause) or clipping (part of the ghost, message, second line, card, or noise texture cut off) seen.
+8. **Fog visibility and Block punchline (amended: fog-visibility).**
+   - `fog.js`: tint maximum 0.38, the new `NOISE_IMAGE` and `NOISE_SIZE`, default `noise` 0.5, the `mist` param, `syncMist`, the Mist_Layer, the mist part of `syncDrift`, and the mist fade and cancel in `undo`.
+   - `block.js`: the new `DETAIL_CSS`.
+   - Tests: the four edited `polish-fog.test.js` cases, the new grain and mist cases, and `polish-punchline.test.js`.
+   - Both `rules.json` Fog rules and both `EXPECTED_RULES` Fog entries, then `npm run build:skeletons`.
+   - Re-run the task 7 automated check list, then the new Screenshot_Checklist items by hand.
+   - (Requirements 2.15, 4.1, 4.2, 4.5, 4.7 to 4.9, 4.11 to 4.17, 5.6, 7.2, 7.13, 9.3, 9.5 to 9.9)
