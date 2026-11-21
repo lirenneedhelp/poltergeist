@@ -234,6 +234,23 @@
         "chatSessionId": "sess_b3912825-85b9-45d0-8e96-43144e60ee9d",
         "timestamp": 1795270942042
       }
+    ],
+    "8.1 Make Fog read as fog in `skeleton/effects/fog.js`": [
+      {
+        "executionId": "2d86de02-44dc-491b-be56-21bca72d5e68",
+        "chatSessionId": "sess_e6aa184f-43d7-425e-bee5-a96c471b88bd",
+        "timestamp": 1795272942592
+      },
+      {
+        "executionId": "68704dc1-ebc5-404a-813e-05bed861d966",
+        "chatSessionId": "sess_b365c977-36a8-419a-968e-124bd3112e17",
+        "timestamp": 1795273020257
+      },
+      {
+        "executionId": "68704dc1-ebc5-404a-813e-05bed861d966",
+        "chatSessionId": "sess_b365c977-36a8-419a-968e-124bd3112e17",
+        "timestamp": 1795273336660
+      }
     ]
   }
 }

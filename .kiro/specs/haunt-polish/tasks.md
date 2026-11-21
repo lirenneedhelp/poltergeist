@@ -132,7 +132,7 @@ Constraints for every task:
     - _Requirements: 9.5, 9.6_
 
 - [ ] 8. Fog visibility and Block punchline (amendment fog-visibility)
-  - [ ] 8.1 Make Fog read as fog in `skeleton/effects/fog.js`
+  - [x] 8.1 Make Fog read as fog in `skeleton/effects/fog.js`
     - `TINT_MAX_OPACITY` 0.22 → 0.38; tint colour stays `#9eb2a4`
     - Replace `NOISE_IMAGE` and `NOISE_SIZE` with the design's seven layers: five specks (radius 1.5 to 2.5 px, alpha 0.7 to 0.85, three white and two black) on 24, 20, 16, 40, and 48 px tiles, then the two existing 240 px soft ellipses; `DEFAULT_NOISE` 0.3 → 0.5
     - Add the `mist` param (`numberIn` 0 to 1, `DEFAULT_MIST` 0), the constants `MIST_MAX_OPACITY` 0.6, `MIST_PX` 1200, `MIST_PERIOD_FACTOR` 3, and the design's `MIST_IMAGE`, `MIST_SIZE`, `MIST_KEYFRAMES`, `MIST_TIMING`

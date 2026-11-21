@@ -5,27 +5,48 @@ export const description = 'Page blurs and loses colour; both scale with intensi
 const DEFAULTS = { maxBlur: 6, maxGrayscale: 1 };
 const Z_INDEX = '2147483645';
 
-const DEFAULT_TINT = '#9eb2a4'; // faint green-grey
-const DEFAULT_NOISE = 0.3;
+const DEFAULT_TINT = '#9eb2a4'; // mid-tone green-grey
+const DEFAULT_NOISE = 0.5;
+const DEFAULT_MIST = 0;
 const DEFAULT_DRIFT_MS = 20000;
-const TINT_MAX_OPACITY = 0.22;
+const TINT_MAX_OPACITY = 0.38;
 const DRIFT_PX = 240;
+const MIST_MAX_OPACITY = 0.6;
+const MIST_PX = 1200;
+const MIST_PERIOD_FACTOR = 3;
 
-// Every tile size divides DRIFT_PX (240), so one Drift cycle ends where it started.
+// Every tile size divides DRIFT_PX (240), so one noise Drift cycle ends where it started.
+// Each speck ends inside its tile, so no dot is cut at a tile edge.
 const NOISE_IMAGE = [
-  'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.55) 0 1px, transparent 1.6px)',
-  'radial-gradient(circle at 70% 20%, rgba(0,0,0,0.45) 0 1px, transparent 1.6px)',
-  'radial-gradient(circle at 55% 75%, rgba(255,255,255,0.4) 0 0.8px, transparent 1.4px)',
-  'radial-gradient(circle at 15% 85%, rgba(0,0,0,0.35) 0 1.2px, transparent 1.8px)',
-  'radial-gradient(ellipse 60% 40% at 30% 40%, rgba(235,242,238,0.45), transparent 70%)',
-  'radial-gradient(ellipse 50% 35% at 75% 70%, rgba(220,232,226,0.35), transparent 70%)',
+  'radial-gradient(circle at 30% 40%, rgba(255,255,255,0.85) 0 2px, transparent 2.6px)', // 24 px tile
+  'radial-gradient(circle at 70% 25%, rgba(0,0,0,0.8) 0 1.8px, transparent 2.4px)', // 20 px tile
+  'radial-gradient(circle at 50% 70%, rgba(255,255,255,0.75) 0 1.5px, transparent 2.1px)', // 16 px tile
+  'radial-gradient(circle at 20% 80%, rgba(0,0,0,0.75) 0 2.5px, transparent 3.1px)', // 40 px tile
+  'radial-gradient(circle at 80% 60%, rgba(255,255,255,0.7) 0 2.2px, transparent 2.8px)', // 48 px tile
+  'radial-gradient(ellipse 60% 40% at 30% 40%, rgba(235,242,238,0.45), transparent 70%)', // 240 px tile
+  'radial-gradient(ellipse 50% 35% at 75% 70%, rgba(220,232,226,0.35), transparent 70%)', // 240 px tile
 ].join(', ');
-const NOISE_SIZE = '24px 24px, 30px 30px, 16px 16px, 40px 40px, 240px 240px, 240px 240px';
+const NOISE_SIZE = '24px 24px, 20px 20px, 16px 16px, 40px 40px, 48px 48px, 240px 240px, 240px 240px';
 const DRIFT_KEYFRAMES = [
   { transform: 'translate(0px, 0px)' },
   { transform: `translate(${DRIFT_PX}px, ${DRIFT_PX}px)` },
 ];
 const DRIFT_TIMING = { easing: 'linear', iterations: Infinity }; // duration = driftMs
+
+// One 1200 px wide, full-height tile, repeated along x only. Each radial band fades out
+// inside the tile, and the linear band is constant along x, so tile edges show no seam.
+const MIST_IMAGE = [
+  'radial-gradient(ellipse 30% 28% at 25% 35%, rgba(232,240,236,0.9), transparent 70%)',
+  'radial-gradient(ellipse 28% 24% at 70% 62%, rgba(226,236,231,0.85), transparent 70%)',
+  'radial-gradient(ellipse 22% 20% at 50% 15%, rgba(238,244,240,0.75), transparent 70%)',
+  'linear-gradient(180deg, transparent 0%, rgba(228,236,232,0.5) 42%, rgba(228,236,232,0.5) 58%, transparent 100%)',
+].join(', ');
+const MIST_SIZE = `${MIST_PX}px 100%`;
+const MIST_KEYFRAMES = [
+  { transform: 'translate(0px, 0px)' },
+  { transform: `translate(${MIST_PX}px, 0px)` },
+];
+const MIST_TIMING = { easing: 'linear', iterations: Infinity }; // duration = driftMs × 3
 
 const filterFor = (blur, gray) => `blur(${blur}px) grayscale(${gray})`;
 const opacityFor = (n) => String(+n.toFixed(3));
@@ -95,21 +116,70 @@ function syncNoise(handle, noise, i) {
     s.willChange = 'transform';
     s.backgroundImage = NOISE_IMAGE;
     s.backgroundSize = NOISE_SIZE;
-    handle.el.appendChild(el);
+    // Keep the order tint, noise, mist: a new noise layer goes below an existing mist layer.
+    if (handle.mistEl) handle.el.insertBefore(el, handle.mistEl);
+    else handle.el.appendChild(el);
     handle.noiseEl = el;
   }
   handle.noiseEl.style.opacity = opacityFor(noise * i);
 }
 
-/** Start, stop, or keep the Drift so it runs exactly when wanted; never restarts a running cycle. */
+function stopMistDrift(handle) {
+  if (handle.mistDrift) handle.mistDrift.cancel();
+  handle.mistDrift = null;
+}
+
+function syncMist(handle, mist, i) {
+  if (!(mist > 0)) {
+    stopMistDrift(handle);
+    if (handle.mistEl) handle.mistEl.remove();
+    handle.mistEl = null;
+    return;
+  }
+  if (!handle.mistEl) {
+    const el = layer(handle.env.document);
+    const s = el.style;
+    s.top = '0';
+    s.bottom = '0';
+    s.left = `-${MIST_PX}px`;
+    s.right = '0';
+    s.willChange = 'transform';
+    s.backgroundImage = MIST_IMAGE;
+    s.backgroundSize = MIST_SIZE;
+    s.backgroundRepeat = 'repeat-x';
+    handle.el.appendChild(el); // always the last layer, above the noise
+    handle.mistEl = el;
+  }
+  handle.mistEl.style.opacity = opacityFor(mist * MIST_MAX_OPACITY * i);
+}
+
+/** True when a Drift part should run on `el`: layer exists, motion allowed, driftMs above 0. */
+const driftWanted = (handle, env, el) =>
+  !!el && !env.reducedMotion && handle.driftMs > 0 && typeof el.animate === 'function';
+
+/**
+ * Start, stop, or keep both Drift parts so each runs exactly when wanted; never restarts
+ * a running cycle. The noise part is reconciled first, then the mist part.
+ */
 function syncDrift(handle, env) {
-  const el = handle.noiseEl;
-  const wanted =
-    !!el && !env.reducedMotion && handle.driftMs > 0 && typeof el.animate === 'function';
-  if (wanted && !handle.drift) {
-    handle.drift = el.animate(DRIFT_KEYFRAMES, { ...DRIFT_TIMING, duration: handle.driftMs });
-  } else if (!wanted) {
+  const noiseEl = handle.noiseEl;
+  if (driftWanted(handle, env, noiseEl)) {
+    if (!handle.drift) {
+      handle.drift = noiseEl.animate(DRIFT_KEYFRAMES, { ...DRIFT_TIMING, duration: handle.driftMs });
+    }
+  } else {
     stopDrift(handle);
+  }
+  const mistEl = handle.mistEl;
+  if (driftWanted(handle, env, mistEl)) {
+    if (!handle.mistDrift) {
+      handle.mistDrift = mistEl.animate(MIST_KEYFRAMES, {
+        ...MIST_TIMING,
+        duration: handle.driftMs * MIST_PERIOD_FACTOR,
+      });
+    }
+  } else {
+    stopMistDrift(handle);
   }
 }
 
@@ -136,7 +206,7 @@ export function apply(env, params = {}, intensity, handle) {
     s.left = '0';
     s.pointerEvents = 'none';
     s.zIndex = Z_INDEX;
-    s.overflow = 'hidden'; // the oversized noise layer never adds scrollable area
+    s.overflow = 'hidden'; // the oversized noise and mist layers never add scrollable area
     doc.documentElement.appendChild(el);
     handle = {
       env,
@@ -146,7 +216,9 @@ export function apply(env, params = {}, intensity, handle) {
       timer: null,
       tintEl: null,
       noiseEl: null,
+      mistEl: null,
       drift: null,
+      mistDrift: null,
       driftMs: DEFAULT_DRIFT_MS,
       unwatch: () => {},
     };
@@ -161,6 +233,7 @@ export function apply(env, params = {}, intensity, handle) {
     handle.el.style.webkitBackdropFilter = value;
     syncTint(handle, acceptedTint(env.document, p.tint), i);
     syncNoise(handle, numberIn(p.noise, 0, 1, DEFAULT_NOISE), i);
+    syncMist(handle, numberIn(p.mist, 0, 1, DEFAULT_MIST), i);
     handle.driftMs = driftFor(p.driftMs);
     syncDrift(handle, env);
   }
@@ -176,7 +249,7 @@ export function undo(handle, { durationMs = 0 } = {}) {
       s.transition = `backdrop-filter ${durationMs}ms linear, -webkit-backdrop-filter ${durationMs}ms linear`;
       s.backdropFilter = 'blur(0px) grayscale(0)';
       s.webkitBackdropFilter = 'blur(0px) grayscale(0)';
-      for (const layerEl of [handle.tintEl, handle.noiseEl]) {
+      for (const layerEl of [handle.tintEl, handle.noiseEl, handle.mistEl]) {
         if (!layerEl) continue;
         layerEl.style.transition = `opacity ${durationMs}ms linear`;
         layerEl.style.opacity = '0';
@@ -185,6 +258,7 @@ export function undo(handle, { durationMs = 0 } = {}) {
     () => {
       handle.unwatch?.();
       stopDrift(handle);
+      stopMistDrift(handle);
       handle.el.remove();
     },
   );
