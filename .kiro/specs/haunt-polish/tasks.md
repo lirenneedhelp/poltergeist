@@ -109,7 +109,7 @@ Constraints for every task:
     - _Requirements: 8.5, 8.10, 8.11, 8.13, 8.15_
 
 - [ ] 7. Final check
-  - [ ] 7.1 Run the automated final check from the repository root, in order, each exiting 0
+  - [x] 7.1 Run the automated final check from the repository root, in order, each exiting 0
     - `npm test` (runs `check:graveyard` as `pretest`, then `check:doomscroll`, then `vitest --run`)
     - `npm run build:skeletons`, then `git status --porcelain` lists no modified, deleted, or untracked file under `app1-doomscroll/skeleton/` or `app2-tab-graveyard/skeleton/`
     - `npm run test:browser` (`skeleton-effects`, `doomscroll-extension`, `graveyard-extension`)
