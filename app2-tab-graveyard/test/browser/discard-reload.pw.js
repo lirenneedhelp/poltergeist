@@ -23,7 +23,7 @@ import {
   test, expect, FIXTURE, WINDOW_KEY_PREFIX, fixtureTitle,
 } from './extension-fixture.js';
 
-// 2 s past the demo Tombstone threshold, and under 60 s so the duration is worded in seconds.
+// 2 s past the demo Tombstone threshold. Demo_Mode shows the duration in demo time: each second away reads as one hour.
 const LONG_AWAY_MS = 26_000;
 const TOMBSTONE_S = 24;
 const WAIT_MS = 10_000;
@@ -110,10 +110,18 @@ test('a discarded tab shows the Tombstone for its full absence after it reloads'
   await expect(tombstone).toHaveCount(1, { timeout: WAIT_MS });
   await expect(tombstone.locator('h1')).toHaveText(`Here lies ${titleA}`);
   const message = tombstone.locator('p');
-  await expect(message).toHaveText(/^Abandoned for \d+ seconds\.$/);
-  const shownSeconds = Number((await message.textContent()).match(/(\d+) seconds/)[1]);
-  expect(shownSeconds).toBeGreaterThanOrEqual(TOMBSTONE_S);
-  expect(shownSeconds).toBeLessThanOrEqual(Math.ceil((Date.now() - left) / 1000) + 1);
+  await expect(message).toHaveText(/^Abandoned for \d+ (?:hours|days) \(demo time\)\.$/);
+  const [, shownCount, shownUnit] = (await message.textContent())
+    .match(/^Abandoned for (\d+) (hours|days) \(demo time\)\.$/);
+  const upper = Math.ceil((Date.now() - left) / 1000) + 1;
+  if (shownUnit === 'hours') {
+    expect(Number(shownCount)).toBeGreaterThanOrEqual(TOMBSTONE_S);
+    expect(Number(shownCount)).toBeLessThanOrEqual(upper);
+  } else {
+    expect(upper, 'days only once the absence reaches 48 s').toBeGreaterThanOrEqual(48);
+    expect(Number(shownCount)).toBeGreaterThanOrEqual(2);
+    expect(Number(shownCount)).toBeLessThanOrEqual(Math.floor(upper / 24));
+  }
 
   const record = await readRecord(finalId);
   expect(record).toMatchObject({ url: FIXTURE.a, title: titleA, leftAt: null });

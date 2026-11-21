@@ -73,7 +73,7 @@ Constraints for every task:
     - "Undo cancels every animation and restores the snapshot" for all three effects with the animate spy installed
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.8, 5.10, 7.11, 9.1_
 
-- [ ] 5. Apps and packaging
+- [x] 5. Apps and packaging
   - [x] 5.1 Update the Demo_Builders in `app1-doomscroll/content.js` and `app2-tab-graveyard/content.js`
     - Keep each function's shape; trigger division no longer `continue`s; use `DEMO_TIME_SCALE` (60 Doomscroll, 3600 Graveyard) and `DEMO_SUFFIX = ' (demo time)'`
     - Set `durationScale` and `durationSuffix` only when `effect.params` is a non-array object with a string `durationMeter`; skip malformed rules without error; never mutate the input
@@ -89,7 +89,7 @@ Constraints for every task:
     - Per app: the Duration_Rule gains `durationScale` (60 or 3600) and `durationSuffix ' (demo time)'`; every other rule and param equals the Normal_Profile apart from divided trigger times; Normal_Profile deep-equals a copy taken before the call and is unchanged after editing demo params; a synthetic Block or Tombstone rule without a string `durationMeter` (Graveyard also with `durationMeter: 5`) gains neither param; malformed rules do not throw; `validateRules(demo, builtinEffects)` is valid with `[]` errors; Normal_Profile has no duration params and exactly one Duration_Rule
     - End to end: Block with the demo params and `readMeter('timeOnSite') = 20` shows `You lost 20 minutes (demo time) to this feed.`; Tombstone with `readMeter('timeAway') = 33` shows `Abandoned for 33 hours (demo time).`
     - _Requirements: 6.1 to 6.10, 9.2_
-  - [ ] 5.4 Edit the demo Tombstone assertions in `app2-tab-graveyard/test/browser/return-resurrect.pw.js` and `discard-reload.pw.js`
+  - [x] 5.4 Edit the demo Tombstone assertions in `app2-tab-graveyard/test/browser/return-resurrect.pw.js` and `discard-reload.pw.js`
     - Replace the "worded in seconds" comment with "Demo_Mode shows the duration in demo time: each second away reads as one hour."
     - Replace the message assertion with the design's block: hours N between `TOMBSTONE_S` (24) and `upper`; days D between 2 and `floor(upper / 24)` only when `upper` is at least 48; `upper` is `Math.ceil(longAwayMs / 1000) + 1` in `return-resurrect.pw.js` and `Math.ceil((Date.now() - left) / 1000) + 1` in `discard-reload.pw.js`
     - Change no other line in either file

@@ -10,8 +10,8 @@ import {
 // Absences, measured from the moment A leaves the front.
 // SHORT_AWAY_MS: past Fog's full intensity (2 s), 21 s short of the Tombstone (24 s).
 // STAY_MS: time spent on A after the short return; decay must hold throughout.
-// LONG_AWAY_MS: 2 s past the Tombstone threshold, and under 60 s so the
-// duration is worded in seconds.
+// LONG_AWAY_MS: 2 s past the Tombstone threshold. Demo_Mode shows the duration
+// in demo time: each second away reads as one hour.
 const SHORT_AWAY_MS = 3_000;
 const STAY_MS = 5_000;
 const LONG_AWAY_MS = 26_000;
@@ -89,10 +89,18 @@ test('decay appears on return, stays while in use, and a real Resurrect click cl
   await expect(tombstone).toHaveCount(1, { timeout: 5_000 });
   await expect(tombstone.locator('h1')).toHaveText(`Here lies ${titleA}`);
   const message = tombstone.locator('p');
-  await expect(message).toHaveText(/^Abandoned for \d+ seconds\.$/);
-  const shownSeconds = Number((await message.textContent()).match(/(\d+) seconds/)[1]);
-  expect(shownSeconds).toBeGreaterThanOrEqual(TOMBSTONE_S);
-  expect(shownSeconds).toBeLessThanOrEqual(Math.ceil(longAwayMs / 1000) + 1);
+  await expect(message).toHaveText(/^Abandoned for \d+ (?:hours|days) \(demo time\)\.$/);
+  const [, shownCount, shownUnit] = (await message.textContent())
+    .match(/^Abandoned for (\d+) (hours|days) \(demo time\)\.$/);
+  const upper = Math.ceil(longAwayMs / 1000) + 1;
+  if (shownUnit === 'hours') {
+    expect(Number(shownCount)).toBeGreaterThanOrEqual(TOMBSTONE_S);
+    expect(Number(shownCount)).toBeLessThanOrEqual(upper);
+  } else {
+    expect(upper, 'days only once the absence reaches 48 s').toBeGreaterThanOrEqual(48);
+    expect(Number(shownCount)).toBeGreaterThanOrEqual(2);
+    expect(Number(shownCount)).toBeLessThanOrEqual(Math.floor(upper / 24));
+  }
   expect(await artifactKinds(a)).toContain('fog');
   const beforeResurrect = await readRecord(tabA);
   expect(beforeResurrect.demo.heldMs).toBeGreaterThanOrEqual(TOMBSTONE_S * 1000);

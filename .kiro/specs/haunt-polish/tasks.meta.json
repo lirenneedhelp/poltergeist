@@ -129,6 +129,25 @@
         "chatSessionId": "sess_2f12c7ce-da42-4aef-bcdf-3979528d2a13",
         "timestamp": 1795267931517
       }
+    ],
+    "5.4 Edit the demo Tombstone assertions in `app2-tab-graveyard/test/browser/return-resurrect.pw.js` and `discard-reload.pw.js`": [
+      {
+        "executionId": "ea0aaf39-21c2-4cf5-8a1e-7d1929d1a103",
+        "chatSessionId": "sess_ee3d2195-04b1-4e5a-95b3-1110c204895c",
+        "timestamp": 1795267998564
+      },
+      {
+        "executionId": "ea0aaf39-21c2-4cf5-8a1e-7d1929d1a103",
+        "chatSessionId": "sess_ee3d2195-04b1-4e5a-95b3-1110c204895c",
+        "timestamp": 1795268290951
+      }
+    ],
+    "5. Apps and packaging": [
+      {
+        "executionId": "ea0aaf39-21c2-4cf5-8a1e-7d1929d1a103",
+        "chatSessionId": "sess_ee3d2195-04b1-4e5a-95b3-1110c204895c",
+        "timestamp": 1795268291002
+      }
     ]
   }
 }
