@@ -20,10 +20,10 @@ const MESSAGE = 'You have scrolled long enough. Close this tab and take a break.
 
 /** Exact expected rules (id, order, meter values, params, undo). */
 export const EXPECTED_RULES = Object.freeze([
-  { id: 'doomscroll-fog', threshold: 120, rampTo: 300, type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8 }, undo: { mode: 'fade', durationMs: 400 } },
+  { id: 'doomscroll-fog', threshold: 120, rampTo: 300, type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8, tint: '#9eb2a4', noise: 0.3, driftMs: 20000 }, undo: { mode: 'fade', durationMs: 400 } },
   { id: 'doomscroll-flicker', threshold: 300, rampTo: 600, type: 'flicker', params: { maxDepth: 0.22, periodMs: 1600 }, undo: { mode: 'instant' } },
-  { id: 'doomscroll-rot', threshold: 600, rampTo: 900, type: 'rot', params: { maxFraction: 0.55, glyphs: '░▒·_ ' }, undo: { mode: 'instant' } },
-  { id: 'doomscroll-block', threshold: 1200, rampTo: 1500, type: 'block', params: { maxOpacity: 0.96, blockAt: 0.8, message: MESSAGE }, undo: { mode: 'fade', durationMs: 600 } },
+  { id: 'doomscroll-rot', threshold: 600, rampTo: 900, type: 'rot', params: { maxFraction: 0.55, glyphs: '▓▒░█' }, undo: { mode: 'instant' } },
+  { id: 'doomscroll-block', threshold: 1200, rampTo: 1500, type: 'block', params: { maxOpacity: 0.96, blockAt: 0.8, message: MESSAGE, detail: 'You lost {duration} to this feed.', durationMeter: 'timeOnSite', figure: 'ghost', fadeInMs: 1500 }, undo: { mode: 'fade', durationMs: 600 } },
 ]);
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);

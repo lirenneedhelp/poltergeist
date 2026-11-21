@@ -19,19 +19,30 @@
  * Build the Demo_Profile from the Normal_Profile: a deep clone whose trigger
  * `threshold` and `rampTo` are divided by exactly 3600 (the Demo_Time_Scale).
  * The input is not mutated. Accepts either `{ rules: [...] }` or a bare rule
- * array, like the validator.
+ * array, like the validator. Rules whose params name a string `durationMeter`
+ * also get `durationScale` and `durationSuffix` so their `{duration}` text
+ * reads in demo time.
  */
 function graveyardCreateDemoProfile(normalDocument) {
   const DEMO_TIME_SCALE = 3600;
+  const DEMO_SUFFIX = ' (demo time)';
   const demo = typeof structuredClone === 'function'
     ? structuredClone(normalDocument)
     : JSON.parse(JSON.stringify(normalDocument));
   const rules = Array.isArray(demo) ? demo : demo && Array.isArray(demo.rules) ? demo.rules : [];
   for (const rule of rules) {
     const trigger = rule && rule.trigger;
-    if (!trigger || typeof trigger !== 'object') continue;
-    if (typeof trigger.threshold === 'number') trigger.threshold /= DEMO_TIME_SCALE;
-    if (typeof trigger.rampTo === 'number') trigger.rampTo /= DEMO_TIME_SCALE;
+    if (trigger && typeof trigger === 'object') {
+      if (typeof trigger.threshold === 'number') trigger.threshold /= DEMO_TIME_SCALE;
+      if (typeof trigger.rampTo === 'number') trigger.rampTo /= DEMO_TIME_SCALE;
+    }
+    // Duration_Rule: params name a string durationMeter. Its {duration} reads in demo time.
+    const effect = rule && rule.effect;
+    const params = effect && typeof effect === 'object' ? effect.params : undefined;
+    if (params && typeof params === 'object' && !Array.isArray(params) && typeof params.durationMeter === 'string') {
+      params.durationScale = DEMO_TIME_SCALE;
+      params.durationSuffix = DEMO_SUFFIX;
+    }
   }
   return demo;
 }

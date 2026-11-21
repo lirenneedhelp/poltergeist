@@ -5,7 +5,7 @@
       "enabled": true,
       "match": ["http://*/*", "https://*/*"],
       "trigger": { "meter": "timeAway", "threshold": 1800, "rampTo": 7200 },
-      "effect": { "type": "fog", "params": { "maxBlur": 4, "maxGrayscale": 0.8 } },
+      "effect": { "type": "fog", "params": { "maxBlur": 4, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.3, "driftMs": 20000 } },
       "undo": { "mode": "fade", "durationMs": 400 }
     },
     {
@@ -13,7 +13,7 @@
       "enabled": true,
       "match": ["http://*/*", "https://*/*"],
       "trigger": { "meter": "timeAway", "threshold": 14400, "rampTo": 43200 },
-      "effect": { "type": "rot", "params": { "maxFraction": 0.45, "glyphs": "░▒·_ " } },
+      "effect": { "type": "rot", "params": { "maxFraction": 0.45, "glyphs": "▓▒░█" } },
       "undo": { "mode": "instant" }
     },
     {
@@ -29,7 +29,10 @@
           "actionLabel": "Resurrect",
           "action": "resurrect",
           "durationMeter": "timeAway",
-          "maxOpacity": 0.96
+          "maxOpacity": 0.96,
+          "weathered": true,
+          "mark": "R.I.P.",
+          "riseInMs": 800
         }
       },
       "undo": { "mode": "fade", "durationMs": 600 }

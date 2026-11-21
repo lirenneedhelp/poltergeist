@@ -93,6 +93,30 @@
         "chatSessionId": "sess_7cfaa17f-2a32-4a1c-9958-b0d9d7a9bb85",
         "timestamp": 1795266973404
       }
+    ],
+    "5.1 Update the Demo_Builders in `app1-doomscroll/content.js` and `app2-tab-graveyard/content.js`": [
+      {
+        "executionId": "3ab685fb-3ff8-425f-8fa1-914e235c155f",
+        "chatSessionId": "sess_d3ef7558-284b-4f2f-92e5-f790b6cc04c5",
+        "timestamp": 1795267406763
+      },
+      {
+        "executionId": "3ab685fb-3ff8-425f-8fa1-914e235c155f",
+        "chatSessionId": "sess_d3ef7558-284b-4f2f-92e5-f790b6cc04c5",
+        "timestamp": 1795267480790
+      }
+    ],
+    "5.2 Update both `rules.json` files and both `EXPECTED_RULES`, then regenerate skeletons": [
+      {
+        "executionId": "678bba36-baab-49ee-9a4e-c0b6ae6add91",
+        "chatSessionId": "sess_bb032f09-9634-4a81-9f27-150bbb262007",
+        "timestamp": 1795267540890
+      },
+      {
+        "executionId": "678bba36-baab-49ee-9a4e-c0b6ae6add91",
+        "chatSessionId": "sess_bb032f09-9634-4a81-9f27-150bbb262007",
+        "timestamp": 1795267663072
+      }
     ]
   }
 }

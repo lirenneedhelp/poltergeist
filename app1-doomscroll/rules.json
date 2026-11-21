@@ -6,7 +6,7 @@
       "enabled": true,
       "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
       "trigger": { "meter": "timeOnSite", "threshold": 120, "rampTo": 300 },
-      "effect": { "type": "fog", "params": { "maxBlur": 5, "maxGrayscale": 0.8 } },
+      "effect": { "type": "fog", "params": { "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.3, "driftMs": 20000 } },
       "undo": { "mode": "fade", "durationMs": 400 }
     },
     {
@@ -24,7 +24,7 @@
       "enabled": true,
       "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
       "trigger": { "meter": "timeOnSite", "threshold": 600, "rampTo": 900 },
-      "effect": { "type": "rot", "params": { "maxFraction": 0.55, "glyphs": "░▒·_ " } },
+      "effect": { "type": "rot", "params": { "maxFraction": 0.55, "glyphs": "▓▒░█" } },
       "undo": { "mode": "instant" }
     },
     {
@@ -38,7 +38,11 @@
         "params": {
           "maxOpacity": 0.96,
           "blockAt": 0.8,
-          "message": "You have scrolled long enough. Close this tab and take a break."
+          "message": "You have scrolled long enough. Close this tab and take a break.",
+          "detail": "You lost {duration} to this feed.",
+          "durationMeter": "timeOnSite",
+          "figure": "ghost",
+          "fadeInMs": 1500
         }
       },
       "undo": { "mode": "fade", "durationMs": 600 }

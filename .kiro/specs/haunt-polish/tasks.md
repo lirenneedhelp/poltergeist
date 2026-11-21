@@ -74,12 +74,12 @@ Constraints for every task:
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 5.7, 5.8, 5.10, 7.11, 9.1_
 
 - [ ] 5. Apps and packaging
-  - [ ] 5.1 Update the Demo_Builders in `app1-doomscroll/content.js` and `app2-tab-graveyard/content.js`
+  - [x] 5.1 Update the Demo_Builders in `app1-doomscroll/content.js` and `app2-tab-graveyard/content.js`
     - Keep each function's shape; trigger division no longer `continue`s; use `DEMO_TIME_SCALE` (60 Doomscroll, 3600 Graveyard) and `DEMO_SUFFIX = ' (demo time)'`
     - Set `durationScale` and `durationSuffix` only when `effect.params` is a non-array object with a string `durationMeter`; skip malformed rules without error; never mutate the input
     - Add the design's one-sentence doc comment to each function
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.9_
-  - [ ] 5.2 Update both `rules.json` files and both `EXPECTED_RULES`, then regenerate skeletons
+  - [x] 5.2 Update both `rules.json` files and both `EXPECTED_RULES`, then regenerate skeletons
     - `app1-doomscroll/rules.json` and `app2-tab-graveyard/rules.json`: replace only `effect.params` with the design's Normal_Profile params in the exact key order (Fog `tint`/`noise`/`driftMs`; Rot glyphs `▓▒░█`; Block `detail`/`durationMeter`/`figure`/`fadeInMs`; Tombstone `weathered`/`mark`/`riseInMs`); `doomscroll-flicker` unchanged; no `durationScale` or `durationSuffix`
     - Replace `EXPECTED_RULES` in `scripts/validate-doomscroll-package.mjs` and `scripts/validate-graveyard-package.mjs` with the design's exact values; change nothing else in either validator, `package-checks.mjs`, or the sync scripts
     - Run `npm run build:skeletons`; confirm no `manifest.json` change is needed because no new module joins the import graph
