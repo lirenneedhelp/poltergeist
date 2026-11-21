@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tab Graveyard</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.js"></script>
+</head>
+<body>
+  <main id="main" aria-busy="true">
+    <h1>Tab Graveyard</h1>
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+    <section class="section" aria-labelledby="this-tab-heading">
+      <h2 id="this-tab-heading">This tab</h2>
+      <div id="current" class="current" role="status" aria-live="polite" data-stage="loading">
+        <p id="current-stage" class="stage">Checking this tab…</p>
+        <p id="current-away" class="away" hidden></p>
+      </div>
+      <button type="button" id="resurrect" disabled>Resurrect this tab</button>
+    </section>
+
+    <section class="section" aria-labelledby="graveyard-heading">
+      <h2 id="graveyard-heading">Graveyard</h2>
+      <p id="dead-empty" class="empty" hidden>No dead tabs.</p>
+      <ul id="dead-list" class="list" aria-labelledby="graveyard-heading" hidden></ul>
+      <button type="button" id="bury" class="danger" disabled>Bury all (0)</button>
+    </section>
+
+    <section class="section" aria-labelledby="buried-heading">
+      <h2 id="buried-heading">Buried</h2>
+      <p id="buried-empty" class="empty" hidden>Nothing buried yet.</p>
+      <ul id="buried-list" class="list" aria-labelledby="buried-heading" hidden></ul>
+    </section>
+
+    <footer class="footer">
+      <label class="control" for="demo">
+        <input type="checkbox" id="demo" name="demo" disabled>
+        <span>Demo mode</span>
+      </label>
+    </footer>
+  </main>
+</body>
+</html>

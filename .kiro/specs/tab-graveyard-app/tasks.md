@@ -124,15 +124,15 @@ Constraints for every task:
     - **Property 5: At most one live instance**
     - **Validates: Requirements 2.6, 2.7, 6.1–6.3, 6.7–6.13, 10.5**
 
-- [ ] 6. Implement the popup
-  - [ ] 6.1 Create `popup.html`, `popup.js`, and `popup.css`
+- [x] 6. Implement the popup
+  - [x] 6.1 Create `popup.html`, `popup.js`, and `popup.css`
     - Sections as designed: This tab (Stage, Away_Time, `Resurrect this tab`), Graveyard (`Bury all (N)`), Buried (`Reopen` per entry), and a `Demo mode` checkbox.
     - Read only the active tab id; get everything else from `graveyard:popup-state`. Render with `textContent` and show hosts only.
     - Guard against duplicate in-flight commands, roll back and show a short error on failure, and re-request state after each successful command.
     - Use external files only; static styling with visible focus and disabled states.
     - _Requirements: 7.1–7.6, 7.13_
 
-  - [ ] 6.2 Add `app2-tab-graveyard/test/popup.test.js`
+  - [x] 6.2 Add `app2-tab-graveyard/test/popup.test.js`
     - Cover the loading, error, unknown-tab, and populated states; the Bury count and disabled state; Bury success and failure; Reopen; Resurrect with `delivered: false`; the demo toggle; the duplicate-click guard; markup in titles shown as text; and a table pinning the popup duration formatter to the tombstone formatter's outputs.
     - **Validates: Requirements 7.1–7.6, 7.13, 10.5**
 

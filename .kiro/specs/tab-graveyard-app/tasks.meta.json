@@ -220,6 +220,37 @@
         "chatSessionId": "sess_5fe08aa3-f915-4c55-b9b2-4885cb0a67ab",
         "timestamp": 1795105209329
       }
+    ],
+    "6.1 Create `popup.html`, `popup.js`, and `popup.css`": [
+      {
+        "executionId": "8b6dbddc-c820-44b2-a8f0-7e774a72cd6d",
+        "chatSessionId": "sess_88e7c605-958a-4f63-a847-7e7754338e7f",
+        "timestamp": 1795243383601
+      },
+      {
+        "executionId": "8b6dbddc-c820-44b2-a8f0-7e774a72cd6d",
+        "chatSessionId": "sess_88e7c605-958a-4f63-a847-7e7754338e7f",
+        "timestamp": 1795244611157
+      }
+    ],
+    "6.2 Add `app2-tab-graveyard/test/popup.test.js`": [
+      {
+        "executionId": "cf49cb3f-9c2b-45bd-9ebf-2451b3aaa8f0",
+        "chatSessionId": "sess_c098e470-d07d-4a6f-b031-ce00def85f17",
+        "timestamp": 1795244976374
+      },
+      {
+        "executionId": "cf49cb3f-9c2b-45bd-9ebf-2451b3aaa8f0",
+        "chatSessionId": "sess_c098e470-d07d-4a6f-b031-ce00def85f17",
+        "timestamp": 1795245456087
+      }
+    ],
+    "6. Implement the popup": [
+      {
+        "executionId": "cf49cb3f-9c2b-45bd-9ebf-2451b3aaa8f0",
+        "chatSessionId": "sess_c098e470-d07d-4a6f-b031-ce00def85f17",
+        "timestamp": 1795245456159
+      }
     ]
   }
 }

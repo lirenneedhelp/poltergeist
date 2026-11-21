@@ -1,0 +1,264 @@
+/* Tab Graveyard popup: small static layout. No animation or transitions. */
+:root {
+  color-scheme: light dark;
+  --fg: #1d1d1f;
+  --bg: #ffffff;
+  --muted: #5f6368;
+  --border: #d0d0d5;
+  --surface: #f3f3f5;
+  --surface-hover: #e6e6ea;
+  --focus: #1a5fd0;
+  --alive: #1e6b34;
+  --fogged: #5b6b7a;
+  --rotting: #8a5300;
+  --dead: #b3261e;
+  --warn: #8a5300;
+  --error: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #ececf0;
+    --bg: #1f1f23;
+    --muted: #a8a8b0;
+    --border: #44444c;
+    --surface: #2a2a30;
+    --surface-hover: #35353c;
+    --focus: #8ab4f8;
+    --alive: #81c995;
+    --fogged: #a8b8c8;
+    --rotting: #f3c46b;
+    --dead: #f2b8b5;
+    --warn: #f3c46b;
+    --error: #f2b8b5;
+  }
+}
+
+* {
+  transition: none;
+  animation: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  width: 320px;
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+main {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px 14px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+h2 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.section {
+  margin: 0;
+}
+
+.notice {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.notice[data-kind="error"] {
+  color: var(--error);
+}
+
+.notice[data-kind="warning"] {
+  color: var(--warn);
+}
+
+.current {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-left-color: var(--muted);
+  border-radius: 4px;
+}
+
+.current p {
+  margin: 0;
+}
+
+.current .stage {
+  font-weight: 600;
+}
+
+.current .away {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.current[data-stage="loading"],
+.current[data-stage="unknown"] {
+  color: var(--muted);
+}
+
+.current[data-stage="alive"] {
+  border-left-color: var(--alive);
+}
+
+.current[data-stage="fogged"] {
+  border-left-color: var(--fogged);
+}
+
+.current[data-stage="rotting"] {
+  border-left-color: var(--rotting);
+}
+
+.current[data-stage="dead"],
+.current[data-stage="error"] {
+  border-left-color: var(--dead);
+}
+
+.empty {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.list {
+  max-height: 168px;
+  margin: 0 0 8px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.row-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title,
+.row-host,
+.row-when {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-title {
+  font-weight: 500;
+}
+
+.row-meta {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.row-when {
+  flex: none;
+}
+
+button {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+button.danger {
+  border-color: var(--dead);
+  color: var(--dead);
+}
+
+.row .reopen {
+  flex: none;
+  padding: 3px 10px;
+  font-size: 13px;
+}
+
+button:focus-visible,
+.control input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+button:disabled,
+button.danger:disabled {
+  border-style: dashed;
+  border-color: var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.footer {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.control input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.control:has(input:disabled) {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.control input:disabled {
+  cursor: not-allowed;
+}
