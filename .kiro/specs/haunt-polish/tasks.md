@@ -16,14 +16,14 @@ Constraints for every task:
 
 ## Tasks
 
-- [ ] 1. Shared duration helpers and Tombstone duration params
+- [x] 1. Shared duration helpers and Tombstone duration params
   - [x] 1.1 Move and add helpers in `skeleton/effects/util.js` and use them in `skeleton/effects/tombstone.js`
     - Move `formatDuration` and `fill` verbatim from `tombstone.js` into `util.js`; add `numberIn` and `durationText(env, meter, params)` exactly as in the design
     - `durationText`: `a while` with no suffix when `readMeter` is missing, returns a non-finite value, or the scaled value overflows; scale 1 unless `durationScale` is a finite number above 0; empty suffix unless `durationSuffix` is a string; scale applied before flooring
     - In `tombstone.js`, replace the local functions with `export { formatDuration } from './util.js'` and import `fill`/`durationText`; `render` fills `{duration}` with `durationText(env, params.durationMeter, params)`, keeping `{...DEFAULTS, ...params}` resolution and `{title}`-before-`{duration}` order
     - Default text must stay byte-identical when both duration params are absent
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.10, 5.6_
-  - [ ] 1.2 Add `skeleton/test/polish-helpers.js` and the Tombstone half of `skeleton/test/polish-duration.test.js`
+  - [x] 1.2 Add `skeleton/test/polish-helpers.js` and the Tombstone half of `skeleton/test/polish-duration.test.js`
     - `polish-helpers.js` (not a `*.test.js` file): `installAnimateSpy()` via `Object.defineProperty(Element.prototype, 'animate', { configurable: true, writable: true, value: vi.fn(...) })` returning `{ calls, on(el), restore() }`; `makeEnv(overrides)`; `isPlaying(spy, el, { duration, iterations })` and `isStill(spy, el)` per Requirement 9.8
     - Tests: `tombstone.formatDuration === util.formatDuration` and the existing pinned table; `33 hours (demo time)` at scale 3600, meter 33; `2 days (demo time)` at meter 48; `a while` with no suffix when `readMeter` is missing or returns `NaN`; scale 1 for `durationScale` 0, -1, `"60"`; empty suffix for `durationSuffix` 5 and `null`; suffix `" {title}"` stays literal; re-apply and re-render after `visibilitychange` use the latest params and meter
     - _Requirements: 1.3, 1.4, 1.5, 1.6, 1.8, 1.10, 9.1_
