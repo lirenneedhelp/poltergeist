@@ -31,6 +31,49 @@
         "chatSessionId": "sess_7fe69eb7-ac56-4a87-8f8f-e41648dff4bf",
         "timestamp": 1795446726785
       }
+    ],
+    "2.1 Add worker foundations and group identity in `background.js`": [
+      {
+        "executionId": "a83d9254-57b5-44ee-aa68-c53b11307a7c",
+        "chatSessionId": "sess_53039948-6d3a-4efb-8325-5c1cbec7e469",
+        "timestamp": 1795447304236
+      },
+      {
+        "executionId": "a83d9254-57b5-44ee-aa68-c53b11307a7c",
+        "chatSessionId": "sess_53039948-6d3a-4efb-8325-5c1cbec7e469",
+        "timestamp": 1795447676544
+      }
+    ],
+    "2.2 Rewrite Bury, add Empty graveyard, ungroup on Resurrect, and extend popup-state": [
+      {
+        "executionId": "319d7d70-f142-442b-84c5-690dc1be765c",
+        "chatSessionId": "sess_b71d081d-f535-4dee-806b-5f97130690d1",
+        "timestamp": 1795447798677
+      },
+      {
+        "executionId": "319d7d70-f142-442b-84c5-690dc1be765c",
+        "chatSessionId": "sess_b71d081d-f535-4dee-806b-5f97130690d1",
+        "timestamp": 1795448106110
+      }
+    ],
+    "2.3 Update worker unit tests for groups, Bury, Empty, and Resurrect": [
+      {
+        "executionId": "f23cea03-53c1-44df-a10b-216259329ef9",
+        "chatSessionId": "sess_b99444e7-5098-4f4b-aeae-e7afb09fa2bf",
+        "timestamp": 1795448175032
+      },
+      {
+        "executionId": "f23cea03-53c1-44df-a10b-216259329ef9",
+        "chatSessionId": "sess_b99444e7-5098-4f4b-aeae-e7afb09fa2bf",
+        "timestamp": 1795449012509
+      }
+    ],
+    "2. Graveyard groups, Bury, Empty graveyard, and Resurrect ungroup in the worker": [
+      {
+        "executionId": "f23cea03-53c1-44df-a10b-216259329ef9",
+        "chatSessionId": "sess_b99444e7-5098-4f4b-aeae-e7afb09fa2bf",
+        "timestamp": 1795449012946
+      }
     ]
   }
 }

@@ -19,8 +19,8 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Update the permission comment in `test/browser/discard-reload.pw.js` and any other test comment that states the permissions
     - _Requirements: 11.6, 11.7_
 
-- [ ] 2. Graveyard groups, Bury, Empty graveyard, and Resurrect ungroup in the worker
-  - [ ] 2.1 Add worker foundations and group identity in `background.js`
+- [x] 2. Graveyard groups, Bury, Empty graveyard, and Resurrect ungroup in the worker
+  - [x] 2.1 Add worker foundations and group identity in `background.js`
     - New `MESSAGE` types (`EMPTY`, `SET_AUTO_BURY`, `REFRESH`), key prefixes, `GRAVEYARD_TITLE`, `GRAVEYARD_COLOR`, `NO_GROUP`, `MAX_EMPTY_IDS`
     - `tabView` as the only Tab reader, `openTabs()`, rename `isBuryable` to `isSaveable`, classification helpers (`graveyardIds`, `isGraveyardTab`, `isDead`, Buryable, Closable)
     - `enqueue(job, {recount})` with the post-job Recount hook (a no-op until task 3) and the `refreshQueue` flush; event jobs use `recount: 'always'`, message jobs `recount: 'ok'`
@@ -28,14 +28,14 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Register `tabs.onUpdated`, `tabGroups.onUpdated`, `tabGroups.onRemoved` synchronously with the existing listeners; reject received `graveyard:refresh` like `graveyard:apply-reset`
     - `logFailure` strips URLs from Chrome error messages
     - _Requirements: 1.6, 1.7, 1.8, 1.9, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 2.10, 2.12, 2.13, 9.3, 9.4, 9.6_
-  - [ ] 2.2 Rewrite Bury, add Empty graveyard, ungroup on Resurrect, and extend popup-state
+  - [x] 2.2 Rewrite Bury, add Empty graveyard, ungroup on Resurrect, and extend popup-state
     - `bury`: sender and payload checks, `rules unavailable`, move distinct Buryable_Tabs per window with `collapse: 'always'`, write attempt keys, reply `{ok: true, moved, notMoved}`; no close, Register change, or Buried_Entry
     - `emptyGraveyard` (declared between `bury` and `reopen`): checks, select Closable_Tabs in request order up to 200, save Buried_Entries before the only `tabs.remove`, reply `{ok: true, buried, notClosed}`; works without rules
     - `resurrect` and `resurrectTab`: after the saved Reset, delete the attempt key and call `ungroupIfGraveyard` once; failures logged, Resurrect finishes as usual
     - `popupState`: `dead` holds only Buryable_Tabs, `closable` holds Closable_Tab ids in dead-list order (also when `rulesLoaded` is false); empty lists plus one diagnostic when `tabs.query` fails
     - `tabs.onRemoved` of a Graveyard_Tab saves no Buried_Entry
     - _Requirements: 2.11, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.13, 4.1, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11, 4.12, 4.17, 5.1, 5.2, 5.3, 5.4, 5.6, 6.13, 9.1, 9.2, 9.7_
-  - [ ] 2.3 Update worker unit tests for groups, Bury, Empty, and Resurrect
+  - [x] 2.3 Update worker unit tests for groups, Bury, Empty, and Resurrect
     - Extend the `background.test.js` mock: Tab `pinned`, `audible`, `groupId`; in-memory `tabs.group`/`tabs.ungroup`; Proxy-based `tabGroups.get` and `tabGroups.onUpdated` objects recording title reads; changeInfo Proxy; `action.setBadgeText` stub; failure switches
     - Rewrite existing bury tests so none expects closing or a Buried_Entry; add Bury, user-group (decision 12), group-identity, Empty, and Resurrect ungroup cases listed in 11.2
     - Rename the fast-check block and its header comment to "Property 3: Nothing closes without Empty graveyard" and update both properties as 11.1 states, keeping 100 runs each

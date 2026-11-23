@@ -4,8 +4,12 @@
 // only the demo flag and the buried list. The worker never reads url, pendingUrl,
 // title, or favIconUrl from a Tab object: the URL comes from MessageSender.url and
 // the title from the content script's payload. It does not import the skeleton.
-// Tabs are closed only while handling graveyard:bury from an extension page, after
-// their Buried_Entries are saved; no timer, event, or content message closes a tab.
+// Tabs are closed only while handling graveyard:empty from an extension page, after
+// their Buried_Entries are saved; graveyard:bury only moves tabs into the Graveyard
+// group, and no timer, event, or content message closes a tab.
+// Each window has at most one Graveyard_Group, identified by the group id the worker
+// recorded when it created the group, never by its title. A group the user made is
+// never changed, and a group title is read only while its id is the recorded one.
 
 export const MESSAGE = Object.freeze({
   CONTENT_STATE: 'graveyard:content-state', // content -> worker
@@ -14,16 +18,30 @@ export const MESSAGE = Object.freeze({
   POPUP_STATE: 'graveyard:popup-state', //     popup -> worker
   RESURRECT_TAB: 'graveyard:resurrect-tab', // popup -> worker
   BURY: 'graveyard:bury', //                   popup -> worker
+  EMPTY: 'graveyard:empty', //                 popup -> worker
   REOPEN: 'graveyard:reopen', //               popup -> worker
   SET_DEMO: 'graveyard:set-demo', //           popup -> worker
+  SET_AUTO_BURY: 'graveyard:set-auto-bury', // popup -> worker
   APPLY_RESET: 'graveyard:apply-reset', //     worker -> content
+  REFRESH: 'graveyard:refresh', //             worker -> content (rejected when the worker receives it)
 });
 
-export const TAB_KEY_PREFIX = 'graveyard.tab.'; //       session: Tab_Record
-export const WINDOW_KEY_PREFIX = 'graveyard.window.'; // session: active tab id of a window
-export const PROFILE_KEY = 'graveyard.profile'; //       session: { epoch, startedAt }
-export const DEMO_KEY = 'graveyard.demoMode'; //         local: Boolean
-export const BURIED_KEY = 'graveyard.buried'; //         local: Buried_Entry[], newest first
+export const TAB_KEY_PREFIX = 'graveyard.tab.'; //            session: Tab_Record
+export const WINDOW_KEY_PREFIX = 'graveyard.window.'; //      session: active tab id of a window
+export const PROFILE_KEY = 'graveyard.profile'; //            session: { epoch, startedAt }
+export const GROUP_KEY_PREFIX = 'graveyard.group.'; //        session: Graveyard_Group id of a window
+export const EXEMPT_KEY_PREFIX = 'graveyard.exempt.'; //      session: true while saved as exempt
+export const ATTEMPT_KEY_PREFIX = 'graveyard.buryAttempt.'; // session: true once Auto_Bury has had its attempt
+export const DEMO_KEY = 'graveyard.demoMode'; //              local: Boolean
+export const AUTO_BURY_KEY = 'graveyard.autoBury'; //         local: Boolean
+export const BURIED_KEY = 'graveyard.buried'; //              local: Buried_Entry[], newest first
+
+export const GRAVEYARD_TITLE = 'Graveyard';
+export const GRAVEYARD_COLOR = 'grey';
+/** chrome.tabGroups.TAB_GROUP_ID_NONE: the tab is in no group. */
+export const NO_GROUP = -1;
+/** Largest tabIds array a graveyard:empty message may carry. MAX_BURIED also caps the tabs one call selects. */
+export const MAX_EMPTY_IDS = 500;
 
 /** One hour of normal timing per second of demo timing. */
 export const DEMO_TIME_SCALE = 3600;
@@ -48,14 +66,23 @@ const isFiniteNumber = (v) => typeof v === 'number' && Number.isFinite(v);
 const nonNegative = (v) => (isFiniteNumber(v) && v > 0 ? v : 0);
 const fail = (error) => ({ ok: false, error });
 
-/** Diagnostics carry only a fixed description and an error message, never titles, URLs, or records. */
+/** Replace any `scheme://...` text, as content.js does, so no URL reaches a diagnostic. */
+const redactUrls = (text) => String(text).replace(/\b[a-z][a-z0-9+.-]*:\/\/\S*/gi, '<url>');
+
+/**
+ * Diagnostics carry only a fixed description and an error message with URLs removed,
+ * never titles, group titles, URLs, or records.
+ */
 function logFailure(kind, err) {
-  const detail = typeof err?.message === 'string' ? err.message : 'unknown error';
+  const detail = typeof err?.message === 'string' ? redactUrls(err.message) : 'unknown error';
   console.error(LOG_PREFIX, `${kind} failed:`, detail);
 }
 
 export const tabKey = (tabId) => `${TAB_KEY_PREFIX}${tabId}`;
 export const windowKey = (windowId) => `${WINDOW_KEY_PREFIX}${windowId}`;
+export const groupKey = (windowId) => `${GROUP_KEY_PREFIX}${windowId}`;
+export const exemptKey = (tabId) => `${EXEMPT_KEY_PREFIX}${tabId}`;
+export const attemptKey = (tabId) => `${ATTEMPT_KEY_PREFIX}${tabId}`;
 
 /** Tab ids are non-negative integers; chrome.tabs.TAB_ID_NONE (-1) is not a tab. */
 export function isTabId(value) {
@@ -65,6 +92,30 @@ export function isTabId(value) {
 /** Window ids are non-negative integers; chrome.windows.WINDOW_ID_NONE (-1) is not a window. */
 export function isWindowId(value) {
   return Number.isInteger(value) && value >= 0;
+}
+
+/** Tab group ids are non-negative integers; NO_GROUP (-1) is not a group. */
+export function isGroupId(value) {
+  return Number.isInteger(value) && value >= 0;
+}
+
+/**
+ * The only place a Tab object is read (Requirement 9.3): id, windowId, active,
+ * incognito, pinned, audible, and groupId. Returns null when `tab` is not a tab.
+ * A missing or non-Boolean pinned or audible counts as false.
+ */
+export function tabView(tab) {
+  if (!isObject(tab) || !isTabId(tab.id)) return null;
+  const windowId = tab.windowId;
+  const groupId = tab.groupId;
+  return {
+    id: tab.id,
+    windowId: isWindowId(windowId) ? windowId : -1,
+    active: tab.active !== false,
+    incognito: tab.incognito === true,
+    exempt: tab.pinned === true || tab.audible === true,
+    groupId: isGroupId(groupId) ? groupId : NO_GROUP,
+  };
 }
 
 /** True only for a parseable http: or https: URL string. */
@@ -128,11 +179,11 @@ export function normalizeProfile(raw) {
 }
 
 /**
- * A record can be buried only when a content script reported its URL and the URL fits
- * in a Buried_Entry. Truncating a URL would make Reopen open a different page, so a
- * longer URL keeps its tab out of the Graveyard instead.
+ * Saveable_Tab rule: a record can be saved only when a content script reported its URL
+ * and the URL fits in a Buried_Entry. Truncating a URL would make Reopen open a different
+ * page, so a longer URL keeps its tab out of the Graveyard instead.
  */
-export function isBuryable(record) {
+export function isSaveable(record) {
   return isObject(record) && typeof record.url === 'string' && record.url.length <= MAX_URL_LENGTH;
 }
 
@@ -253,6 +304,43 @@ export function scaleThresholds(base, demoMode) {
   });
 }
 
+/** Recorded Graveyard_Group ids in a full session snapshot: Map windowId -> groupId. */
+export function graveyardIds(stored) {
+  const out = new Map();
+  for (const [key, value] of Object.entries(isObject(stored) ? stored : {})) {
+    if (!key.startsWith(GROUP_KEY_PREFIX)) continue;
+    const suffix = key.slice(GROUP_KEY_PREFIX.length);
+    const windowId = Number(suffix);
+    if (!isWindowId(windowId) || String(windowId) !== suffix || !isGroupId(value)) continue;
+    out.set(windowId, value);
+  }
+  return out;
+}
+
+/** Graveyard_Tab: the tab's group is the recorded Graveyard_Group of the tab's own window. */
+export function isGraveyardTab(view, groups) {
+  return isObject(view) && view.groupId !== NO_GROUP && groups.get(view.windowId) === view.groupId;
+}
+
+/**
+ * Dead_Tab: an open, non-exempt Saveable_Tab whose Away_Time at t is at or above the
+ * Tombstone threshold. `thresholds` are the active profile's (null means no Stage).
+ */
+export function isDead(view, record, { demoMode, profile, thresholds, t }) {
+  if (!isObject(view) || view.exempt || !isSaveable(record)) return false;
+  return stage(awayMs(record, modeOf(demoMode), profile, t) / 1000, thresholds) === 'dead';
+}
+
+/** Buryable_Tab: a Dead_Tab in no tab group. */
+export function isBuryableTab(view, record, context) {
+  return isDead(view, record, context) && view.groupId === NO_GROUP;
+}
+
+/** Closable_Tab: a non-exempt Saveable_Tab inside its window's Graveyard_Group, whatever its Stage. */
+export function isClosableTab(view, record, groups) {
+  return isObject(view) && !view.exempt && isSaveable(record) && isGraveyardTab(view, groups);
+}
+
 /**
  * Build the tracker around an injected Chrome API object so it can be tested with
  * mocks. Nothing is registered here; see registerBackground.
@@ -268,20 +356,50 @@ export function createBackground(chromeApi, {
   const session = chromeApi.storage.session;
   const local = chromeApi.storage.local;
   const tabs = chromeApi.tabs;
+  const tabGroups = chromeApi.tabGroups;
   const runtime = chromeApi.runtime;
 
+  /** Tab ids owed a graveyard:refresh, sent after the current job and its Recount. */
+  const refreshQueue = new Set();
+
+  /** Recount: count the Dead_Tabs and update the Badge (Requirement 7). Not active yet. */
+  async function recountSafely() {}
+
+  /** Send the owed graveyard:refresh messages without awaiting them, so a slow page cannot stall the queue. */
+  function flushRefreshes() {
+    for (const tabId of refreshQueue) void sendToTab(tabId, { type: MESSAGE.REFRESH });
+    refreshQueue.clear();
+  }
+
   // Every read-modify-write of storage runs through this one chain. A failed job
-  // rejects its own Promise but never breaks the chain for later jobs.
+  // rejects its own Promise but never breaks the chain for later jobs. Each link runs
+  // the job, then the Recount when `recount` asks for it ('always' for event jobs,
+  // 'ok' for message jobs that reply ok:true), then the refresh flush. The next job
+  // starts only after all three have finished.
   let queue = Promise.resolve();
-  function enqueue(job) {
-    const run = queue.then(() => job());
+  function enqueue(job, { recount = 'never' } = {}) {
+    const run = queue.then(async () => {
+      let result;
+      let failed = false;
+      let error;
+      try {
+        result = await job();
+      } catch (err) {
+        failed = true;
+        error = err;
+      }
+      if (recount === 'always' || (recount === 'ok' && !failed && result?.ok === true)) await recountSafely();
+      flushRefreshes();
+      if (failed) throw error;
+      return result;
+    });
     queue = run.then(() => undefined, () => undefined);
     return run;
   }
 
   /** Queue an event job; failures are logged and never reach the event dispatcher. */
   function guarded(kind, job) {
-    return enqueue(job).catch((err) => logFailure(kind, err));
+    return enqueue(job, { recount: 'always' }).catch((err) => logFailure(kind, err));
   }
 
   async function readKey(area, key) {
@@ -368,27 +486,33 @@ export function createBackground(chromeApi, {
     return { awaySeconds: Math.floor(ms / 1000), stage: stage(ms / 1000, thresholds) };
   }
 
-  /** Ids of open non-incognito tabs, or null when the query fails (then nothing is filtered). Reads only id and incognito. */
-  async function openTabIds() {
-    try {
-      const all = await tabs.query({});
-      return new Set((Array.isArray(all) ? all : []).filter((tab) => isObject(tab) && isTabId(tab.id) && tab.incognito !== true).map((tab) => tab.id));
-    } catch (err) {
-      logFailure('tabs.query', err);
-      return null;
+  /** Open non-incognito tabs as a Map from tab id to tabView. Throws when tabs.query fails. */
+  async function openTabs() {
+    const all = await tabs.query({});
+    const out = new Map();
+    for (const tab of Array.isArray(all) ? all : []) {
+      const view = tabView(tab);
+      if (view && !view.incognito) out.set(view.id, view);
     }
+    return out;
   }
 
-  /** The tab's `active` flag when it is open and not incognito, otherwise null. Reads only active and incognito. */
-  async function openTabActive(tabId) {
+  /** The tabView of an open non-incognito tab, or null when it cannot be read. */
+  async function openTabView(tabId) {
     let tab;
     try {
       tab = await tabs.get(tabId);
     } catch {
       return null;
     }
-    if (!isObject(tab) || tab.incognito === true) return null;
-    return tab.active !== false;
+    const view = tabView(tab);
+    return view && !view.incognito ? view : null;
+  }
+
+  /** The tab's `active` flag when it is open and not incognito, otherwise null. */
+  async function openTabActive(tabId) {
+    const view = await openTabView(tabId);
+    return view ? view.active : null;
   }
 
   /** Send a message to a tab's top-frame content script; resolves undefined when no receiver answers. */
@@ -409,15 +533,151 @@ export function createBackground(chromeApi, {
 
   /**
    * Accept only this extension's own top-frame content scripts on http/https pages.
-   * Returns { tabId, url, active } or null. The Tab object is read only for id,
-   * active, and incognito.
+   * Returns { tabId, url, active, view } or null. The Tab object is read only through tabView.
    */
   function contentSender(sender) {
     if (!isObject(sender) || sender.id !== runtime.id || sender.frameId !== 0) return null;
-    const tab = sender.tab;
-    if (!isObject(tab) || !isTabId(tab.id) || tab.incognito === true) return null;
+    const view = tabView(sender.tab);
+    if (!view || view.incognito) return null;
     if (!isWebUrl(sender.url)) return null;
-    return { tabId: tab.id, url: sender.url, active: tab.active !== false };
+    return { tabId: view.id, url: sender.url, active: view.active, view };
+  }
+
+  /**
+   * The recorded Graveyard_Group of a window when it still exists in that window and is
+   * titled exactly GRAVEYARD_TITLE; otherwise the record is deleted and null returned
+   * (Requirement 2.9). The window is checked before the title, so a title is read only
+   * while the id is the one recorded for the group's window (9.4).
+   */
+  async function usableGroup(windowId) {
+    const id = await readKey(session, groupKey(windowId));
+    if (!isGroupId(id)) {
+      if (id !== undefined) await session.remove(groupKey(windowId));
+      return null;
+    }
+    let group;
+    try {
+      group = await tabGroups.get(id);
+    } catch {
+      group = null;
+    }
+    if (!isObject(group) || group.windowId !== windowId || group.title !== GRAVEYARD_TITLE) {
+      await session.remove(groupKey(windowId));
+      return null;
+    }
+    return id;
+  }
+
+  /**
+   * After a failed tabs.group call: a tab now in the window's recorded Graveyard_Group
+   * counts as moved, any other tab (including one that cannot be read) as not moved.
+   */
+  async function settle(windowId, tabIds) {
+    const recorded = await readKey(session, groupKey(windowId));
+    const moved = [];
+    const notMoved = [];
+    for (const tabId of tabIds) {
+      let view = null;
+      try {
+        view = tabView(await tabs.get(tabId));
+      } catch (err) {
+        logFailure('tabs.get', err);
+      }
+      const inGraveyard = view !== null && isGroupId(recorded) && view.windowId === windowId && view.groupId === recorded;
+      (inGraveyard ? moved : notMoved).push(tabId);
+    }
+    return { moved, notMoved };
+  }
+
+  /**
+   * Move tabIds (all of one window, all in no group) into that window's Graveyard_Group,
+   * reusing the recorded group or creating one. `collapse` is 'always' for Bury (3.4) and
+   * 'unless-active' for Auto_Bury (8.13), which keeps a reused group expanded while it
+   * holds the window's active tab `activeTabId` (looked up in `views`). Never touches a
+   * group the user made. Returns { moved, notMoved }.
+   */
+  async function moveIntoGraveyard(windowId, tabIds, { collapse = 'always', activeTabId = null, views = null } = {}) {
+    if (tabIds.length === 0) return { moved: [], notMoved: [] };
+    const style = { title: GRAVEYARD_TITLE, color: GRAVEYARD_COLOR };
+    const reused = await usableGroup(windowId);
+    if (reused !== null) {
+      try {
+        await tabs.group({ groupId: reused, tabIds });
+      } catch (err) {
+        logFailure('tabs.group', err);
+        return settle(windowId, tabIds);
+      }
+      const keepOpen = collapse === 'unless-active' && views?.get(activeTabId)?.groupId === reused;
+      try {
+        await tabGroups.update(reused, keepOpen ? style : { ...style, collapsed: true });
+      } catch (err) {
+        // The tabs are in the Graveyard_Group, so they count as moved (3.7).
+        logFailure('tabGroups.update', err);
+      }
+      return { moved: [...tabIds], notMoved: [] };
+    }
+    let created;
+    try {
+      created = await tabs.group({ tabIds, createProperties: { windowId } });
+    } catch (err) {
+      logFailure('tabs.group', err);
+      return settle(windowId, tabIds);
+    }
+    try {
+      if (!isGroupId(created)) throw new Error('tabs.group returned no group id');
+      // Recorded before styling, so the creation-time onUpdated event does not Release it (2.5).
+      await session.set({ [groupKey(windowId)]: created });
+      // A new group never holds the active tab here, so it is always collapsed (2.3).
+      await tabGroups.update(created, { ...style, collapsed: true });
+    } catch (err) {
+      // Requirement 2.13: forget the group, leave it as Chrome made it, move nothing else.
+      logFailure('graveyard group setup', err);
+      try {
+        await session.remove(groupKey(windowId));
+      } catch (removeErr) {
+        logFailure('group record delete', removeErr);
+      }
+      return { moved: [], notMoved: [...tabIds] };
+    }
+    return { moved: [...tabIds], notMoved: [] };
+  }
+
+  /**
+   * Resurrect, after its Reset is saved: delete the tab's Auto_Bury attempt and, when the
+   * tab is in its window's recorded Graveyard_Group now, take it out with one tabs.ungroup
+   * call (5.1). A tab in no group or in a user group is left alone (5.2). Failures are
+   * logged once and never change the Resurrect's outcome (5.3). This is the only place
+   * the extension ungroups a tab (5.6).
+   */
+  async function afterResurrect(tabId) {
+    try {
+      // Only an existing attempt is deleted, so a Resurrect without one writes nothing extra.
+      if ((await readKey(session, attemptKey(tabId))) !== undefined) await session.remove(attemptKey(tabId));
+    } catch (err) {
+      logFailure('bury attempt delete', err);
+    }
+    await ungroupIfGraveyard(tabId);
+  }
+
+  /** One tabs.ungroup call when the tab is a Graveyard_Tab now; otherwise no call. */
+  async function ungroupIfGraveyard(tabId) {
+    // A tab that can no longer be read is closed, so there is nothing to ungroup.
+    const view = await openTabView(tabId);
+    if (!view || view.groupId === NO_GROUP) return;
+    let recorded;
+    try {
+      recorded = await readKey(session, groupKey(view.windowId));
+    } catch (err) {
+      logFailure('group record read', err);
+      return;
+    }
+    if (!isGroupId(recorded) || view.groupId !== recorded) return;
+    try {
+      await tabs.ungroup(view.id);
+    } catch (err) {
+      // The Reset stays saved and the group stays recorded; no second attempt (5.3).
+      logFailure('tabs.ungroup', err);
+    }
   }
 
   /** The sender tab's record, or a new one with an Absence starting at t if the tab is inactive. */
@@ -443,7 +703,7 @@ export function createBackground(chromeApi, {
         heldSeconds: heldAwayMs(record, mode, profile) / 1000,
         currentSeconds: currentAwayMs(record, mode, profile, t) / 1000,
       };
-    });
+    }, { recount: 'ok' });
   }
 
   async function report(message, sender) {
@@ -461,7 +721,7 @@ export function createBackground(chromeApi, {
       const named = { ...(await ensureRecord(from, profile, t)), url: from.url, title: truncateTitle(title) };
       await writeRecord(from.tabId, raiseHeld(named, modeOf(demoMode), profile, heldSeconds * 1000, t));
       return { ok: true, applied: true };
-    });
+    }, { recount: 'ok' });
   }
 
   async function resurrect(message, sender) {
@@ -472,13 +732,18 @@ export function createBackground(chromeApi, {
       const profile = await readProfile();
       const base = { ...(await ensureRecord(from, profile, t)), url: from.url };
       await writeRecord(from.tabId, resetRecord(base, profile, t, from.active));
+      // After the Reset is saved and before the reply lets the page clear its decay.
+      await afterResurrect(from.tabId);
       return { ok: true };
-    });
+    }, { recount: 'ok' });
   }
 
   /**
    * Everything the popup shows. Read-only. `rulesLoaded` is false when rules.json is
-   * unusable; then no Stage is known and the Graveyard lists no Dead_Tabs.
+   * unusable; then no Stage is known and the Graveyard lists no Dead_Tabs. `dead` holds
+   * only Buryable_Tabs (3.13); `closable` holds the Closable_Tab ids in the same order,
+   * whatever their Stage and also without rules (4.1). When tabs.query fails, group
+   * membership is unknown, so both lists are empty (one diagnostic).
    */
   async function popupState(message, sender) {
     if (!isExtensionPage(sender)) return fail('popup-state requires an extension page sender');
@@ -486,9 +751,16 @@ export function createBackground(chromeApi, {
     const base = await readBaseThresholds();
     return enqueue(async () => {
       const t = now();
-      const [demoMode, profile, stored, buried, open] = await Promise.all([readDemo(), readProfile(), readAllSession(), readBuried(), openTabIds()]);
+      const [demoMode, profile, stored, buried, views] = await Promise.all([
+        readDemo(), readProfile(), readAllSession(), readBuried(),
+        openTabs().catch((err) => {
+          logFailure('tabs.query', err);
+          return null;
+        }),
+      ]);
       const thresholds = base ? scaleThresholds(base, demoMode) : null;
       const records = recordsIn(stored);
+      const groups = graveyardIds(stored);
 
       const own = records.get(message.tabId);
       const current = own?.url
@@ -496,15 +768,21 @@ export function createBackground(chromeApi, {
         : { known: false, stage: null, awaySeconds: 0 };
 
       const dead = [];
+      const closable = [];
       for (const [tabId, record] of records) {
-        if (!isBuryable(record) || (open && !open.has(tabId))) continue;
+        const view = views?.get(tabId);
+        if (!view || view.exempt || !isSaveable(record)) continue;
         const { awaySeconds, stage: s } = assess(record, demoMode, profile, thresholds, t);
-        if (s === 'dead') dead.push({ tabId, title: record.title, url: record.url, awaySeconds });
+        if (isGraveyardTab(view, groups)) closable.push({ tabId, awaySeconds });
+        else if (s === 'dead' && view.groupId === NO_GROUP) dead.push({ tabId, title: record.title, url: record.url, awaySeconds });
+        // A Dead_Tab in a user-made group is neither listed nor closable (decision 12).
       }
-      dead.sort((a, b) => b.awaySeconds - a.awaySeconds || a.tabId - b.tabId);
+      const byAway = (a, b) => b.awaySeconds - a.awaySeconds || a.tabId - b.tabId;
+      dead.sort(byAway);
+      closable.sort(byAway);
 
-      return { ok: true, demoMode, rulesLoaded: base !== null, current, dead, buried };
-    });
+      return { ok: true, demoMode, rulesLoaded: base !== null, current, dead, closable: closable.map((c) => c.tabId), buried };
+    }, { recount: 'ok' });
   }
 
   /** Popup Resurrect: reset the tab's Registers, then tell its page to clear the decay. */
@@ -520,8 +798,10 @@ export function createBackground(chromeApi, {
       const t = now();
       const profile = await readProfile();
       await writeRecord(tabId, resetRecord(record, profile, t, active));
+      // After the Reset is saved and before graveyard:apply-reset is sent.
+      await afterResurrect(tabId);
       return { ok: true };
-    });
+    }, { recount: 'ok' });
     if (!committed.ok) return committed;
     // Sent after the commit and outside the queue: a discarded tab has no receiver,
     // and its reload seeds 0 from the reset record.
@@ -553,13 +833,15 @@ export function createBackground(chromeApi, {
         return fail('could not save demo mode');
       }
       return { ok: true, demoMode: enabled };
-    });
+    }, { recount: 'ok' });
   }
 
   /**
-   * Bury: save a Buried_Entry for every requested tab that is a Dead_Tab now, then close
-   * those tabs one by one. Nothing closes when rules.json is unusable or the save fails.
-   * At most MAX_BURIED tabs are taken per call, so every closed tab's entry fits in the list.
+   * Bury: move every distinct requested tab that is a Buryable_Tab now into the
+   * Graveyard_Group of its own window, collapsed (3.3, 3.4). Closes no tab, changes no
+   * Register, and saves no Buried_Entry (3.5). Dead_Tabs in any tab group stay where they
+   * are and appear in neither reply array (decision 12). Each moved tab gets its Auto_Bury
+   * attempt (8.6). Nothing moves when rules.json is unusable (3.8).
    */
   async function bury(message, sender) {
     if (!isExtensionPage(sender)) return fail('bury requires an extension page sender');
@@ -571,23 +853,82 @@ export function createBackground(chromeApi, {
     if (!base) return fail('rules unavailable');
     return enqueue(async () => {
       const t = now();
-      const [demoMode, profile, stored, existing] = await Promise.all([readDemo(), readProfile(), readAllSession(), readBuried()]);
-      const thresholds = scaleThresholds(base, demoMode);
+      const [demoMode, profile, stored, views] = await Promise.all([readDemo(), readProfile(), readAllSession(), openTabs()]);
+      const context = { demoMode, profile, thresholds: scaleThresholds(base, demoMode), t };
       const records = recordsIn(stored);
 
-      const kept = [];
+      // Qualify against the newest view and group the tabs by their own window.
+      const byWindow = new Map();
       for (const tabId of new Set(tabIds)) {
-        if (kept.length >= MAX_BURIED) break;
-        const record = records.get(tabId);
-        if (!isBuryable(record)) continue;
-        const { awaySeconds, stage: s } = assess(record, demoMode, profile, thresholds, t);
-        if (s !== 'dead' || (await openTabActive(tabId)) === null) continue;
-        kept.push({ tabId, entry: { id: randomId(), title: record.title, url: record.url, buriedAt: t, awaySeconds } });
+        const view = views.get(tabId);
+        if (!isBuryableTab(view, records.get(tabId), context)) continue;
+        if (!byWindow.has(view.windowId)) byWindow.set(view.windowId, []);
+        byWindow.get(view.windowId).push(tabId);
       }
-      if (kept.length === 0) return { ok: true, buried: [], notClosed: [] };
+
+      const moved = [];
+      const notMoved = [];
+      for (const [windowId, ids] of byWindow) {
+        if (!isWindowId(windowId)) {
+          notMoved.push(...ids);
+          continue;
+        }
+        try {
+          const result = await moveIntoGraveyard(windowId, ids, { collapse: 'always', views });
+          moved.push(...result.moved);
+          notMoved.push(...result.notMoved);
+        } catch (err) {
+          // A storage failure before any move: this window's tabs stay put; other windows continue.
+          logFailure('graveyard move', err);
+          notMoved.push(...ids);
+        }
+      }
+
+      if (moved.length > 0) {
+        try {
+          await session.set(Object.fromEntries(moved.map((tabId) => [attemptKey(tabId), true])));
+        } catch (err) {
+          // The tabs are in the group; a missing attempt only lets Auto_Bury see them again.
+          logFailure('bury attempt save', err);
+        }
+      }
+      return { ok: true, moved, notMoved };
+    }, { recount: 'ok' });
+  }
+
+  /**
+   * Empty graveyard: select the requested tabs that are Closable_Tabs now, in request
+   * order, ignoring repeats, at most MAX_BURIED (4.4). Their Buried_Entries are saved
+   * before any tab closes (4.5); nothing closes when the save fails (4.6). Stage is not
+   * needed, so this works without rules.json (4.11). This is the only handler that
+   * closes tabs (4.9).
+   */
+  async function emptyGraveyard(message, sender) {
+    if (!isExtensionPage(sender)) return fail('empty requires an extension page sender');
+    const { tabIds } = message;
+    if (!Array.isArray(tabIds) || tabIds.length > MAX_EMPTY_IDS || !tabIds.every(isTabId)) {
+      return fail(`tabIds must be an array of at most ${MAX_EMPTY_IDS} tab ids`);
+    }
+    return enqueue(async () => {
+      const t = now();
+      const [demoMode, profile, stored, existing, views] = await Promise.all([
+        readDemo(), readProfile(), readAllSession(), readBuried(), openTabs(),
+      ]);
+      const records = recordsIn(stored);
+      const groups = graveyardIds(stored);
+
+      const selected = [];
+      for (const tabId of new Set(tabIds)) {
+        if (selected.length >= MAX_BURIED) break;
+        const record = records.get(tabId);
+        if (!isClosableTab(views.get(tabId), record, groups)) continue;
+        const awaySeconds = Math.floor(awayMs(record, modeOf(demoMode), profile, t) / 1000);
+        selected.push({ tabId, entry: { id: randomId(), title: record.title, url: record.url, buriedAt: t, awaySeconds } });
+      }
+      if (selected.length === 0) return { ok: true, buried: [], notClosed: [] };
 
       try {
-        await local.set({ [BURIED_KEY]: [...kept.map((k) => k.entry), ...existing].slice(0, MAX_BURIED) });
+        await local.set({ [BURIED_KEY]: [...selected.map((s) => s.entry), ...existing].slice(0, MAX_BURIED) });
       } catch (err) {
         logFailure('buried list save', err);
         return fail('could not save buried tabs');
@@ -595,13 +936,19 @@ export function createBackground(chromeApi, {
 
       // The only place the extension closes tabs: after the entries are saved, one call per tab.
       // A tab that fails to close keeps its entry and is reported in notClosed.
-      const results = await Promise.allSettled(kept.map(async ({ tabId }) => tabs.remove(tabId)));
+      const results = await Promise.allSettled(selected.map(async ({ tabId }) => tabs.remove(tabId)));
       const buried = [];
       const notClosed = [];
-      results.forEach((r, i) => (r.status === 'fulfilled' ? buried : notClosed).push(kept[i].tabId));
-      if (notClosed.length > 0) logFailure('tab close', new Error(`${notClosed.length} tab(s) could not be closed`));
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') {
+          buried.push(selected[i].tabId);
+        } else {
+          notClosed.push(selected[i].tabId);
+          logFailure('tab close', r.reason);
+        }
+      });
       return { ok: true, buried, notClosed };
-    });
+    }, { recount: 'ok' });
   }
 
   /** Reopen a Buried_Entry in a new active tab; the entry is removed only after the tab exists. */
@@ -630,7 +977,7 @@ export function createBackground(chromeApi, {
         return { ok: true, entryRemoved: false };
       }
       return { ok: true, entryRemoved: true };
-    });
+    }, { recount: 'ok' });
   }
 
   // Worker-handled message types. A type without a handler is rejected with no side effects.
@@ -642,6 +989,7 @@ export function createBackground(chromeApi, {
     [MESSAGE.RESURRECT_TAB, resurrectTab],
     [MESSAGE.SET_DEMO, setDemo],
     [MESSAGE.BURY, bury],
+    [MESSAGE.EMPTY, emptyGraveyard],
     [MESSAGE.REOPEN, reopen],
   ]);
 
@@ -650,7 +998,9 @@ export function createBackground(chromeApi, {
     if (!isObject(message) || typeof message.type !== 'string') return fail('malformed message');
     const handler = handlers.get(message.type);
     if (!handler) {
-      return fail(message.type === MESSAGE.APPLY_RESET ? `${MESSAGE.APPLY_RESET} is handled by content scripts` : 'unknown message type');
+      // Worker -> content messages are rejected with no side effects (Requirement 1.9).
+      const forContent = message.type === MESSAGE.APPLY_RESET || message.type === MESSAGE.REFRESH;
+      return fail(forContent ? `${message.type} is handled by content scripts` : 'unknown message type');
     }
     try {
       return await handler(message, sender);
@@ -672,13 +1022,8 @@ export function createBackground(chromeApi, {
    * closed or moved to another window where they are active.
    */
   async function leftTabRecord(tabId, profile, t) {
-    let tab;
-    try {
-      tab = await tabs.get(tabId);
-    } catch {
-      return null;
-    }
-    if (!isObject(tab) || tab.active !== false || tab.incognito === true) return null;
+    const view = await openTabView(tabId);
+    if (!view || view.active) return null;
     const existing = await readRecord(tabId);
     if (!existing) return createRecord({ t, away: true, profile }); // stub: url null until a content script reports
     return existing.leftAt === null ? { ...existing, leftAt: t } : null;
@@ -709,14 +1054,13 @@ export function createBackground(chromeApi, {
   function seedTabs() {
     return guarded('tab seeding', async () => {
       const t = now();
-      const [profile, stored, all] = await Promise.all([readProfile(), readAllSession(), tabs.query({})]);
+      const [profile, stored, views] = await Promise.all([readProfile(), readAllSession(), openTabs()]);
       const writes = {};
-      for (const tab of Array.isArray(all) ? all : []) {
-        if (!isObject(tab) || !isTabId(tab.id) || tab.incognito === true) continue;
-        if (tab.active === true) {
-          if (isWindowId(tab.windowId)) writes[windowKey(tab.windowId)] = tab.id;
-        } else if (tab.active === false && !normalizeRecord(stored[tabKey(tab.id)])) {
-          writes[tabKey(tab.id)] = createRecord({ t, away: true, profile });
+      for (const view of views.values()) {
+        if (view.active) {
+          if (isWindowId(view.windowId)) writes[windowKey(view.windowId)] = view.id;
+        } else if (!normalizeRecord(stored[tabKey(view.id)])) {
+          writes[tabKey(view.id)] = createRecord({ t, away: true, profile });
         }
       }
       if (Object.keys(writes).length > 0) await session.set(writes);
@@ -746,7 +1090,11 @@ export function createBackground(chromeApi, {
     });
   }
 
-  /** tabs.onRemoved: delete only that tab's record and any window entry pointing to it. */
+  /**
+   * tabs.onRemoved: delete only that tab's record and any window entry pointing to it.
+   * No Buried_Entry is saved, also when the closed tab was a Graveyard_Tab (2.11):
+   * only graveyard:empty adds to the Buried_List.
+   */
   function handleRemoved(tabId, removeInfo) {
     if (!isTabId(tabId)) return Promise.resolve();
     return guarded('tabs.onRemoved', async () => {
@@ -761,10 +1109,62 @@ export function createBackground(chromeApi, {
     });
   }
 
-  /** windows.onRemoved: delete the window entry. */
+  /** windows.onRemoved: delete the window entry and the window's Graveyard_Group record (2.8). */
   function handleWindowRemoved(windowId) {
     if (!isWindowId(windowId)) return Promise.resolve();
-    return guarded('windows.onRemoved', () => session.remove(windowKey(windowId)));
+    return guarded('windows.onRemoved', () => session.remove([windowKey(windowId), groupKey(windowId)]));
+  }
+
+  /**
+   * tabs.onUpdated: only a change of pinned, audible, or groupId makes a job. The keys
+   * are checked with Object.hasOwn, which reads no values; other changes (loading
+   * status and the like) are dropped before the queue and cause no Recount. A groupId
+   * change writes nothing: the move is never undone and the Tab_Record is kept (2.10);
+   * the Recount after the job sees the new membership.
+   */
+  function handleUpdated(tabId, changeInfo) {
+    if (!isTabId(tabId) || !isObject(changeInfo)) return Promise.resolve();
+    const relevant = Object.hasOwn(changeInfo, 'pinned') || Object.hasOwn(changeInfo, 'audible') || Object.hasOwn(changeInfo, 'groupId');
+    if (!relevant) return Promise.resolve();
+    return guarded('tabs.onUpdated', async () => {});
+  }
+
+  /**
+   * tabGroups.onUpdated: reads only the event group's id and windowId. When the id is
+   * still recorded for that window once the job runs, the current title is read with
+   * tabGroups.get; a title other than exactly GRAVEYARD_TITLE, or a group now in another
+   * window, Releases the group (2.4). Colour and collapsed changes keep it, and no
+   * tabGroups.update is made (2.6). A failed get keeps the record (2.12).
+   */
+  function handleGroupUpdated(group) {
+    const groupId = isObject(group) ? group.id : undefined;
+    const windowId = isObject(group) ? group.windowId : undefined;
+    if (!isGroupId(groupId) || !isWindowId(windowId)) return Promise.resolve();
+    return guarded('tabGroups.onUpdated', async () => {
+      if ((await readKey(session, groupKey(windowId))) !== groupId) return;
+      let current;
+      try {
+        current = await tabGroups.get(groupId);
+      } catch (err) {
+        logFailure('tabGroups.get', err);
+        return;
+      }
+      // windowId first, so the title is read only while the id is recorded for the group's window (9.4).
+      if (!isObject(current) || current.windowId !== windowId || current.title !== GRAVEYARD_TITLE) {
+        await session.remove(groupKey(windowId));
+      }
+    });
+  }
+
+  /** tabGroups.onRemoved: delete every Graveyard_Group record holding the group's id (2.7). Reads only the id. */
+  function handleGroupRemoved(group) {
+    const groupId = isObject(group) ? group.id : undefined;
+    if (!isGroupId(groupId)) return Promise.resolve();
+    return guarded('tabGroups.onRemoved', async () => {
+      const stored = await readAllSession();
+      const keys = Object.keys(stored).filter((key) => key.startsWith(GROUP_KEY_PREFIX) && stored[key] === groupId);
+      if (keys.length > 0) await session.remove(keys);
+    });
   }
 
   return {
@@ -775,6 +1175,9 @@ export function createBackground(chromeApi, {
     handleReplaced,
     handleRemoved,
     handleWindowRemoved,
+    handleUpdated,
+    handleGroupUpdated,
+    handleGroupRemoved,
     seedTabs,
     readRecord,
     readProfile,
@@ -788,7 +1191,7 @@ export function createBackground(chromeApi, {
 /** Register the worker listeners on a Chrome API object; returns the tracker. */
 export function registerBackground(chromeApi, options) {
   const background = createBackground(chromeApi, options);
-  const { runtime, tabs, windows } = chromeApi;
+  const { runtime, tabs, windows, tabGroups } = chromeApi;
   runtime.onMessage.addListener(background.onMessage);
   runtime.onInstalled.addListener(() => { void background.seedTabs(); });
   runtime.onStartup.addListener(() => { void background.seedTabs(); });
@@ -796,6 +1199,9 @@ export function registerBackground(chromeApi, options) {
   tabs.onReplaced.addListener((addedTabId, removedTabId) => { void background.handleReplaced(addedTabId, removedTabId); });
   tabs.onRemoved.addListener((tabId, removeInfo) => { void background.handleRemoved(tabId, removeInfo); });
   windows.onRemoved.addListener((windowId) => { void background.handleWindowRemoved(windowId); });
+  tabs.onUpdated.addListener((tabId, changeInfo) => { void background.handleUpdated(tabId, changeInfo); });
+  tabGroups.onUpdated.addListener((group) => { void background.handleGroupUpdated(group); });
+  tabGroups.onRemoved.addListener((group) => { void background.handleGroupRemoved(group); });
   return background;
 }
 
