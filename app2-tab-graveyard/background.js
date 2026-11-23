@@ -1,7 +1,9 @@
 // Tab Graveyard service worker (Manifest V3 module worker): the Activity_Tracker.
 // It is the source of truth for when each tab was left and for its Registers.
 // Open-tab records live only in chrome.storage.session; chrome.storage.local holds
-// only the demo flag and the buried list. The worker never reads url, pendingUrl,
+// only the demo flag, the auto-bury flag, and the buried list. After every job the
+// worker recounts the Dead_Tabs, sets the toolbar badge, and, when auto-bury is on,
+// moves newly dead tabs that are in no group into the Graveyard group. The worker never reads url, pendingUrl,
 // title, or favIconUrl from a Tab object: the URL comes from MessageSender.url and
 // the title from the content script's payload. It does not import the skeleton.
 // Tabs are closed only while handling graveyard:empty from an extension page, after
@@ -358,12 +360,90 @@ export function createBackground(chromeApi, {
   const tabs = chromeApi.tabs;
   const tabGroups = chromeApi.tabGroups;
   const runtime = chromeApi.runtime;
+  const action = chromeApi.action;
 
   /** Tab ids owed a graveyard:refresh, sent after the current job and its Recount. */
   const refreshQueue = new Set();
 
-  /** Recount: count the Dead_Tabs and update the Badge (Requirement 7). Not active yet. */
-  async function recountSafely() {}
+  /**
+   * Run the Recount after a job. A failure logs one diagnostic and leaves the Badge as
+   * it was (7.6); the job's reply and saved changes are untouched (7.8).
+   */
+  async function recountSafely() {
+    try {
+      await recount();
+    } catch (err) {
+      logFailure('badge recount', err);
+    }
+  }
+
+  /**
+   * Recount (Requirement 7) with Auto_Bury (Requirement 8). Counts the Dead_Tabs in every
+   * non-incognito window, including Graveyard_Tabs and tabs in user groups (7.1), records
+   * an Auto_Bury attempt for each dead Graveyard_Tab (8.6), moves new Buryable_Tabs into
+   * their window's Graveyard_Group while Auto_Bury is on and the rules load (8.5, 8.8),
+   * and then sets the Badge for all tabs. Storage is written only when something changes.
+   * Runs inside the queue link of the job that triggered it.
+   */
+  async function recount() {
+    // A failed read or query throws here, before the Badge is touched (7.6).
+    const [stored, views] = await Promise.all([readAllSession(), openTabs()]);
+    const t = now();
+    const [base, demoMode, autoBury] = await Promise.all([
+      // Quiet: the rules diagnostic belongs to the job that needed the rules, not to every Recount.
+      loadThresholds().catch(() => null),
+      readDemo(),
+      readAutoBury(),
+    ]);
+    const profile = normalizeProfile(stored[PROFILE_KEY]);
+    const context = { demoMode, profile, thresholds: base ? scaleThresholds(base, demoMode) : null, t };
+    const records = recordsIn(stored);
+    const groups = graveyardIds(stored);
+
+    // Hook for exemption sync from this tabs.query (design decision 3, task 4.1): it will
+    // update `stored`, `records`, and the views' saved exemption before the count below.
+
+    // Without rules no Stage is known, so isDead is false for every tab and the count is 0 (7.5).
+    const dead = [];
+    for (const [tabId, view] of views) {
+      if (isDead(view, records.get(tabId), context)) dead.push(view);
+    }
+
+    const writes = {};
+    for (const view of dead) {
+      // A dead tab already in the Graveyard_Group has had its attempt (8.6).
+      if (isGraveyardTab(view, groups) && stored[attemptKey(view.id)] !== true) writes[attemptKey(view.id)] = true;
+    }
+
+    // Auto_Bury candidates: Buryable_Tabs that are not their window's active tab and have no attempt (8.5).
+    const byWindow = new Map();
+    if (autoBury && base) {
+      for (const view of dead) {
+        if (view.groupId !== NO_GROUP || view.active || !isWindowId(view.windowId)) continue;
+        if (stored[attemptKey(view.id)] === true) continue;
+        writes[attemptKey(view.id)] = true; // recorded whatever the move's outcome (8.6, 8.10)
+        if (!byWindow.has(view.windowId)) byWindow.set(view.windowId, []);
+        byWindow.get(view.windowId).push(view.id);
+      }
+    }
+
+    // Saved before any move, so a failed move is never retried before the tab's next Reset (8.10).
+    if (Object.keys(writes).length > 0) await session.set(writes);
+
+    for (const [windowId, ids] of byWindow) {
+      const activeTabId = [...views.values()].find((v) => v.windowId === windowId && v.active)?.id ?? null;
+      try {
+        // usableGroup inside reuses only a recorded Graveyard_Group, so user groups are never touched (decision 12).
+        await moveIntoGraveyard(windowId, ids, { collapse: 'unless-active', activeTabId, views });
+      } catch (err) {
+        // One diagnostic per affected tab; they stay where they are (8.10).
+        for (let i = 0; i < ids.length; i += 1) logFailure('auto-bury move', err);
+      }
+    }
+
+    // No tab id: every window shows the same text (7.1).
+    await action.setBadgeText({ text: dead.length > 0 ? String(dead.length) : '' });
+  }
 
   /** Send the owed graveyard:refresh messages without awaiting them, so a slow page cannot stall the queue. */
   function flushRefreshes() {
@@ -427,6 +507,16 @@ export function createBackground(chromeApi, {
   async function readDemo() {
     // Only an exact `true` counts; missing or malformed values mean off.
     return (await readKey(local, DEMO_KEY)) === true;
+  }
+
+  async function readAutoBury() {
+    // Only an exact `true` counts; missing, malformed, or unreadable means off (8.2).
+    try {
+      return (await readKey(local, AUTO_BURY_KEY)) === true;
+    } catch (err) {
+      logFailure('auto-bury read', err);
+      return false;
+    }
   }
 
   // rules.json is fetched once per worker life. A failed load clears the cache so a later call retries.
@@ -751,8 +841,8 @@ export function createBackground(chromeApi, {
     const base = await readBaseThresholds();
     return enqueue(async () => {
       const t = now();
-      const [demoMode, profile, stored, buried, views] = await Promise.all([
-        readDemo(), readProfile(), readAllSession(), readBuried(),
+      const [demoMode, autoBury, profile, stored, buried, views] = await Promise.all([
+        readDemo(), readAutoBury(), readProfile(), readAllSession(), readBuried(),
         openTabs().catch((err) => {
           logFailure('tabs.query', err);
           return null;
@@ -781,7 +871,9 @@ export function createBackground(chromeApi, {
       dead.sort(byAway);
       closable.sort(byAway);
 
-      return { ok: true, demoMode, rulesLoaded: base !== null, current, dead, closable: closable.map((c) => c.tabId), buried };
+      return {
+        ok: true, demoMode, autoBury, rulesLoaded: base !== null, current, dead, closable: closable.map((c) => c.tabId), buried,
+      };
     }, { recount: 'ok' });
   }
 
@@ -833,6 +925,26 @@ export function createBackground(chromeApi, {
         return fail('could not save demo mode');
       }
       return { ok: true, demoMode: enabled };
+    }, { recount: 'ok' });
+  }
+
+  /**
+   * Switch Auto_Bury (8.4, 8.11). Moves no tab out of any group. The Recount that follows
+   * an ok:true reply runs before the reply resolves, so turning it on moves the current
+   * Buryable_Tabs before replying (8.7); the reply does not depend on those moves.
+   */
+  async function setAutoBury(message, sender) {
+    if (!isExtensionPage(sender)) return fail('set-auto-bury requires an extension page sender');
+    const { enabled } = message;
+    if (typeof enabled !== 'boolean') return fail('enabled must be a Boolean');
+    return enqueue(async () => {
+      try {
+        await local.set({ [AUTO_BURY_KEY]: enabled });
+      } catch (err) {
+        logFailure('auto-bury save', err);
+        return fail('could not save auto-bury');
+      }
+      return { ok: true, autoBury: enabled };
     }, { recount: 'ok' });
   }
 
@@ -988,6 +1100,7 @@ export function createBackground(chromeApi, {
     [MESSAGE.POPUP_STATE, popupState],
     [MESSAGE.RESURRECT_TAB, resurrectTab],
     [MESSAGE.SET_DEMO, setDemo],
+    [MESSAGE.SET_AUTO_BURY, setAutoBury],
     [MESSAGE.BURY, bury],
     [MESSAGE.EMPTY, emptyGraveyard],
     [MESSAGE.REOPEN, reopen],

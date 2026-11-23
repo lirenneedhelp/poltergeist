@@ -624,7 +624,7 @@ describe('popup-state', () => {
     env.session[tabKey(9)] = { url: urlOf(9), title: 'closed', since: 0, leftAt: 0, normal: { heldMs: 0 }, demo: { heldMs: 0, epoch: 0 } };
     const state = await env.popup({ type: MESSAGE.POPUP_STATE, tabId: 3 });
     expect(state).toEqual({
-      ok: true, demoMode: false, rulesLoaded: true,
+      ok: true, demoMode: false, autoBury: false, rulesLoaded: true,
       current: { known: true, stage: 'dead', awaySeconds: 86400 },
       dead: [
         { tabId: 2, title: 'Two', url: urlOf(2), awaySeconds: 90000 },
@@ -645,8 +645,9 @@ describe('popup-state', () => {
   });
 
   it('lists no Dead_Tabs and refuses Bury when rules.json cannot be read, then retries', async () => {
-    await env.awayTab(2, 2 * DAY);
+    // Failing from the start: every job's Recount also tries the rules, which would otherwise cache them.
     env.fetchState.fail = true;
+    await env.awayTab(2, 2 * DAY);
     const state = await env.popup({ type: MESSAGE.POPUP_STATE, tabId: 2 });
     expect(state).toMatchObject({ ok: true, rulesLoaded: false, current: { stage: null }, dead: [] });
     expect(await env.popup({ type: MESSAGE.BURY, tabIds: [2] })).toEqual({ ok: false, error: 'rules unavailable' });
@@ -1178,6 +1179,209 @@ describe('resurrect ungroups a Graveyard tab', () => {
     expect(env.groupOf(2)).toBe(id);
     expect(env.session[groupKey(WIN)]).toBe(id);
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+const setAutoBury = (enabled, sender = popupSender) => env.send({ type: MESSAGE.SET_AUTO_BURY, enabled }, sender);
+
+describe('toolbar badge', () => {
+  it('recounts after one trigger of each kind, counting dead Graveyard tabs and dead tabs in user groups', async () => {
+    env.addTab(1, { active: true });
+    await env.content(1, 'Front');
+    await deadTabs([2, 3, 4, 6]);
+    expect(await bury([3])).toMatchObject({ ok: true, moved: [3] });
+    const gid = env.session[groupKey(WIN)];
+    env.addGroup({ title: 'Work', color: 'red', tabIds: [4] });
+    const ok = (reply) => expect(reply?.ok).toBe(true);
+    // Each step: [trigger, run, expected badge text]. Every step starts from a stale badge.
+    const steps = [
+      ['runtime.onInstalled / onStartup', () => env.bg.seedTabs(), '4'],
+      ['tabs.onActivated', async () => { env.addTab(5); await env.activate(5); }, '4'],
+      ['tabs.onUpdated', () => env.bg.handleUpdated(2, env.changeInfo({ groupId: -1 })), '4'],
+      ['tabGroups.onUpdated', () => env.bg.handleGroupUpdated(env.groupEvent(gid)), '4'],
+      ['tabGroups.onRemoved', () => env.bg.handleGroupRemoved(env.groupEvent(9999)), '4'],
+      ['windows.onRemoved', () => env.bg.handleWindowRemoved(77), '4'],
+      ['tabs.onRemoved', async () => { env.open.delete(6); await env.bg.handleRemoved(6, { windowId: WIN }); }, '3'],
+      ['tabs.onReplaced', async () => { env.open.delete(2); env.addTab(8); await env.bg.handleReplaced(8, 2); }, '3'],
+      ['graveyard:content-state', async () => ok(await env.content(5)), '3'],
+      ['graveyard:report', async () => ok(await env.report(5, 0)), '3'],
+      ['graveyard:popup-state', async () => ok(await popupState()), '3'],
+      ['graveyard:set-demo', async () => ok(await env.popup({ type: MESSAGE.SET_DEMO, enabled: false })), '3'],
+      ['graveyard:set-auto-bury', async () => ok(await setAutoBury(false)), '3'],
+      ['graveyard:bury', async () => ok(await bury([])), '3'],
+      ['graveyard:empty', async () => expect(await empty([3])).toEqual({ ok: true, buried: [3], notClosed: [] }), '2'],
+      ['graveyard:reopen', async () => ok(await env.popup({ type: MESSAGE.REOPEN, entryId: env.local[BURIED_KEY][0].id })), '2'],
+      ['graveyard:resurrect-tab', async () => ok(await env.popup({ type: MESSAGE.RESURRECT_TAB, tabId: 8 })), '1'],
+      ['graveyard:resurrect', async () => ok(await env.send({ type: MESSAGE.RESURRECT }, env.sender(4))), ''],
+    ];
+    for (const [trigger, run, expected] of steps) {
+      env.badge = 'stale';
+      await run();
+      expect({ trigger, badge: env.badge }).toEqual({ trigger, badge: expected });
+    }
+    // No tab id: every window shows the same text (7.1).
+    for (const [arg] of env.chromeApi.action.setBadgeText.mock.calls) expect(Object.keys(arg)).toEqual(['text']);
+  });
+
+  it('shows the empty string at 0 Dead_Tabs', async () => {
+    env.addTab(1, { active: true });
+    await env.awayTab(2, H); // fogged, not dead
+    await popupState();
+    expect(env.badge).toBe('');
+  });
+
+  it('shows the empty string when rules.json cannot be read', async () => {
+    env.fetchState.fail = true;
+    await deadTabs([2, 3]);
+    await popupState();
+    expect(env.badge).toBe('');
+  });
+
+  it('keeps the badge and the job\'s reply when the Recount fails', async () => {
+    await deadTabs([2]);
+    await popupState();
+    expect(env.badge).toBe('1');
+    await env.awayTab(3, DAY);
+    errorSpy.mockClear();
+    env.fail.badge = true;
+    const reply = await popupState();
+    expect(reply).toMatchObject({ ok: true, dead: [{ tabId: 2 }, { tabId: 3 }] });
+    expect(env.badge).toBe('1');
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    // A failing tabs.query in the Recount also leaves the badge; the bury still succeeds.
+    env.fail.badge = false;
+    errorSpy.mockClear();
+    const query = env.chromeApi.tabs.query.getMockImplementation();
+    let calls = 0;
+    env.chromeApi.tabs.query.mockImplementation(async (...args) => {
+      calls += 1;
+      if (calls === 2) throw new Error('boom'); // the bury job's query passes, the Recount's fails
+      return query(...args);
+    });
+    expect(await bury([2])).toEqual({ ok: true, moved: [2], notMoved: [] });
+    expect(env.badge).toBe('1');
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('auto-bury', () => {
+  it('is off by default and while off moves nothing', async () => {
+    await deadTabs([2]);
+    expect(await popupState()).toMatchObject({ autoBury: false, dead: [{ tabId: 2 }] });
+    env.local[AUTO_BURY_KEY] = 'yes'; // malformed means off
+    expect((await popupState()).autoBury).toBe(false);
+    expect(env.chromeApi.tabs.group).not.toHaveBeenCalled();
+    expect(env.groupOf(2)).toBe(-1);
+    // Turned on and off again: a tab that dies afterwards stays where it is.
+    expect(await setAutoBury(true)).toEqual({ ok: true, autoBury: true });
+    expect(await setAutoBury(false)).toEqual({ ok: true, autoBury: false });
+    expect(env.local[AUTO_BURY_KEY]).toBe(false);
+    const groupCalls = env.chromeApi.tabs.group.mock.calls.length;
+    await env.awayTab(3, DAY);
+    await popupState();
+    expect(env.chromeApi.tabs.group).toHaveBeenCalledTimes(groupCalls);
+    expect(env.groupOf(3)).toBe(-1);
+  });
+
+  it('turning it on moves the current Buryable_Tabs before replying', async () => {
+    await deadTabs([2, 3]);
+    await env.awayTab(4, H); // not dead
+    const reply = await setAutoBury(true);
+    expect(reply).toEqual({ ok: true, autoBury: true });
+    const id = env.session[groupKey(WIN)];
+    expect([env.groupOf(2), env.groupOf(3), env.groupOf(4), env.groupOf(1)]).toEqual([id, id, -1, -1]);
+    expect(env.groups.get(id)).toMatchObject({ windowId: WIN, title: 'Graveyard', color: 'grey', collapsed: true });
+    expect(env.session[attemptKey(2)]).toBe(true);
+    expect(env.local[AUTO_BURY_KEY]).toBe(true);
+    expect(env.chromeApi.tabs.remove).not.toHaveBeenCalled();
+    expect(env.chromeApi.tabs.ungroup).not.toHaveBeenCalled();
+    expect(env.local[BURIED_KEY]).toBeUndefined();
+    expect((await popupState()).autoBury).toBe(true);
+  });
+
+  it('rejects bad requests and keeps the stored value when the save fails', async () => {
+    await deadTabs([2]);
+    expect((await setAutoBury('on')).ok).toBe(false);
+    expect((await setAutoBury(true, env.sender(2))).ok).toBe(false);
+    env.chromeApi.storage.local.failSet = true;
+    expect(await setAutoBury(true)).toEqual({ ok: false, error: 'could not save auto-bury' });
+    expect(env.local[AUTO_BURY_KEY]).toBeUndefined();
+    expect(env.chromeApi.tabs.group).not.toHaveBeenCalled();
+  });
+
+  it('moves a tab once per death: a tab moved out stays out until it is Reset and dies again', async () => {
+    await setAutoBury(true);
+    await deadTabs([2]);
+    await popupState();
+    const id = env.session[groupKey(WIN)];
+    expect(env.groupOf(2)).toBe(id);
+    // The user drags it out; later Recounts leave it there.
+    env.open.get(2).groupId = -1;
+    await env.bg.handleUpdated(2, env.changeInfo({ groupId: -1 }));
+    await popupState();
+    expect(env.groupOf(2)).toBe(-1);
+    expect(env.chromeApi.tabs.group).toHaveBeenCalledTimes(1);
+    // Resurrect resets it; when it dies again it is moved again.
+    expect(await env.popup({ type: MESSAGE.RESURRECT_TAB, tabId: 2 })).toMatchObject({ ok: true });
+    expect(env.groupOf(2)).toBe(-1);
+    env.advance(DAY);
+    await popupState();
+    expect(env.chromeApi.tabs.group).toHaveBeenCalledTimes(2);
+    expect(env.groupOf(2)).toBe(env.session[groupKey(WIN)]);
+  });
+
+  it('counts a graveyard:bury move, or a dead tab found in the Graveyard group, as the attempt', async () => {
+    await deadTabs([2, 3]);
+    await bury([2, 3]);
+    delete env.session[attemptKey(3)];
+    await popupState(); // the Recount records the attempt for a dead Graveyard tab
+    expect(env.session[attemptKey(3)]).toBe(true);
+    for (const tabId of [2, 3]) {
+      env.open.get(tabId).groupId = -1;
+      await env.bg.handleUpdated(tabId, env.changeInfo({ groupId: -1 }));
+    }
+    const calls = env.chromeApi.tabs.group.mock.calls.length;
+    await setAutoBury(true);
+    expect(env.chromeApi.tabs.group).toHaveBeenCalledTimes(calls);
+    expect([env.groupOf(2), env.groupOf(3)]).toEqual([-1, -1]);
+  });
+
+  it('skips the active tab of a window and moves it once it is left', async () => {
+    await deadTabs([2]);
+    await env.activate(2); // still dead: its Register holds the Absence
+    expect(await setAutoBury(true)).toEqual({ ok: true, autoBury: true });
+    expect(env.groupOf(2)).toBe(-1);
+    expect(env.session[attemptKey(2)]).toBeUndefined();
+    await env.activate(1);
+    expect(env.groupOf(2)).toBe(env.session[groupKey(WIN)]);
+    expect(env.groups.get(env.groupOf(2))).toMatchObject({ collapsed: true });
+  });
+
+  it('leaves a reused group expanded when it holds the window\'s active tab', async () => {
+    await deadTabs([2, 3]);
+    const id = (await bury([2]), env.session[groupKey(WIN)]);
+    env.groups.get(id).collapsed = false; // Chrome expands a group when one of its tabs is activated
+    await env.activate(2);
+    await setAutoBury(true);
+    expect(env.groupOf(3)).toBe(id);
+    expect(env.groups.get(id)).toMatchObject({ title: 'Graveyard', color: 'grey', collapsed: false });
+    expect(env.chromeApi.tabGroups.update).toHaveBeenLastCalledWith(id, { title: 'Graveyard', color: 'grey' });
+    expect(env.open.get(2).active).toBe(true);
+  });
+
+  it('never moves tabs in, or changes, groups the user made', async () => {
+    await deadTabs([2, 3]);
+    const work = env.addGroup({ title: 'Work', color: 'red', tabIds: [2] });
+    const fake = env.addGroup({ title: 'Graveyard', color: 'grey', collapsed: true, tabIds: [3] });
+    const before = structuredClone([...env.groups.values()]);
+    await setAutoBury(true);
+    await popupState();
+    expect([env.groupOf(2), env.groupOf(3)]).toEqual([work, fake]);
+    expect([...env.groups.values()]).toEqual(before);
+    expect(env.chromeApi.tabs.group).not.toHaveBeenCalled();
+    expect(env.chromeApi.tabGroups.update).not.toHaveBeenCalled();
+    expect(env.session[groupKey(WIN)]).toBeUndefined();
+    expect(env.badge).toBe('2');
   });
 });
 

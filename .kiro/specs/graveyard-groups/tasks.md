@@ -43,13 +43,13 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Privacy tests: no `url`/`pendingUrl`/`title`/`favIconUrl` reads, no title read of a non-recorded group, no group title in storage or diagnostics; allow the new key prefixes and `graveyard.autoBury`; listener-registration test includes the three new listeners
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-- [ ] 3. Recount, toolbar badge, and Auto_Bury
-  - [ ] 3.1 Implement Recount and Auto_Bury in `background.js`
+- [x] 3. Recount, toolbar badge, and Auto_Bury
+  - [x] 3.1 Implement Recount and Auto_Bury in `background.js`
     - `recount()` and `recountSafely()` wired into `enqueue`: count Dead_Tabs across windows (including grouped ones), record attempts for dead Graveyard_Tabs, run Auto_Bury when on and rules load (candidates: Buryable, not active, no attempt; `collapse: 'unless-active'`; attempt written whatever the outcome), commit writes only on change, then `action.setBadgeText` with no tab id (`''` at 0 or without rules)
     - Recount failures log one diagnostic, leave the badge, and do not change the job's reply
     - `setAutoBury` handler with sender and Boolean checks, `{ok: true, autoBury}` reply, `could not save auto-bury` on write failure; `popupState` adds `autoBury`
     - _Requirements: 7.1, 7.2, 7.4, 7.5, 7.6, 7.8, 8.2, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.10, 8.11, 8.13_
-  - [ ] 3.2 Add badge and Auto_Bury unit tests
+  - [x] 3.2 Add badge and Auto_Bury unit tests
     - Badge text after one trigger of each kind in 7.2, counting dead Graveyard_Tabs and dead tabs in user groups; `''` at 0 and when `rules.json` cannot be read; Recount failure keeps the reply
     - Auto_Bury: default off; once per death; a `graveyard:bury` move counts as the attempt; active-tab skip; no move while off; turning on moves before the reply; collapse left unchanged when the group holds the active tab; user groups untouched
     - _Requirements: 11.2_
