@@ -11,6 +11,7 @@ import { REPO_ROOT } from '../../scripts/sync-skeleton.mjs';
 
 const APP = path.join(REPO_ROOT, APP_DIR);
 const readJson = async (p) => JSON.parse(await fs.readFile(p, 'utf8'));
+const PERMISSION_ERROR = 'manifest.json: permissions must be exactly ["storage", "tabGroups"]';
 
 const temps = [];
 afterEach(async () => {
@@ -71,10 +72,10 @@ describe('real graveyard package', () => {
     expect(validateRulesDocument(doc)).toEqual([]);
   });
 
-  it('is MV3 with storage only, no host permissions, incognito not allowed, one classic top-frame content script', async () => {
+  it('is MV3 with storage and tabGroups only, no host permissions, incognito not allowed, one classic top-frame content script', async () => {
     const m = await readJson(path.join(APP, 'manifest.json'));
     expect(m.manifest_version).toBe(3);
-    expect(m.permissions).toEqual(['storage']);
+    expect(m.permissions).toEqual(['storage', 'tabGroups']);
     expect(m.incognito).toBe('not_allowed');
     for (const key of FORBIDDEN_MANIFEST_KEYS) expect(m[key], key).toBeUndefined();
     expect(m.content_scripts).toEqual([{ matches: [...WEB_SCOPE], js: ['content.js'], run_at: 'document_idle', all_frames: false }]);
@@ -109,6 +110,17 @@ describe('manifest document checks', () => {
     const m = await base();
     m[key] = key.endsWith('permissions') ? ['https://*/*'] : {};
     expect(scopeOnly(m)).toEqual([`manifest.json: ${key} is not allowed`]);
+  });
+
+  it.each([
+    ['a missing tabGroups', ['storage']],
+    ['an added alarms', ['storage', 'tabGroups', 'alarms']],
+    ['a duplicated tabGroups', ['storage', 'tabGroups', 'tabGroups']],
+    ['another order', ['tabGroups', 'storage']],
+  ])('reports only the permission error for %s', async (_label, permissions) => {
+    const m = await base();
+    m.permissions = permissions;
+    expect(scopeOnly(m)).toEqual([PERMISSION_ERROR]);
   });
 
   it('rejects a missing incognito setting, name, and version', async () => {
@@ -157,7 +169,7 @@ describe('temporary package fixtures', () => {
     const { ok, errors } = await validatePackage(root);
     expect(ok).toBe(false);
     expect(errors).toEqual(expect.arrayContaining([
-      'manifest.json: permissions must be exactly ["storage"]',
+      PERMISSION_ERROR,
       'manifest.json: host_permissions is not allowed',
       'manifest.json: content_scripts[0].matches must be exactly the web scope',
       'manifest.json: web_accessible_resources is missing skeleton/effects/rot.js',
@@ -228,7 +240,7 @@ describe('check:graveyard npm script', () => {
     const before = await snapshot(root);
     const res = runCheck(root);
     expect(res.status).not.toBe(0);
-    expect(res.stderr.split(/\r?\n/).some((l) => /manifest\.json: permissions must be exactly \["storage"\]/.test(l))).toBe(true);
+    expect(res.stderr.split(/\r?\n/).some((l) => l.includes(PERMISSION_ERROR))).toBe(true);
     expect(await snapshot(root)).toEqual(before);
   }, 60_000);
 });

@@ -1,0 +1,36 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add `tabGroups` to the manifest and the Graveyard_Validator": [
+      {
+        "executionId": "73467343-515e-49ad-8011-8621e1bfc8b0",
+        "chatSessionId": "sess_c04b2f93-66b1-4810-9160-b4dc45e2d46f",
+        "timestamp": 1795445874894
+      },
+      {
+        "executionId": "73467343-515e-49ad-8011-8621e1bfc8b0",
+        "chatSessionId": "sess_c04b2f93-66b1-4810-9160-b4dc45e2d46f",
+        "timestamp": 1795446474714
+      }
+    ],
+    "1.2 Update packaging tests and permission comments": [
+      {
+        "executionId": "5023a40a-5ada-4081-b8bc-17022e9918da",
+        "chatSessionId": "sess_7fe69eb7-ac56-4a87-8f8f-e41648dff4bf",
+        "timestamp": 1795446662643
+      },
+      {
+        "executionId": "5023a40a-5ada-4081-b8bc-17022e9918da",
+        "chatSessionId": "sess_7fe69eb7-ac56-4a87-8f8f-e41648dff4bf",
+        "timestamp": 1795446726716
+      }
+    ],
+    "1. Manifest, validator, and packaging tests": [
+      {
+        "executionId": "5023a40a-5ada-4081-b8bc-17022e9918da",
+        "chatSessionId": "sess_7fe69eb7-ac56-4a87-8f8f-e41648dff4bf",
+        "timestamp": 1795446726785
+      }
+    ]
+  }
+}

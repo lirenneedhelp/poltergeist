@@ -8,12 +8,12 @@ Paths without a directory are under `app2-tab-graveyard/`.
 
 ## Tasks
 
-- [ ] 1. Manifest, validator, and packaging tests
-  - [ ] 1.1 Add `tabGroups` to the manifest and the Graveyard_Validator
+- [x] 1. Manifest, validator, and packaging tests
+  - [x] 1.1 Add `tabGroups` to the manifest and the Graveyard_Validator
     - Set `manifest.json` `permissions` to exactly `["storage", "tabGroups"]`; change no other key
     - In `scripts/validate-graveyard-package.mjs`, require `["storage", "tabGroups"]` with the single error `manifest.json: permissions must be exactly ["storage", "tabGroups"]`, and add the `tabGroups` comment directly above the check; leave the forbidden-key loop unchanged
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.11_
-  - [ ] 1.2 Update packaging tests and permission comments
+  - [x] 1.2 Update packaging tests and permission comments
     - `test/package.test.js`: expect `["storage", "tabGroups"]` and the new error text; add validator cases for a missing `tabGroups`, an added `alarms`, a duplicated `tabGroups`, and `["tabGroups", "storage"]`, each reporting only that error; keep the read-only `check:graveyard` failure on an added `tabs`
     - `test/sync.test.js`: expected error text updated
     - Update the permission comment in `test/browser/discard-reload.pw.js` and any other test comment that states the permissions

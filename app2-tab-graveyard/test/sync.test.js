@@ -191,7 +191,7 @@ describe('build and check modes', () => {
     await fs.writeFile(mp, JSON.stringify(m));
     expect(await sync.main(['--check', '--app', 'graveyard'], root)).toBe(1);
     expect(logs.err).toContain('Tab Graveyard package validation failed:');
-    expect(logs.err).toContain('  manifest.json: permissions must be exactly ["storage"]');
+    expect(logs.err).toContain('  manifest.json: permissions must be exactly ["storage", "tabGroups"]');
   });
 });
 

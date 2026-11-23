@@ -5,7 +5,7 @@
 // extension's service worker while A is in the background, and requires the
 // returned Tab, and `tabs.get` on its id, to report `discarded: true`. It never
 // falls back to a background reload. Discard is test-only driving. The app
-// itself never calls it, and the manifest keeps `permissions: ["storage"]`
+// itself never calls it, and the manifest keeps `permissions: ["storage", "tabGroups"]`
 // because `tabs.discard` needs no permission.
 //
 // Discarding destroys A's renderer, so every bit of in-page state (the meter, the

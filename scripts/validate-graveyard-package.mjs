@@ -65,7 +65,11 @@ export function validateManifestDocument(m, { allFiles = [], reachable = new Set
   if (!nonEmptyString(m.name)) errors.push(`${at}: name is required`);
   if (!nonEmptyString(m.version)) errors.push(`${at}: version is required`);
   if (m.incognito !== 'not_allowed') errors.push(`${at}: incognito must be "not_allowed"`);
-  if (!same(m.permissions, ['storage'])) errors.push(`${at}: permissions must be exactly ["storage"]`);
+  // `tabGroups` is needed to read and set the Graveyard group's title, colour, and collapsed state
+  // and to receive its update and removal events. No other permission is needed: `tabs.group`,
+  // `tabs.ungroup`, `tabs.onUpdated`, the `pinned`, `audible`, and `groupId` properties, and
+  // `action.setBadgeText` need none.
+  if (!same(m.permissions, ['storage', 'tabGroups'])) errors.push(`${at}: permissions must be exactly ["storage", "tabGroups"]`);
   for (const key of FORBIDDEN_MANIFEST_KEYS) {
     if (m[key] !== undefined) errors.push(`${at}: ${key} is not allowed`);
   }
