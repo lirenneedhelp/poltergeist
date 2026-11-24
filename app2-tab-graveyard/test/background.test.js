@@ -14,7 +14,7 @@ import {
   MESSAGE, TAB_KEY_PREFIX, WINDOW_KEY_PREFIX, PROFILE_KEY, DEMO_KEY, BURIED_KEY,
   GROUP_KEY_PREFIX, EXEMPT_KEY_PREFIX, ATTEMPT_KEY_PREFIX, AUTO_BURY_KEY,
   MAX_BURIED, MAX_BURY_IDS, MAX_EMPTY_IDS, MAX_TITLE_LENGTH, MAX_URL_LENGTH,
-  tabKey, windowKey, groupKey, attemptKey, truncateTitle, createBackground, registerBackground,
+  tabKey, windowKey, groupKey, exemptKey, attemptKey, truncateTitle, createBackground, registerBackground,
 } from '../background.js';
 
 const RULES = JSON.parse(readFileSync(new URL('../rules.json', import.meta.url), 'utf8'));
@@ -449,7 +449,7 @@ describe('content messages', () => {
     const reply = await env.bg.handleMessage(
       { type: MESSAGE.CONTENT_STATE, title: 'Notes', url: 'https://evil.test/', tabId: 99 }, env.sender(3),
     );
-    expect(reply).toEqual({ ok: true, demoMode: false, timeScale: 1, epoch: 0, heldSeconds: 0, currentSeconds: 0 });
+    expect(reply).toEqual({ ok: true, demoMode: false, timeScale: 1, epoch: 0, exempt: false, heldSeconds: 0, currentSeconds: 0 });
     expect(env.rec(3)).toEqual({
       url: urlOf(3), title: 'Notes', since: T0, leftAt: T0, normal: { heldMs: 0 }, demo: { heldMs: 0, epoch: 0 },
     });
@@ -1179,6 +1179,161 @@ describe('resurrect ungroups a Graveyard tab', () => {
     expect(env.groupOf(2)).toBe(id);
     expect(env.session[groupKey(WIN)]).toBe(id);
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Tab ids that were sent graveyard:refresh, in send order. */
+const refreshes = () => env.chromeApi.tabs.sendMessage.mock.calls
+  .filter(([, message]) => message?.type === MESSAGE.REFRESH)
+  .map(([tabId, , options]) => {
+    expect(options).toEqual({ frameId: 0 }); // the tab's top frame (6.8)
+    return tabId;
+  });
+
+/** Set a tab's pinned or audible value in Chrome and fire tabs.onUpdated for that change. */
+async function setFlag(id, key, value) {
+  env.open.get(id)[key] = value;
+  await env.bg.handleUpdated(id, env.changeInfo({ [key]: value }), env.sender(id).tab);
+}
+
+const ZERO = { normal: { heldMs: 0 }, demo: { heldMs: 0, epoch: 0 } };
+
+describe('pinned and audible exemptions', () => {
+  it.each(['pinned', 'audible'])('resets a dead tab that becomes %s and sends one refresh', async (key) => {
+    await deadTabs([2]);
+    await popupState();
+    expect(env.badge).toBe('1');
+    env.advance(S);
+    await setFlag(2, key, true);
+    expect(env.session[exemptKey(2)]).toBe(true);
+    // Registers to 0 and the Absence ended without being credited (6.2).
+    expect(env.rec(2)).toMatchObject({ url: urlOf(2), since: env.now, leftAt: null, ...ZERO });
+    expect(refreshes()).toEqual([2]);
+    expect(env.badge).toBe('');
+    expect((await popupState()).dead).toEqual([]);
+  });
+
+  it('replies exempt with zero seeds to content-state from a pinned or audible sender', async () => {
+    await deadTabs([2, 3]);
+    env.open.get(2).audible = true;
+    env.open.get(3).pinned = true;
+    for (const id of [2, 3]) {
+      expect(await env.content(id)).toEqual({
+        ok: true, demoMode: false, timeScale: 1, epoch: 0, exempt: true, heldSeconds: 0, currentSeconds: 0,
+      });
+      expect(env.session[exemptKey(id)]).toBe(true);
+      expect(env.rec(id)).toMatchObject({ leftAt: null, ...ZERO });
+    }
+    // sender.tab was the source of the change, so each tab is owed exactly one refresh.
+    expect(refreshes()).toEqual([2, 3]);
+    // A non-Boolean value counts as false (6.1).
+    env.addTab(4);
+    env.open.get(4).pinned = 'yes';
+    expect((await env.content(4)).exempt).toBe(false);
+  });
+
+  it('holds the Registers at 0 and ignores page reports while exempt', async () => {
+    env.addTab(1, { active: true });
+    await env.content(1, 'Front');
+    env.addTab(2, { pinned: true });
+    await env.activate(2);
+    await env.content(2);
+    expect(env.session[exemptKey(2)]).toBe(true);
+    // Leaving the exempt tab, a restart seeding, and a long wait start no Absence (6.3).
+    env.advance(S);
+    await env.activate(1);
+    await env.bg.seedTabs();
+    env.advance(2 * DAY);
+    expect(env.rec(2)).toMatchObject({ leftAt: null, ...ZERO });
+    // A valid report changes nothing (6.12).
+    const before = env.rec(2);
+    expect(await env.report(2, 3 * 86400)).toEqual({ ok: true, applied: false });
+    expect(env.rec(2)).toEqual(before);
+    expect(await env.content(2)).toMatchObject({ exempt: true, heldSeconds: 0, currentSeconds: 0 });
+    // Out of the popup lists and the badge (6.4).
+    expect(await popupState()).toMatchObject({ dead: [], closable: [] });
+    expect(env.badge).toBe('');
+    // No change, no further refresh: only the entry sent one.
+    expect(refreshes()).toEqual([2]);
+  });
+
+  it('starts a fresh Absence when an inactive tab stops being exempt', async () => {
+    await deadTabs([2]);
+    await setFlag(2, 'pinned', true);
+    env.advance(2 * DAY);
+    const exitAt = env.now;
+    await setFlag(2, 'pinned', false);
+    expect(env.session[exemptKey(2)]).toBeUndefined();
+    // Registers stay 0; the Absence starts at the exit (6.5, 6.14).
+    expect(env.rec(2)).toMatchObject({ since: exitAt, leftAt: exitAt, ...ZERO });
+    expect(refreshes()).toEqual([2, 2]);
+    // An event that changes nothing sends no refresh.
+    await env.bg.handleUpdated(2, env.changeInfo({ audible: false }), env.sender(2).tab);
+    expect(refreshes()).toEqual([2, 2]);
+    // Dead no sooner than 86400 s after the exemption ends.
+    env.advance(DAY - S);
+    expect((await popupState()).dead).toEqual([]);
+    env.advance(S);
+    expect((await popupState()).dead).toMatchObject([{ tabId: 2, awaySeconds: 86400 }]);
+    expect(env.badge).toBe('1');
+  });
+
+  it('starts no Absence when an active tab stops being exempt', async () => {
+    env.addTab(2, { active: true, audible: true });
+    await env.content(2);
+    env.advance(H);
+    await setFlag(2, 'audible', false);
+    expect(env.rec(2)).toMatchObject({ since: env.now, leftAt: null, ...ZERO });
+    expect(refreshes()).toEqual([2, 2]);
+  });
+
+  it('leaves a Graveyard tab in its group when it becomes exempt, and clears its attempt', async () => {
+    const id = await graveyard([2]);
+    expect(env.session[attemptKey(2)]).toBe(true);
+    await setFlag(2, 'audible', true);
+    expect(env.chromeApi.tabs.ungroup).not.toHaveBeenCalled();
+    expect(env.groupOf(2)).toBe(id);
+    expect(env.session[attemptKey(2)]).toBeUndefined();
+    // Neither closable nor counted while exempt (6.4).
+    expect((await popupState()).closable).toEqual([]);
+    expect(await empty([2])).toEqual({ ok: true, buried: [], notClosed: [] });
+    expect(env.open.has(2)).toBe(true);
+    await setFlag(2, 'audible', false);
+    expect(env.chromeApi.tabs.ungroup).not.toHaveBeenCalled();
+    expect(env.groupOf(2)).toBe(id);
+  });
+
+  it('moves the exempt flag and attempt on tabs.onReplaced, then syncs from tabs.get', async () => {
+    await deadTabs([2, 3]);
+    env.session[exemptKey(2)] = true;
+    env.session[attemptKey(2)] = true;
+    env.session[exemptKey(3)] = true;
+    env.open.get(3).pinned = true; // so the Recounts below see no exemption change for tab 3
+    // Tab 2 is replaced by a pinned tab: its state moves unchanged.
+    env.open.delete(2);
+    env.addTab(50, { pinned: true });
+    await env.bg.handleReplaced(50, 2);
+    expect(env.session[exemptKey(50)]).toBe(true);
+    expect(env.session[attemptKey(50)]).toBe(true);
+    for (const key of [tabKey(2), exemptKey(2), attemptKey(2)]) expect(env.session[key]).toBeUndefined();
+    expect(refreshes()).toEqual([]);
+    // Tab 3 is replaced by a tab that is neither pinned nor audible: the move is followed by an exit.
+    env.open.delete(3);
+    env.addTab(60);
+    await env.bg.handleReplaced(60, 3);
+    expect(env.session[exemptKey(60)]).toBeUndefined();
+    expect(env.session[exemptKey(3)]).toBeUndefined();
+    expect(env.rec(60)).toMatchObject({ url: urlOf(3), since: env.now, leftAt: env.now, ...ZERO });
+    expect(refreshes()).toEqual([60]);
+  });
+
+  it('keeps no exempt flag or attempt for a tab after tabs.onRemoved', async () => {
+    await deadTabs([2]);
+    env.session[exemptKey(2)] = true;
+    env.session[attemptKey(2)] = true;
+    env.open.delete(2);
+    await env.bg.handleRemoved(2, { windowId: WIN });
+    for (const key of [tabKey(2), exemptKey(2), attemptKey(2)]) expect(env.session[key]).toBeUndefined();
   });
 });
 

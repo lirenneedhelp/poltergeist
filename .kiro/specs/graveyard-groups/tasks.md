@@ -54,22 +54,22 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Auto_Bury: default off; once per death; a `graveyard:bury` move counts as the attempt; active-tab skip; no move while off; turning on moves before the reply; collapse left unchanged when the group holds the active tab; user groups untouched
     - _Requirements: 11.2_
 
-- [ ] 4. Pinned and audible exemptions, page refresh, and death watch
-  - [ ] 4.1 Implement exemption sync in `background.js`
+- [x] 4. Pinned and audible exemptions, page refresh, and death watch
+  - [x] 4.1 Implement exemption sync in `background.js`
     - `syncExemption` for entry (Reset, attempt cleared, refresh queued) and exit (Registers 0, `since` = now, fresh Absence when not active, refresh queued)
     - Sync from `sender.tab` in `contentState`, `report`, `resurrect`; from `tabs.get` in `tabs.onActivated`; from `tabs.query` in `seedTabs` and the Recount; from `tabs.onUpdated` when `pinned` or `audible` changes
     - `contentState` replies `exempt` with zero seeds when exempt; `report` replies `{ok: true, applied: false}` for exempt tabs; exempt tabs excluded from lists, badge, and Auto_Bury; exemption never ungroups
     - `tabs.onRemoved` deletes exempt and attempt keys; `tabs.onReplaced` moves them to the added id, then syncs from `tabs.get(added)`
     - _Requirements: 5.6, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.8, 6.10, 6.12, 6.13, 6.14, 9.9_
-  - [ ] 4.2 Implement exemption handling and the death watch in `content.js`
+  - [x] 4.2 Implement exemption handling and the death watch in `content.js`
     - `parseState` requires a Boolean `exempt`; a reply without it is a failed state request with one diagnostic; `exempt: true` stops any instance and starts none
     - Accept `graveyard:refresh` from the extension's own id and run the existing serialized, generation-guarded refresh
     - Add `every`, `cancel`, `isHidden` dependencies; death watch armed while hidden, ticking the engine each second and sending one unchanged `graveyard:report` when `timeAway` reaches the active profile's Tombstone threshold; disarmed on visible, stop, dispose, fault, and after its report
     - _Requirements: 5.5, 6.7, 6.9, 6.11, 7.3, 7.7, 9.8_
-  - [ ] 4.3 Add exemption unit tests in `background.test.js`
+  - [x] 4.3 Add exemption unit tests in `background.test.js`
     - Reset on becoming pinned and on becoming audible; Registers held at 0; ignored page reports; the `exempt` reply field; `graveyard:refresh` on entry and exit; fresh Absence on exit for an inactive tab; no ungroup on exemption; `tabs.onReplaced` moving exempt and attempt keys; no keys left after `tabs.onRemoved`
     - _Requirements: 11.2, 9.9_
-  - [ ] 4.4 Add content-script unit tests in `content.test.js`
+  - [x] 4.4 Add content-script unit tests in `content.test.js`
     - Harness default reply gains `exempt: false`; `exempt: true` starts nothing; refresh stops a running instance on `exempt: true`; refresh starts one instance on `exempt: false` for a dead tab; missing `exempt` fails with one diagnostic
     - Death watch: one report with exactly `type`, `title`, `heldSeconds`, `epoch` at 24 s in Demo_Mode; none while visible; none after stop or dispose; re-arms after apply-reset while hidden
     - _Requirements: 11.5_

@@ -254,6 +254,36 @@ export function resetRecord(record, profile, t, active) {
 }
 
 /**
+ * The change that applies one source's view of a tab (tabView) to its saved exemption
+ * state, or null when nothing changes (Requirement 6).
+ *   Entry (view exempt, not saved): save the exempt flag, Reset the record (when one
+ *   exists) with no Absence and without crediting the elapsed one, and clear the
+ *   Auto_Bury attempt (6.2, 8.6).
+ *   Exit (view not exempt, saved): delete the flag and keep both Registers at 0, with
+ *   `since` at t and a fresh Absence from t when the tab is not active (6.5, 6.14). A tab
+ *   with no record that is not active gets a stub record with that Absence.
+ * Returns { set, remove, record } where `record` is the tab's new Tab_Record or null
+ * when it has none. Never touches group membership (5.6).
+ */
+export function exemptionChange(view, saved, record, profile, t) {
+  if (view.exempt && !saved) {
+    return {
+      set: { [exemptKey(view.id)]: true },
+      remove: [attemptKey(view.id)],
+      record: record ? resetRecord(record, profile, t, true) : null,
+    };
+  }
+  if (!view.exempt && saved) {
+    const away = !view.active;
+    let next = null;
+    if (record) next = resetRecord(record, profile, t, !away);
+    else if (away) next = createRecord({ t, away: true, profile });
+    return { set: {}, remove: [exemptKey(view.id)], record: next };
+  }
+  return null;
+}
+
+/**
  * Raise the Register for `mode` to a page-reported Held_Absence, capped at the time
  * since the record was created or reset (for demo, also since the epoch started).
  * Callers must already have checked that the report's epoch is the current one.
@@ -387,7 +417,7 @@ export function createBackground(chromeApi, {
    */
   async function recount() {
     // A failed read or query throws here, before the Badge is touched (7.6).
-    const [stored, views] = await Promise.all([readAllSession(), openTabs()]);
+    const [snapshot, views] = await Promise.all([readAllSession(), openTabs()]);
     const t = now();
     const [base, demoMode, autoBury] = await Promise.all([
       // Quiet: the rules diagnostic belongs to the job that needed the rules, not to every Recount.
@@ -395,13 +425,15 @@ export function createBackground(chromeApi, {
       readDemo(),
       readAutoBury(),
     ]);
-    const profile = normalizeProfile(stored[PROFILE_KEY]);
+    const profile = normalizeProfile(snapshot[PROFILE_KEY]);
     const context = { demoMode, profile, thresholds: base ? scaleThresholds(base, demoMode) : null, t };
+
+    // Exemption sync from this tabs.query (design decision 3): a change an earlier job saw
+    // but did not save is applied here, before anything is counted.
+    const plan = planExemptions(views, snapshot, profile, t);
+    const stored = applyPlan(snapshot, plan);
     const records = recordsIn(stored);
     const groups = graveyardIds(stored);
-
-    // Hook for exemption sync from this tabs.query (design decision 3, task 4.1): it will
-    // update `stored`, `records`, and the views' saved exemption before the count below.
 
     // Without rules no Stage is known, so isDead is false for every tab and the count is 0 (7.5).
     const dead = [];
@@ -409,7 +441,7 @@ export function createBackground(chromeApi, {
       if (isDead(view, records.get(tabId), context)) dead.push(view);
     }
 
-    const writes = {};
+    const writes = { ...plan.set };
     for (const view of dead) {
       // A dead tab already in the Graveyard_Group has had its attempt (8.6).
       if (isGraveyardTab(view, groups) && stored[attemptKey(view.id)] !== true) writes[attemptKey(view.id)] = true;
@@ -428,7 +460,9 @@ export function createBackground(chromeApi, {
     }
 
     // Saved before any move, so a failed move is never retried before the tab's next Reset (8.10).
+    if (plan.remove.length > 0) await session.remove(plan.remove);
     if (Object.keys(writes).length > 0) await session.set(writes);
+    for (const tabId of plan.tabIds) refreshQueue.add(tabId); // the exemption changes are saved (6.8)
 
     for (const [windowId, ids] of byWindow) {
       const activeTabId = [...views.values()].find((v) => v.windowId === windowId && v.active)?.id ?? null;
@@ -599,10 +633,50 @@ export function createBackground(chromeApi, {
     return view && !view.incognito ? view : null;
   }
 
-  /** The tab's `active` flag when it is open and not incognito, otherwise null. */
-  async function openTabActive(tabId) {
-    const view = await openTabView(tabId);
-    return view ? view.active : null;
+  /**
+   * Apply one source's view (6.1) to the tab's saved exemption state inside the current
+   * job. Writes only on a change, then owes the tab a graveyard:refresh (6.8), which the
+   * queue sends after the job and its Recount. Returns the tab's Tab_Record after the
+   * change (null when it has none).
+   */
+  async function syncExemption(view, record, profile, t) {
+    const saved = (await readKey(session, exemptKey(view.id))) === true;
+    const change = exemptionChange(view, saved, record, profile, t);
+    if (!change) return record;
+    const set = { ...change.set };
+    if (change.record) set[tabKey(view.id)] = change.record;
+    if (change.remove.length > 0) await session.remove(change.remove);
+    if (Object.keys(set).length > 0) await session.set(set);
+    refreshQueue.add(view.id);
+    return change.record;
+  }
+
+  /**
+   * Exemption changes for every view against one session snapshot, without per-tab reads
+   * (design decision 3). Returns { set, remove, tabIds }; the caller commits the writes
+   * and then owes each tab in `tabIds` a graveyard:refresh.
+   */
+  function planExemptions(views, stored, profile, t) {
+    const set = {};
+    const remove = [];
+    const tabIds = [];
+    for (const view of views.values()) {
+      const record = normalizeRecord(stored[tabKey(view.id)]);
+      const change = exemptionChange(view, stored[exemptKey(view.id)] === true, record, profile, t);
+      if (!change) continue;
+      Object.assign(set, change.set);
+      if (change.record) set[tabKey(view.id)] = change.record;
+      remove.push(...change.remove);
+      tabIds.push(view.id);
+    }
+    return { set, remove, tabIds };
+  }
+
+  /** Apply a plan to a snapshot copy, so later steps of the same job see the new state. */
+  function applyPlan(stored, plan) {
+    const next = { ...stored, ...plan.set };
+    for (const key of plan.remove) delete next[key];
+    return next;
   }
 
   /** Send a message to a tab's top-frame content script; resolves undefined when no receiver answers. */
@@ -770,9 +844,13 @@ export function createBackground(chromeApi, {
     }
   }
 
-  /** The sender tab's record, or a new one with an Absence starting at t if the tab is inactive. */
+  /**
+   * The sender tab's record after its exemption sync, or a new one. A new record starts an
+   * Absence at t only for an inactive tab that is not an Exempt_Tab (6.3).
+   */
   async function ensureRecord(from, profile, t) {
-    return (await readRecord(from.tabId)) ?? createRecord({ t, away: !from.active, profile });
+    const synced = await syncExemption(from.view, await readRecord(from.tabId), profile, t);
+    return synced ?? createRecord({ t, away: !from.active && !from.view.exempt, profile });
   }
 
   async function contentState(message, sender) {
@@ -782,6 +860,7 @@ export function createBackground(chromeApi, {
     return enqueue(async () => {
       const t = now();
       const [profile, demoMode] = await Promise.all([readProfile(), readDemo()]);
+      const { exempt } = from.view;
       const record = { ...(await ensureRecord(from, profile, t)), url: from.url, title: truncateTitle(message.title) };
       await writeRecord(from.tabId, record);
       const mode = modeOf(demoMode);
@@ -790,8 +869,10 @@ export function createBackground(chromeApi, {
         demoMode,
         timeScale: demoMode ? DEMO_TIME_SCALE : 1,
         epoch: profile.epoch,
-        heldSeconds: heldAwayMs(record, mode, profile) / 1000,
-        currentSeconds: currentAwayMs(record, mode, profile, t) / 1000,
+        // 6.6: exempt exactly when sender.tab reports pinned or audible, with zero seeds.
+        exempt,
+        heldSeconds: exempt ? 0 : heldAwayMs(record, mode, profile) / 1000,
+        currentSeconds: exempt ? 0 : currentAwayMs(record, mode, profile, t) / 1000,
       };
     }, { recount: 'ok' });
   }
@@ -806,9 +887,12 @@ export function createBackground(chromeApi, {
     return enqueue(async () => {
       const t = now();
       const [profile, demoMode] = await Promise.all([readProfile(), readDemo()]);
+      const prior = await ensureRecord(from, profile, t);
+      // An Exempt_Tab's reports are ignored, like a report from another epoch (6.12).
+      if (from.view.exempt) return { ok: true, applied: false };
       // A report from another epoch belongs to a profile that is no longer running: ignore it entirely.
       if (epoch !== profile.epoch) return { ok: true, applied: false };
-      const named = { ...(await ensureRecord(from, profile, t)), url: from.url, title: truncateTitle(title) };
+      const named = { ...prior, url: from.url, title: truncateTitle(title) };
       await writeRecord(from.tabId, raiseHeld(named, modeOf(demoMode), profile, heldSeconds * 1000, t));
       return { ok: true, applied: true };
     }, { recount: 'ok' });
@@ -821,7 +905,8 @@ export function createBackground(chromeApi, {
       const t = now();
       const profile = await readProfile();
       const base = { ...(await ensureRecord(from, profile, t)), url: from.url };
-      await writeRecord(from.tabId, resetRecord(base, profile, t, from.active));
+      // An Exempt_Tab gets no Absence from a Resurrect either (6.3).
+      await writeRecord(from.tabId, resetRecord(base, profile, t, from.active || from.view.exempt));
       // After the Reset is saved and before the reply lets the page clear its decay.
       await afterResurrect(from.tabId);
       return { ok: true };
@@ -885,11 +970,13 @@ export function createBackground(chromeApi, {
     const committed = await enqueue(async () => {
       const record = await readRecord(tabId);
       if (!record) return fail('unknown tab');
-      const active = await openTabActive(tabId);
-      if (active === null) return fail('tab is not open');
+      const view = await openTabView(tabId);
+      if (!view) return fail('tab is not open');
       const t = now();
       const profile = await readProfile();
-      await writeRecord(tabId, resetRecord(record, profile, t, active));
+      const synced = (await syncExemption(view, record, profile, t)) ?? record;
+      // An Exempt_Tab gets no Absence from a Resurrect (6.3).
+      await writeRecord(tabId, resetRecord(synced, profile, t, view.active || view.exempt));
       // After the Reset is saved and before graveyard:apply-reset is sent.
       await afterResurrect(tabId);
       return { ok: true };
@@ -1136,8 +1223,11 @@ export function createBackground(chromeApi, {
    */
   async function leftTabRecord(tabId, profile, t) {
     const view = await openTabView(tabId);
-    if (!view || view.active) return null;
-    const existing = await readRecord(tabId);
+    if (!view) return null;
+    // tabs.get is the newest source for this tab's exemption (6.1).
+    const existing = await syncExemption(view, await readRecord(tabId), profile, t);
+    // An active tab has not been left; an Exempt_Tab starts no Absence (6.3).
+    if (view.active || view.exempt) return null;
     if (!existing) return createRecord({ t, away: true, profile }); // stub: url null until a content script reports
     return existing.leftAt === null ? { ...existing, leftAt: t } : null;
   }
@@ -1167,16 +1257,22 @@ export function createBackground(chromeApi, {
   function seedTabs() {
     return guarded('tab seeding', async () => {
       const t = now();
-      const [profile, stored, views] = await Promise.all([readProfile(), readAllSession(), openTabs()]);
-      const writes = {};
+      const [profile, snapshot, views] = await Promise.all([readProfile(), readAllSession(), openTabs()]);
+      // tabs.query is the newest source for every open tab's exemption (6.1).
+      const plan = planExemptions(views, snapshot, profile, t);
+      const stored = applyPlan(snapshot, plan);
+      const writes = { ...plan.set };
       for (const view of views.values()) {
         if (view.active) {
           if (isWindowId(view.windowId)) writes[windowKey(view.windowId)] = view.id;
-        } else if (!normalizeRecord(stored[tabKey(view.id)])) {
+        } else if (!view.exempt && !normalizeRecord(stored[tabKey(view.id)])) {
+          // An Exempt_Tab gets no stub Absence (6.3).
           writes[tabKey(view.id)] = createRecord({ t, away: true, profile });
         }
       }
+      if (plan.remove.length > 0) await session.remove(plan.remove);
       if (Object.keys(writes).length > 0) await session.set(writes);
+      for (const tabId of plan.tabIds) refreshQueue.add(tabId);
     });
   }
 
@@ -1185,7 +1281,12 @@ export function createBackground(chromeApi, {
     return Object.keys(stored).filter((key) => key.startsWith(WINDOW_KEY_PREFIX) && stored[key] === tabId);
   }
 
-  /** tabs.onReplaced: move the record and any window entry from the removed id to the added id. */
+  /**
+   * tabs.onReplaced: move the record, any window entry, the exempt flag, and the
+   * Auto_Bury attempt from the removed id to the added id (design decision 4), so no
+   * state is kept for the removed id (9.9). Then tabs.get(added), the newest source,
+   * decides exemption (6.1).
+   */
   function handleReplaced(addedTabId, removedTabId) {
     if (!isTabId(addedTabId) || !isTabId(removedTabId) || addedTabId === removedTabId) return Promise.resolve();
     return guarded('tabs.onReplaced', async () => {
@@ -1198,20 +1299,26 @@ export function createBackground(chromeApi, {
         writes[tabKey(addedTabId)] = newer?.url ? { ...moved, url: newer.url, title: newer.title } : moved;
       }
       for (const key of windowKeysFor(stored, removedTabId)) writes[key] = addedTabId;
+      if (stored[exemptKey(removedTabId)] === true) writes[exemptKey(addedTabId)] = true;
+      if (stored[attemptKey(removedTabId)] === true) writes[attemptKey(addedTabId)] = true;
       if (Object.keys(writes).length > 0) await session.set(writes);
-      if (moved) await session.remove(tabKey(removedTabId));
+      const stale = [tabKey(removedTabId), exemptKey(removedTabId), attemptKey(removedTabId)].filter((key) => key in stored);
+      if (stale.length > 0) await session.remove(stale);
+
+      const view = await openTabView(addedTabId);
+      if (view) await syncExemption(view, await readRecord(addedTabId), await readProfile(), now());
     });
   }
 
   /**
-   * tabs.onRemoved: delete only that tab's record and any window entry pointing to it.
-   * No Buried_Entry is saved, also when the closed tab was a Graveyard_Tab (2.11):
-   * only graveyard:empty adds to the Buried_List.
+   * tabs.onRemoved: delete that tab's record, exempt flag, and Auto_Bury attempt (9.9),
+   * and any window entry pointing to it. No Buried_Entry is saved, also when the closed
+   * tab was a Graveyard_Tab (2.11): only graveyard:empty adds to the Buried_List.
    */
   function handleRemoved(tabId, removeInfo) {
     if (!isTabId(tabId)) return Promise.resolve();
     return guarded('tabs.onRemoved', async () => {
-      const keys = [tabKey(tabId)];
+      const keys = [tabKey(tabId), exemptKey(tabId), attemptKey(tabId)];
       const windowId = removeInfo?.windowId;
       if (isWindowId(windowId)) {
         if ((await readKey(session, windowKey(windowId))) === tabId) keys.push(windowKey(windowId));
@@ -1233,13 +1340,19 @@ export function createBackground(chromeApi, {
    * are checked with Object.hasOwn, which reads no values; other changes (loading
    * status and the like) are dropped before the queue and cause no Recount. A groupId
    * change writes nothing: the move is never undone and the Tab_Record is kept (2.10);
-   * the Recount after the job sees the new membership.
+   * the Recount after the job sees the new membership. A pinned or audible change syncs
+   * exemption from the event's Tab object, read only through tabView (6.1, 9.3).
    */
-  function handleUpdated(tabId, changeInfo) {
+  function handleUpdated(tabId, changeInfo, tab) {
     if (!isTabId(tabId) || !isObject(changeInfo)) return Promise.resolve();
-    const relevant = Object.hasOwn(changeInfo, 'pinned') || Object.hasOwn(changeInfo, 'audible') || Object.hasOwn(changeInfo, 'groupId');
-    if (!relevant) return Promise.resolve();
-    return guarded('tabs.onUpdated', async () => {});
+    const exemptionChanged = Object.hasOwn(changeInfo, 'pinned') || Object.hasOwn(changeInfo, 'audible');
+    if (!exemptionChanged && !Object.hasOwn(changeInfo, 'groupId')) return Promise.resolve();
+    return guarded('tabs.onUpdated', async () => {
+      if (!exemptionChanged) return;
+      const view = tabView(tab);
+      if (!view || view.id !== tabId || view.incognito) return;
+      await syncExemption(view, await readRecord(tabId), await readProfile(), now());
+    });
   }
 
   /**
@@ -1312,7 +1425,7 @@ export function registerBackground(chromeApi, options) {
   tabs.onReplaced.addListener((addedTabId, removedTabId) => { void background.handleReplaced(addedTabId, removedTabId); });
   tabs.onRemoved.addListener((tabId, removeInfo) => { void background.handleRemoved(tabId, removeInfo); });
   windows.onRemoved.addListener((windowId) => { void background.handleWindowRemoved(windowId); });
-  tabs.onUpdated.addListener((tabId, changeInfo) => { void background.handleUpdated(tabId, changeInfo); });
+  tabs.onUpdated.addListener((tabId, changeInfo, tab) => { void background.handleUpdated(tabId, changeInfo, tab); });
   tabGroups.onUpdated.addListener((group) => { void background.handleGroupUpdated(group); });
   tabGroups.onRemoved.addListener((group) => { void background.handleGroupRemoved(group); });
   return background;

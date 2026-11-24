@@ -19,7 +19,7 @@ const flush = async (n = 30) => { for (let i = 0; i < n; i += 1) await new Promi
 
 /** Evaluate content.js as a classic script in an isolated VM context (no chrome → boot is inert). */
 function loadContent() {
-  const sandbox = { structuredClone, console, setTimeout };
+  const sandbox = { structuredClone, console, setTimeout, setInterval, clearInterval };
   vm.runInNewContext(RAW, sandbox, { filename: 'content.js' });
   return sandbox;
 }
@@ -68,7 +68,9 @@ async function workerReply(w, log, msg) {
   if (msg.type === 'graveyard:content-state') {
     if (w.stateGate) await w.stateGate;
     if (w.failState) throw new Error('no worker at https://secret.example/x');
-    return { ok: true, demoMode: w.demoMode, timeScale: w.demoMode ? 3600 : 1, epoch: w.epoch, heldSeconds: w.heldSeconds, currentSeconds: w.currentSeconds };
+    const reply = { ok: true, exempt: w.exempt ?? false, demoMode: w.demoMode, timeScale: w.demoMode ? 3600 : 1, epoch: w.epoch, heldSeconds: w.heldSeconds, currentSeconds: w.currentSeconds };
+    if (w.omitExempt) delete reply.exempt;
+    return reply;
   }
   if (msg.type === 'graveyard:resurrect') {
     log.order.push('send:resurrect');
@@ -84,15 +86,20 @@ async function workerReply(w, log, msg) {
 function makeHarness({ worker = {}, delays = [] } = {}) {
   const { graveyardCreateController } = loadContent();
   const w = { demoMode: false, epoch: 0, heldSeconds: 0, currentSeconds: 0, ...worker };
-  const log = { starts: [], sent: [], reports: [], order: [], overlaps: 0, deferred: [] };
+  const log = { starts: [], sent: [], reports: [], order: [], overlaps: 0, deferred: [], timers: [], loads: 0 };
   const api = makeApi(log);
+  const page = { hidden: false };
   let di = 0;
   const wait = async () => {
     const n = delays.length ? delays[di++ % delays.length] : 0;
     for (let i = 0; i < n; i += 1) await tick();
   };
   const controller = graveyardCreateController({
+    every: (fn, ms) => { const t = { fn, ms, cancelled: false }; log.timers.push(t); return t; },
+    cancel: (t) => { t.cancelled = true; },
+    isHidden: () => page.hidden,
     loadPackage: async () => {
+      log.loads += 1;
       await wait();
       if (w.failLoad) throw new Error('fetch failed');
       return { api, normalProfile: NORMAL };
@@ -103,8 +110,12 @@ function makeHarness({ worker = {}, delays = [] } = {}) {
     report: (kind, message) => log.reports.push({ kind, message }),
   });
   const runDeferred = () => { const fns = log.deferred.splice(0); fns.forEach((fn) => fn()); };
-  return { controller, api, w, log, runDeferred };
+  /** One death-watch second: run every timer that has not been cancelled. */
+  const fireWatch = async () => { log.timers.filter((t) => !t.cancelled).forEach((t) => t.fn()); await flush(); };
+  return { controller, api, w, log, page, runDeferred, fireWatch };
 }
+
+const reportsSent = (log) => log.sent.filter((m) => m.type === 'graveyard:report');
 
 const thresholds = (rules) => rules.rules.map((r) => [r.trigger.threshold, r.trigger.rampTo]);
 
@@ -440,6 +451,163 @@ describe('graveyardCreateController', () => {
   }, 60000);
 });
 
+describe('graveyardCreateController exemption', () => {
+  it('an exempt: true reply starts nothing and loads no package', async () => {
+    const { controller, log, api } = makeHarness({ worker: { exempt: true, heldSeconds: 90000 } });
+    await controller.refresh();
+    expect(log.sent).toEqual([{ type: 'graveyard:content-state', title: 'Lecture 4 notes' }]);
+    expect(log.starts).toHaveLength(0);
+    expect(log.loads).toBe(0);
+    expect(api.live).toBe(0);
+    expect(controller.getState()).toMatchObject({ ghost: null, faulted: false });
+    expect(log.reports).toEqual([]);
+  });
+
+  it('graveyard:refresh stops the running instance when the new reply has exempt: true', async () => {
+    const { controller, log, w, api } = makeHarness({ worker: { heldSeconds: 90000 } });
+    await controller.refresh();
+    expect(api.live).toBe(1);
+    w.exempt = true;
+    expect(plain(controller.handleWorkerMessage({ type: 'graveyard:refresh' }))).toEqual({ ok: true });
+    await controller.whenIdle();
+    expect(log.order).toEqual(['start', 'stop']);
+    expect(log.starts[0].live).toBe(false);
+    expect(api.live).toBe(0);
+    expect(controller.getState().ghost).toBeNull();
+    expect(log.reports).toEqual([]);
+  });
+
+  it('graveyard:refresh starts one instance when the new reply has exempt: false for a dead tab', async () => {
+    const { controller, log, w, api } = makeHarness({ worker: { exempt: true, demoMode: true, epoch: 2, heldSeconds: 30 } });
+    await controller.refresh();
+    expect(log.starts).toHaveLength(0);
+    w.exempt = false;
+    expect(plain(controller.handleWorkerMessage({ type: 'graveyard:refresh' }))).toEqual({ ok: true });
+    await controller.whenIdle();
+    expect(log.starts).toHaveLength(1);
+    expect(api.live).toBe(1);
+    expect(log.overlaps).toBe(0);
+    expect(log.starts[0].initialMeters).toEqual({ timeAway: 30, timeAwayCurrent: 0 });
+    expect(log.starts[0].rules.rules[2].trigger.threshold).toBe(24);
+    expect(controller.getState()).toMatchObject({ demoMode: true, epoch: 2 });
+  });
+
+  it('graveyard:refresh is refused once the controller is disposed', async () => {
+    const { controller, log } = makeHarness();
+    await controller.refresh();
+    controller.dispose();
+    expect(controller.handleWorkerMessage({ type: 'graveyard:refresh' }).ok).toBe(false);
+    await controller.whenIdle();
+    expect(log.starts).toHaveLength(1);
+  });
+
+  it('a reply without exempt is a failed state request with one diagnostic', async () => {
+    const { controller, log } = makeHarness({ worker: { omitExempt: true } });
+    await controller.refresh();
+    controller.handleWorkerMessage({ type: 'graveyard:refresh' });
+    await controller.whenIdle();
+    expect(log.starts).toHaveLength(0);
+    expect(log.loads).toBe(0);
+    expect(log.reports.map((r) => r.kind)).toEqual(['state']);
+  });
+});
+
+describe('graveyardCreateController death watch', () => {
+  const demoHidden = async (worker = {}) => {
+    const h = makeHarness({ worker: { demoMode: true, epoch: 4, ...worker } });
+    await h.controller.refresh();
+    h.page.hidden = true;
+    h.controller.visibilityChanged(false);
+    await flush();
+    return h;
+  };
+
+  it('sends one report with exactly type, title, heldSeconds, epoch when timeAway reaches 24 s in Demo_Mode', async () => {
+    const { controller, log, fireWatch } = await demoHidden();
+    expect(reportsSent(log)).toEqual([{ type: 'graveyard:report', title: 'Lecture 4 notes', heldSeconds: 0, epoch: 4 }]);
+    expect(log.timers).toHaveLength(1);
+    expect(log.timers[0].ms).toBe(1000);
+    const ghost = log.starts[0];
+    ghost.timeAway = 23;
+    log.order.length = 0;
+    await fireWatch();
+    expect(log.order).toEqual(['tick']); // the watch ticks the engine before reading
+    expect(reportsSent(log)).toHaveLength(1);
+    ghost.timeAway = 24;
+    await fireWatch();
+    await fireWatch();
+    const reports = reportsSent(log);
+    expect(reports).toHaveLength(2);
+    expect(reports[1]).toEqual({ type: 'graveyard:report', title: 'Lecture 4 notes', heldSeconds: 24, epoch: 4 });
+    expect(Object.keys(reports[1]).sort()).toEqual(['epoch', 'heldSeconds', 'title', 'type']);
+    expect(log.timers[0].cancelled).toBe(true);
+    expect(controller.getState().watching).toBe(false);
+  });
+
+  it('sends nothing while the page is visible', async () => {
+    const { controller, log, runDeferred } = makeHarness({ worker: { demoMode: true } });
+    await controller.refresh();
+    log.starts[0].timeAway = 100;
+    expect(log.timers).toHaveLength(0);
+    controller.visibilityChanged(false);
+    controller.visibilityChanged(true);
+    runDeferred();
+    await flush();
+    const before = reportsSent(log).length;
+    expect(log.timers[0].cancelled).toBe(true);
+    log.timers[0].fn(); // a late firing of the cancelled timer is ignored
+    await flush();
+    expect(reportsSent(log)).toHaveLength(before);
+  });
+
+  it('sends nothing after stop or dispose', async () => {
+    const stopped = await demoHidden();
+    stopped.w.exempt = true;
+    stopped.controller.handleWorkerMessage({ type: 'graveyard:refresh' });
+    await stopped.controller.whenIdle();
+    expect(stopped.log.timers[0].cancelled).toBe(true);
+    stopped.log.starts[0].timeAway = 100;
+    stopped.log.timers[0].fn();
+    await flush();
+    expect(reportsSent(stopped.log)).toHaveLength(1); // only the hidden report
+
+    const disposed = await demoHidden();
+    disposed.controller.dispose();
+    expect(disposed.log.timers[0].cancelled).toBe(true);
+    disposed.log.starts[0].timeAway = 100;
+    disposed.log.timers[0].fn();
+    await flush();
+    expect(reportsSent(disposed.log)).toHaveLength(1);
+  });
+
+  it('re-arms after apply-reset while hidden and reports the next death', async () => {
+    const { controller, log, fireWatch } = await demoHidden();
+    const ghost = log.starts[0];
+    ghost.timeAway = 24;
+    await fireWatch();
+    expect(reportsSent(log)).toHaveLength(2);
+    expect(controller.getState().watching).toBe(false);
+    expect(plain(controller.handleWorkerMessage({ type: 'graveyard:apply-reset' }))).toEqual({ ok: true });
+    expect(ghost.timeAway).toBe(0);
+    expect(controller.getState().watching).toBe(true);
+    expect(log.timers).toHaveLength(2);
+    await fireWatch();
+    expect(reportsSent(log)).toHaveLength(2);
+    ghost.timeAway = 25;
+    await fireWatch();
+    expect(reportsSent(log)).toHaveLength(3);
+    expect(reportsSent(log)[2]).toEqual({ type: 'graveyard:report', title: 'Lecture 4 notes', heldSeconds: 25, epoch: 4 });
+  });
+
+  it('arms on a start while the page is already hidden', async () => {
+    const h = makeHarness({ worker: { demoMode: true } });
+    h.page.hidden = true;
+    await h.controller.refresh();
+    expect(h.controller.getState().watching).toBe(true);
+    expect(h.log.timers).toHaveLength(1);
+  });
+});
+
 /**
  * Run the classic loader in a VM with fake chrome / fetch / window / document and a
  * fake dynamic-import boundary. Any access to tabs, location changes, or close is recorded.
@@ -474,6 +642,8 @@ async function boot({ worker = {}, fetchImpl, importImpl, title = 'Fixture page'
     console: { error: (...a) => log.errors.push(a.map(String).join(' ')) },
     structuredClone,
     setTimeout,
+    setInterval,
+    clearInterval,
     chrome,
     document: doc,
     location: { href: 'https://fixture.test/page', assign: forbid('assign'), replace: forbid('replace'), reload: forbid('reload') },

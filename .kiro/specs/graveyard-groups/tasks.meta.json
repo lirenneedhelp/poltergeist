@@ -105,6 +105,61 @@
         "chatSessionId": "sess_86f3c3d6-cfa5-4ae3-bdce-376baf08b3fa",
         "timestamp": 1795452181221
       }
+    ],
+    "4.1 Implement exemption sync in `background.js`": [
+      {
+        "executionId": "277a4c8f-77ca-44e9-87bd-586d3cdc4b2a",
+        "chatSessionId": "sess_e7ab938c-7490-4cb0-bd50-bee242d7cc8b",
+        "timestamp": 1795501552156
+      },
+      {
+        "executionId": "277a4c8f-77ca-44e9-87bd-586d3cdc4b2a",
+        "chatSessionId": "sess_e7ab938c-7490-4cb0-bd50-bee242d7cc8b",
+        "timestamp": 1795501939289
+      }
+    ],
+    "4.2 Implement exemption handling and the death watch in `content.js`": [
+      {
+        "executionId": "f19ba04a-7540-43ce-be11-5fdc163d92f3",
+        "chatSessionId": "sess_6d535699-e8c6-42dc-8e51-fbfd578c22a3",
+        "timestamp": 1795502029179
+      },
+      {
+        "executionId": "f19ba04a-7540-43ce-be11-5fdc163d92f3",
+        "chatSessionId": "sess_6d535699-e8c6-42dc-8e51-fbfd578c22a3",
+        "timestamp": 1795502250960
+      }
+    ],
+    "4.3 Add exemption unit tests in `background.test.js`": [
+      {
+        "executionId": "bd0460f2-2c46-4a38-bef1-c38217f2f6a2",
+        "chatSessionId": "sess_bb5b59a5-c529-424e-863b-3d14d0066636",
+        "timestamp": 1795502322999
+      },
+      {
+        "executionId": "bd0460f2-2c46-4a38-bef1-c38217f2f6a2",
+        "chatSessionId": "sess_bb5b59a5-c529-424e-863b-3d14d0066636",
+        "timestamp": 1795502791717
+      }
+    ],
+    "4.4 Add content-script unit tests in `content.test.js`": [
+      {
+        "executionId": "62bf2f1f-15c4-4225-a557-c5cc809440b9",
+        "chatSessionId": "sess_5c5489cd-1a8c-412e-9f65-819a298eefd9",
+        "timestamp": 1795502905702
+      },
+      {
+        "executionId": "62bf2f1f-15c4-4225-a557-c5cc809440b9",
+        "chatSessionId": "sess_5c5489cd-1a8c-412e-9f65-819a298eefd9",
+        "timestamp": 1795503151144
+      }
+    ],
+    "4. Pinned and audible exemptions, page refresh, and death watch": [
+      {
+        "executionId": "62bf2f1f-15c4-4225-a557-c5cc809440b9",
+        "chatSessionId": "sess_5c5489cd-1a8c-412e-9f65-819a298eefd9",
+        "timestamp": 1795503151245
+      }
     ]
   }
 }

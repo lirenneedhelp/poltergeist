@@ -14,6 +14,11 @@
 // with them, and reports the meter's Held_Absence back on visibility changes.
 // Messages carry only the page title and meter values; the worker takes the URL
 // from MessageSender.url. This script never closes, navigates, or reloads its tab.
+//
+// A pinned or audible tab is exempt: the state reply says so and no instance runs.
+// The worker sends graveyard:refresh when that changes. While the page is hidden,
+// a death watch sends one ordinary report when timeAway reaches the Tombstone
+// threshold, so the worker can update its badge without an alarm.
 
 /**
  * Build the Demo_Profile from the Normal_Profile: a deep clone whose trigger
@@ -61,6 +66,9 @@ function graveyardCreateDemoProfile(normalDocument) {
  * @param {(fn: () => void) => void} [deps.defer] Runs fn on the next timer turn.
  * @param {(kind: string, message: string, error?: unknown) => void} [deps.report]
  *   Diagnostic sink. Called at most once per failure kind.
+ * @param {(fn: () => void, ms: number) => unknown} [deps.every] Repeating timer (death watch).
+ * @param {(id: unknown) => void} [deps.cancel] Cancels a timer returned by `every`.
+ * @param {() => boolean} [deps.isHidden] True while the document is hidden.
  */
 function graveyardCreateController({
   loadPackage,
@@ -68,15 +76,21 @@ function graveyardCreateController({
   getTitle = () => '',
   defer = (fn) => setTimeout(fn, 0),
   report = () => {},
+  every = (fn, ms) => setInterval(fn, ms),
+  cancel = (id) => clearInterval(id),
+  isHidden = () => false,
 } = {}) {
   const MESSAGE = Object.freeze({
     CONTENT_STATE: 'graveyard:content-state', // content -> worker
     REPORT: 'graveyard:report', //               content -> worker
     RESURRECT: 'graveyard:resurrect', //         content -> worker
     APPLY_RESET: 'graveyard:apply-reset', //     worker -> content
+    REFRESH: 'graveyard:refresh', //             worker -> content
   });
   const RESURRECT_ACTION = 'resurrect';
+  const TOMBSTONE_RULE_ID = 'graveyard-tombstone';
   const TICK_MS = 1000;
+  const WATCH_MS = 1000;
 
   const clone = (value) => (typeof structuredClone === 'function'
     ? structuredClone(value)
@@ -91,6 +105,7 @@ function graveyardCreateController({
     disposed: false,
     fault: null,
     resurrecting: false,
+    watch: null, // { id, entry } while the death watch is armed
   };
   const reported = new Set();
 
@@ -122,8 +137,10 @@ function graveyardCreateController({
   function parseState(reply) {
     if (!reply || typeof reply !== 'object' || reply.ok !== true) return null;
     if (typeof reply.demoMode !== 'boolean') return null;
+    if (typeof reply.exempt !== 'boolean') return null; // exemption is learned only from this field
     if (!Number.isInteger(reply.epoch) || reply.epoch < 0) return null;
     return {
+      exempt: reply.exempt,
       demoMode: reply.demoMode,
       epoch: reply.epoch,
       heldSeconds: seconds(reply.heldSeconds),
@@ -136,8 +153,77 @@ function graveyardCreateController({
     return token === state.generation && !state.disposed && state.fault === null;
   }
 
+  function hidden() {
+    try {
+      return isHidden() === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** The Tombstone threshold of the profile an instance started from, or null when it has none. */
+  function tombstoneThreshold(rules) {
+    const list = Array.isArray(rules) ? rules : rules && Array.isArray(rules.rules) ? rules.rules : [];
+    const rule = list.find((r) => r && r.id === TOMBSTONE_RULE_ID);
+    const threshold = rule && rule.trigger ? rule.trigger.threshold : undefined;
+    return typeof threshold === 'number' && Number.isFinite(threshold) ? threshold : null;
+  }
+
+  /** Death watch off. Safe to call when it is not armed. */
+  function disarmWatch() {
+    const watch = state.watch;
+    if (!watch) return;
+    state.watch = null;
+    try {
+      cancel(watch.id);
+    } catch {
+      // The firing re-checks state.watch, so a failed cancel cannot cause a report.
+    }
+  }
+
+  /**
+   * Death watch on for `entry` (the page is hidden). Each firing ticks the engine so the
+   * meter is fresh, and the first value at the Tombstone threshold is sent as one
+   * ordinary graveyard:report. No-op when already armed for this entry.
+   */
+  function armWatch(entry) {
+    if (state.current !== entry || state.disposed || state.fault !== null) return;
+    if (entry.deadAt === null) return;
+    if (state.watch && state.watch.entry === entry) return;
+    disarmWatch();
+    const watch = { id: null, entry };
+    const fire = () => {
+      if (state.watch !== watch) return;
+      if (state.current !== entry || state.disposed || state.fault !== null) {
+        disarmWatch();
+        return;
+      }
+      let value;
+      try {
+        entry.ghost.engine.tick();
+        value = entry.ghost.meters.values().timeAway;
+      } catch (error) {
+        disarmWatch();
+        reportOnce('watch', 'could not read the time-away meter while hidden', error);
+        return;
+      }
+      if (typeof value === 'number' && value >= entry.deadAt) {
+        disarmWatch();
+        void sendReport(entry, value);
+      }
+    };
+    state.watch = watch;
+    try {
+      watch.id = every(fire, WATCH_MS);
+    } catch (error) {
+      state.watch = null;
+      reportOnce('watch', 'could not start the hidden-page timer', error);
+    }
+  }
+
   /** Stop the owned instance. Returns false (and faults) if its stop() threw. */
   function stopCurrent() {
+    disarmWatch();
     const cur = state.current;
     if (!cur) return true;
     try {
@@ -174,6 +260,11 @@ function graveyardCreateController({
       failClean(token, 'state', 'could not read the tab state');
       return;
     }
+    if (seeds.exempt) {
+      // A pinned or audible tab holds no instance; stop() undoes every effect.
+      stopCurrent();
+      return;
+    }
 
     let pkg;
     try {
@@ -196,7 +287,7 @@ function graveyardCreateController({
 
     // Synchronous from here on, so no other trigger can run between stop and start.
     if (!stopCurrent()) return;
-    const entry = { ghost: null, epoch: seeds.epoch, demoMode: seeds.demoMode };
+    const entry = { ghost: null, epoch: seeds.epoch, demoMode: seeds.demoMode, deadAt: tombstoneThreshold(rules) };
     try {
       entry.ghost = api.startPoltergeist({
         rules,
@@ -211,6 +302,7 @@ function graveyardCreateController({
       return;
     }
     state.current = entry;
+    if (hidden()) armWatch(entry);
   }
 
   /** Append one refresh to the serialized queue. Older queued refreshes become no-ops. */
@@ -245,6 +337,8 @@ function graveyardCreateController({
         reportOnce('reset', 'clearing the decay failed', error);
         return false;
       }
+      // The tab can die again while still hidden, so watch for the next death.
+      if (hidden()) armWatch(cur);
     }
     // A refresh still in flight may carry seeds read before the reset; replace it.
     if (state.pending > 0) enqueue();
@@ -303,18 +397,22 @@ function graveyardCreateController({
     dispose() {
       state.disposed = true;
       state.generation += 1;
+      disarmWatch();
     },
 
     /**
      * visibilitychange. This listener is registered before the meter's, so after a
      * change to visible the Held_Absence is read on the next timer turn, once the
-     * meter has completed the Absence. A change to hidden reports 0.
+     * meter has completed the Absence. A change to hidden reports 0 and arms the
+     * death watch; a change to visible disarms it.
      */
     visibilityChanged(visible) {
+      if (visible) disarmWatch();
       const entry = state.current;
       if (!entry || state.disposed || state.fault !== null) return;
       if (!visible) {
         void sendReport(entry, 0);
+        armWatch(entry);
         return;
       }
       defer(() => {
@@ -334,6 +432,12 @@ function graveyardCreateController({
     handleWorkerMessage(message) {
       if (!message || typeof message !== 'object' || typeof message.type !== 'string') {
         return { ok: false, error: 'malformed message' };
+      }
+      if (message.type === MESSAGE.REFRESH) {
+        // The worker saved an exemption change; re-read state through the serialized queue.
+        if (state.disposed || state.fault !== null) return { ok: false, error: 'the haunt is halted on this page' };
+        void enqueue();
+        return { ok: true };
       }
       if (message.type !== MESSAGE.APPLY_RESET) return { ok: false, error: 'unknown message type' };
       return applyCommittedReset() ? { ok: true } : { ok: false, error: 'the haunt is halted on this page' };
@@ -355,6 +459,7 @@ function graveyardCreateController({
         pending: state.pending,
         disposed: state.disposed,
         faulted: state.fault !== null,
+        watching: state.watch !== null,
       };
     },
   };
@@ -411,6 +516,9 @@ void (async function bootGraveyard() {
       getTitle: () => (doc && typeof doc.title === 'string' ? doc.title : ''),
       defer: (fn) => { win.setTimeout(fn, 0); },
       report,
+      every: (fn, ms) => win.setInterval(fn, ms),
+      cancel: (id) => { win.clearInterval(id); },
+      isHidden: () => Boolean(doc) && doc.visibilityState === 'hidden',
     });
 
     // 1. Register every listener before requesting state.
