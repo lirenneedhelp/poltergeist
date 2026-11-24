@@ -284,3 +284,40 @@ heavier rot glyphs in both apps.
 browser tests pass. Break-it checks: `innerHTML` for the new text lines now
 fails 12 tests (task 4.3's scan closed the gap found after task 3); fog
 drifting under reduced motion fails 14; a wrong demo scale fails 2.
+
+## 2026-11-23: graveyard-groups Tasks 1–2
+**Kiro feature:** spec tasks; Opus 5.5 High for the worker (2.1–2.2)
+**What changed:** Bury all now moves dead tabs into a grey, collapsed
+"Graveyard" tab group instead of closing them. Empty graveyard saves each
+tab to the buried list, then closes it. Resurrect takes a tab out of the
+group. Dead tabs in the user's own groups are left where they are.
+Tab Graveyard now needs `tabGroups` as well as `storage`.
+**Evidence:** commits 2d2e844, a327d57; tests 747 → 779. Break-it checks:
+Bury pulling from user groups, Empty closing non-Graveyard tabs, closing
+after a failed save, closing before saving, accepting Empty from any
+sender, Resurrect not ungrouping, and Bury closing tabs each failed 1–27
+tests.
+
+## 2026-11-24: graveyard-groups Tasks 3–4
+**What happened:** the toolbar badge counts dead tabs (loose, buried, and in
+the user's own groups); optional auto-bury (off by default). Pinned and
+audio-playing tabs never decay, and a "death watch" in hidden pages
+reports the moment a tab dies, so the badge updates without a visit.
+**Checked in Chrome:** badge count, Bury into the Graveyard group, a pinned
+tab staying alive.
+**Evidence:** commits 90b1d14, 744432e; tests 779 → 810. Break-it checks:
+removing either exemption, haunting an exempt page, accepting reports from
+exempt tabs, and silencing the death watch each failed 1–7 tests.
+**Known limit:** in normal mode Chrome throttles timers in tabs hidden for
+more than ~5 minutes, so the badge can lag by up to a minute; demo mode is
+unaffected.
+
+## 2026-11-24: graveyard-groups Task 5 (popup)
+**What happened:** popup gains Empty graveyard (with a count), an auto-bury
+toggle, and demo-time durations that match the tombstone.
+**What I caught:** in Chrome, the popup said "Away for 2 minutes" while the
+tombstone said "Abandoned for 5 days (demo time)". I asked Kiro to align
+them. Kiro pointed out that scaling buried rows by the current demo setting
+would mislabel old entries, so only live durations are scaled (Req 3.14).
+**Evidence:** commit 2a1332e; tests 810 → 850. Break-it checks: dropping
+demo scaling failed 4 tests; a wrong scale failed 3.

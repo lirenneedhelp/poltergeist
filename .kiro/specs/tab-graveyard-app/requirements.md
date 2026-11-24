@@ -12,6 +12,8 @@ Verification modes: criteria are statically or Vitest-verified unless prefixed `
 
 Out of scope: syncing across devices, tab grouping, site-specific behaviour, persisting tab records across a browser restart, pausing the haunt, and any change under `demo-site/`.
 
+Note (graveyard-groups): Tab grouping is now in scope through the graveyard-groups spec. Bury moves tabs into a Graveyard_Group (defined in graveyard-groups), and `Empty graveyard` saves and closes them (graveyard-groups Requirements 3 and 4).
+
 ## Glossary
 
 - **Web_Scope**: exactly the two match patterns `http://*/*` and `https://*/*`.
@@ -24,8 +26,14 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 - **Tab_Record**: the Activity_Tracker's per-tab entry in `chrome.storage.session`.
 - **Register**: the pair (Held_Absence, profile epoch) kept in a Tab_Record for one profile. Each Tab_Record has a normal Register and a demo Register.
 - **Stage**: one of `alive`, `fogged`, `rotting`, `dead`, derived from Away_Time and the active profile's rule thresholds.
-- **Dead_Tab**: an open, recorded, non-incognito tab whose Away_Time is at or above the Tombstone threshold of the active profile.
-- **Buried_Entry**: a saved record `{id, title, url, buriedAt, awaySeconds}` of a tab closed by Bury.
+- **Dead_Tab**: a Saveable_Tab (defined in graveyard-groups: an open, non-incognito tab whose Tab_Record holds a URL, reported through a content script, of at most 2048 characters) that is not an Exempt_Tab (defined in graveyard-groups: a tab whose `pinned` or `audible` property Chrome reports as true) and whose Away_Time is at or above the Tombstone threshold of the active profile. (amended by graveyard-groups)
+
+  Reason (graveyard-groups): Pinned and audible tabs are exempt from decay, so they no longer count as dead.
+
+- **Buried_Entry**: a saved record `{id, title, url, buriedAt, awaySeconds}` of a tab closed by `Empty graveyard` (graveyard-groups Requirement 4 criterion 5). (amended by graveyard-groups)
+
+  Reason (graveyard-groups): `Bury all` no longer closes tabs, so only `Empty graveyard` now saves and closes them.
+
 - **Graveyard**: the popup view that lists Dead_Tabs and Buried_Entries.
 - **Normal_Profile**: the rules parsed from `app2-tab-graveyard/rules.json`.
 - **Demo_Profile**: a deep clone of the Normal_Profile whose trigger `threshold` and `rampTo` are divided by the Demo_Time_Scale.
@@ -34,7 +42,10 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 - **Demo_Mode**: a global Boolean preference stored in `chrome.storage.local`.
 - **Runtime_Controller**: the content-script logic that owns at most one live Poltergeist instance per document.
 - **Resurrect**: the user action that resets one tab's Registers to zero and clears its decay.
-- **Bury**: the user action that saves Buried_Entries for the listed Dead_Tabs and then closes them.
+- **Bury**: the `Bury all` user action that moves the listed Dead_Tabs, which are in no tab group, into their windows' Graveyard_Groups (defined in graveyard-groups) and closes no tab (graveyard-groups Requirement 3). (amended by graveyard-groups)
+
+  Reason (graveyard-groups): Bury now tucks dead tabs into one collapsed group instead of closing them, and the new `Empty graveyard` action does the closing.
+
 - **Skeleton_Sync**: the generalised Node script `scripts/sync-skeleton.mjs` that builds or checks the generated skeleton mirror of each registered app.
 - **Generated_Skeleton**: the committed `app2-tab-graveyard/skeleton/` copy of the root skeleton's production files.
 - **Graveyard_Validator**: the build/test-time package validator for `app2-tab-graveyard/`.
@@ -48,10 +59,16 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 
 1. THE app SHALL contain `manifest.json`, `rules.json`, `content.js`, `background.js`, `popup.html`, `popup.js`, `popup.css`, and the Generated_Skeleton under `app2-tab-graveyard/`.
 2. THE manifest SHALL declare `manifest_version` 3, a name and version, a module service worker `background.js`, an action whose `default_popup` is `popup.html`, and `"incognito": "not_allowed"`.
-3. THE manifest `permissions` SHALL be exactly `["storage"]`, and THE manifest SHALL NOT declare `host_permissions`, `optional_permissions`, `optional_host_permissions`, `externally_connectable`, `content_security_policy`, or `sandbox`.
+3. THE manifest `permissions` SHALL be exactly `["storage", "tabGroups"]`, in that order, and THE manifest SHALL NOT declare `host_permissions`, `optional_permissions`, `optional_host_permissions`, `externally_connectable`, `content_security_policy`, or `sandbox`; IF it declares any of those keys, THEN THE Graveyard_Validator SHALL report `manifest.json: <key> is not allowed` once for each declared key (graveyard-groups Requirement 1 criteria 1 and 4). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): Giving the Graveyard group its title, colour, and collapsed state, and noticing when the user renames or removes it, needs the `tabGroups` permission. The `tabs` permission is still not requested, because it would expose page URLs and titles.
+
 4. THE manifest SHALL statically register exactly one classic content script `content.js` with `matches` equal to the Web_Scope, `run_at` `document_idle`, `all_frames` false, and the default isolated world.
 5. THE manifest SHALL expose, as one web-accessible-resource entry with `matches` equal to the Web_Scope and `use_dynamic_url` false, exactly `rules.json` plus every module reachable by relative static import from `skeleton/index.js`, and nothing else.
-6. THE extension SHALL use only Chrome APIs that need no permission other than `storage`: `tabs.query`, `tabs.get`, `tabs.remove`, `tabs.create`, `tabs.sendMessage`, the `tabs.onActivated`, `tabs.onRemoved`, and `tabs.onReplaced` events, `windows.onRemoved`, `runtime` messaging, and `storage`. IT SHALL NOT read the `url`, `pendingUrl`, `title`, or `favIconUrl` properties of a `Tab` object.
+6. THE extension SHALL use only Chrome APIs that need no permission other than `storage` and `tabGroups`: `tabs.query`, `tabs.get`, `tabs.remove`, `tabs.create`, `tabs.sendMessage`, `tabs.group`, `tabs.ungroup`, the `tabs.onActivated`, `tabs.onRemoved`, `tabs.onReplaced`, and `tabs.onUpdated` events, `windows.onRemoved`, `tabGroups.get`, `tabGroups.update`, the `tabGroups.onUpdated` and `tabGroups.onRemoved` events, `action.setBadgeText`, `runtime` messaging, and `storage`. FROM a `Tab` object (including `sender.tab`, `tabs.get` and `tabs.query` results, and the `tab` argument of `tabs.onUpdated`) or from `tabs.onUpdated` change information, THE service worker SHALL read only `id`, `windowId`, `active`, `incognito`, `pinned`, `audible`, and `groupId`. THE extension SHALL NOT read the `url`, `pendingUrl`, `title`, or `favIconUrl` properties of a `Tab` object (graveyard-groups Requirement 1 criterion 6 and Requirement 9 criterion 3). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): Graveyard groups, pinned and audible exemptions, and the toolbar badge need the tab-group APIs, `tabs.onUpdated`, `action.setBadgeText`, and the `pinned`, `audible`, and `groupId` fields. The rule that page URLs and titles are never read from Chrome is kept.
+
 7. THE extension SHALL package all executable code locally and SHALL NOT use remote code, `eval`, `new Function`, string-valued timers, inline scripts, or inline event-handler attributes.
 8. THE app SHALL apply effects to the whole page through skeleton effects only and SHALL NOT query or depend on site-specific selectors.
 
@@ -131,14 +148,26 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 
 1. THE Activity_Tracker SHALL be the source of truth for each tab's Absence start and Registers, and SHALL store each Tab_Record under its own `chrome.storage.session` key ending in the tab id.
 2. WHEN `tabs.onActivated` fires for tab B in window W, THE Activity_Tracker SHALL end any Absence of B (raising each valid Register's Held_Absence to the completed Absence) and SHALL start an Absence for the tab previously recorded as active in W, but only if `tabs.get` reports that tab as existing and not active.
+
+   Note (graveyard-groups): An Exempt_Tab (defined in graveyard-groups: a pinned or audible tab) starts no Absence, and its page reports are ignored (graveyard-groups Requirement 6 criteria 3 and 12).
+
 3. THE Activity_Tracker SHALL record the active tab of each window under its own `chrome.storage.session` key and SHALL delete it on `windows.onRemoved`.
 4. WHEN `runtime.onInstalled` or `runtime.onStartup` fires, THE Activity_Tracker SHALL query all tabs, record each window's active tab, and start an Absence at that time for each inactive tab that has no Tab_Record.
+
+   Note (graveyard-groups): An Exempt_Tab (defined in graveyard-groups: a pinned or audible tab) starts no Absence, and its page reports are ignored (graveyard-groups Requirement 6 criteria 3 and 12).
+
 5. WHEN a content script requests its state from a tab with no Tab_Record, THE Activity_Tracker SHALL create one, with an Absence starting now if `sender.tab.active` is false.
+
+   Note (graveyard-groups): An Exempt_Tab (defined in graveyard-groups: a pinned or audible tab) starts no Absence, and its page reports are ignored (graveyard-groups Requirement 6 criteria 3 and 12).
+
 6. WHEN `tabs.onReplaced` fires, THE Activity_Tracker SHALL move the Tab_Record and any window entry from the removed tab id to the added tab id.
 7. WHEN `tabs.onRemoved` fires, THE Activity_Tracker SHALL delete only that tab's Tab_Record and clear any window entry that points to it.
 8. THE demo Register's ongoing Absence SHALL be measured from the later of the Absence start and the start of the current demo epoch; a demo Register from an earlier Profile_Epoch SHALL count as 0.
 9. WHEN Demo_Mode changes, THE Activity_Tracker SHALL increment the Profile_Epoch and record the time the new epoch started, and SHALL NOT change any normal Register.
 10. WHEN a content script reports a page-observed Held_Absence with the current Profile_Epoch, THE Activity_Tracker SHALL raise the matching Register's Held_Absence to the larger value, capped at the time since the Tab_Record was created or last reset; reports with another epoch SHALL be ignored.
+
+   Note (graveyard-groups): An Exempt_Tab (defined in graveyard-groups: a pinned or audible tab) starts no Absence, and its page reports are ignored (graveyard-groups Requirement 6 criteria 3 and 12).
+
 11. THE Activity_Tracker SHALL derive a content script's tab id from `sender.tab.id`, its URL from `sender.url`, and SHALL accept messages only from the extension's own content scripts and pages.
 12. THE Activity_Tracker SHALL run every read-modify-write of storage through one serialized queue, so concurrent events cannot lose an update.
 13. THE Activity_Tracker SHALL register all event listeners synchronously at the top level of `background.js`, and a restarted worker SHALL continue from the stored state.
@@ -152,11 +181,17 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 1. THE content script SHALL be a classic script with no static `import` or `export`, SHALL load the Generated_Skeleton with dynamic `import(chrome.runtime.getURL('skeleton/index.js'))`, and SHALL fetch `rules.json` the same way.
 2. WHEN the content script starts, it SHALL register its listeners, send `graveyard:content-state` with the page title, and start no Poltergeist instance until a successful reply arrives.
 3. THE Runtime_Controller SHALL start the selected profile with `initialMeters` `{ timeAway: heldSeconds, timeAwayCurrent: currentSeconds }` from the reply, with `tickMs` 1000 and the `onAction` callback, so a reloaded or discarded tab shows the decay the Activity_Tracker recorded.
+
+   Note (graveyard-groups): A `graveyard:content-state` reply with `exempt` true starts no Poltergeist instance, and `graveyard:refresh` stops or starts the instance (graveyard-groups Requirement 6 criteria 7 and 9).
+
 4. (BROWSER-VERIFIED) WHEN the user returns in Demo_Mode to a tab left for at least 3 seconds, THE page SHALL show Fog and no Tombstone; WHEN the user returns to a tab left for at least 25 seconds, THE page SHALL show the Tombstone naming the page title and a duration.
 5. (BROWSER-VERIFIED) WHILE the user stays on a returned tab, THE decay SHALL remain visible and SHALL NOT fade.
 6. (BROWSER-VERIFIED) WHEN a tab is reloaded or discarded while away and then activated, THE page SHALL show decay for its full Away_Time even though in-page state was lost.
 7. WHEN the document's visibility changes, THE content script SHALL send `graveyard:report` with the current title, the meter's Held_Absence, and the Profile_Epoch it started with.
 8. WHEN the Tombstone_Effect reports the `resurrect` action, THE content script SHALL send `graveyard:resurrect`; only after a successful reply SHALL it call `meters.reset('timeAway')` and `engine.tick()`, so the decay clears at once with its configured fades. IF the reply fails, THEN the decay SHALL stay and the content script SHALL report one diagnostic.
+
+   Note (graveyard-groups): Resurrect removes a Graveyard_Tab (defined in graveyard-groups) from its Graveyard_Group (graveyard-groups Requirement 5 criterion 1).
+
 9. WHEN the content script receives `graveyard:apply-reset` from the service worker, it SHALL reset `timeAway` and tick the engine the same way.
 10. WHEN Demo_Mode changes in `chrome.storage.onChanged`, THE Runtime_Controller SHALL request fresh state, stop the current instance, and start the new profile from the new seeds; requests SHALL be serialized and guarded by a generation token so that no more than one instance is live.
 11. WHEN `pagehide` fires, THE Runtime_Controller SHALL let the skeleton stop the instance and SHALL not reconcile again for that page; WHEN `pageshow` fires with `persisted` true, it SHALL request fresh state and start one new instance.
@@ -169,22 +204,43 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 #### Acceptance Criteria
 
 1. THE popup SHALL show the active tab's Stage and Away_Time, a `Resurrect this tab` button, a list of Dead_Tabs, a `Bury all` button, a list of Buried_Entries each with a `Reopen` button, and a `Demo mode` control, using native buttons and labelled controls with visible focus and disabled states.
+
+   Note (graveyard-groups): The Dead_Tab list shows only Dead_Tabs that are in no tab group, leaving out Graveyard_Tabs (defined in graveyard-groups) and tabs in the user's own groups. The popup also adds the `Empty graveyard` button and the `Auto-bury dead tabs` checkbox (graveyard-groups Requirement 3 criteria 1 and 13, Requirement 4 criterion 2, Requirement 8 criterion 1).
+
 2. THE popup SHALL obtain every title, URL, and duration from the service worker through `graveyard:popup-state` and SHALL read only the active tab's id from the Tabs API.
 3. THE popup SHALL render titles and URLs with `textContent` and SHALL show each URL's host only.
 4. WHEN the active tab has no Tab_Record with a URL, THE popup SHALL show `Not haunted here` and disable `Resurrect this tab`.
 5. WHEN the user activates `Resurrect this tab`, THE service worker SHALL reset that tab's Registers, then send `graveyard:apply-reset` to the tab, and SHALL return whether delivery succeeded.
+
+   Note (graveyard-groups): Resurrect removes a Graveyard_Tab (defined in graveyard-groups) from its Graveyard_Group (graveyard-groups Requirement 5 criterion 1).
+
 6. THE `Bury all` button SHALL show the number of listed Dead_Tabs and SHALL be disabled when there are none.
-7. WHEN the user activates `Bury all`, THE popup SHALL send `graveyard:bury` with the listed tab ids, and THE service worker SHALL bury only the ids that are still Dead_Tabs at that moment.
-8. WHEN burying, THE service worker SHALL first save one Buried_Entry per tab to `chrome.storage.local`, and SHALL call `tabs.remove` only after the save succeeds. IF the save fails, THEN it SHALL close no tab and return an error.
-9. THE service worker SHALL call `tabs.remove` only while handling `graveyard:bury` from an extension page; no timer, event, threshold, or content-script message SHALL close a tab.
+7. WHEN the user activates `Bury all`, THE popup SHALL send `graveyard:bury` with the listed tab ids, and THE service worker SHALL move each distinct requested tab that is a Buryable_Tab (defined in graveyard-groups: a Dead_Tab in no tab group) at that moment into the Graveyard_Group (defined in graveyard-groups) of that tab's own window, reusing the window's recorded Graveyard_Group when one exists and creating one otherwise, and SHALL leave each requested Dead_Tab that is in any tab group in that group (graveyard-groups Requirement 3 criteria 2 and 3). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): `Bury all` now clears the tab strip by grouping dead tabs instead of closing them, so pressing it loses nothing. Tabs in the user's own groups stay where the user put them.
+
+8. WHEN emptying the graveyard, THE service worker SHALL first save one Buried_Entry `{id, title, url, buriedAt, awaySeconds}` per tab selected by `graveyard:empty` to the Buried_List (defined in graveyard-groups) in `chrome.storage.local`, taking `title` and `url` from the tab's Tab_Record, `buriedAt` from the handling time, and `awaySeconds` from the tab's Away_Time in whole seconds rounded down, and SHALL call `tabs.remove` for any selected tab only after the save succeeds. IF the save fails, THEN it SHALL close no tab, leave the stored Buried_List and every selected tab's group membership unchanged, log one diagnostic, and reply `{ok: false, error: 'could not save buried tabs'}` (graveyard-groups Requirement 4 criteria 5 and 6). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): Closing moved from `Bury all` to the new `Empty graveyard` button, so the save-before-close rule now guards that button.
+
+9. THE service worker SHALL call `tabs.remove` only while handling `graveyard:empty` from an Extension_Page (defined in graveyard-groups); `graveyard:bury`, every other popup or content-script message, Auto_Bury (defined in graveyard-groups), timers, Chrome events, and thresholds SHALL close no tab (graveyard-groups Requirement 4 criterion 9). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): `Bury all` no longer closes tabs, so `graveyard:empty` is now the one message allowed to close them.
+
 10. IF `tabs.remove` fails for a tab, THEN its Buried_Entry SHALL remain and the result SHALL list that tab as not closed.
 11. WHEN the user activates `Reopen`, THE service worker SHALL open the entry's URL with `tabs.create` only if its protocol is `http:` or `https:`, and SHALL remove the entry only after the tab is created.
 12. THE Buried_Entries list SHALL hold at most 200 entries, newest first, dropping the oldest when full; each title SHALL be at most 300 characters and each URL at most 2048 characters.
 13. THE popup SHALL roll back to the last confirmed state and show a short error when a command fails, and SHALL prevent a second click while a command is in flight.
 14. THE popup and service worker SHALL use an enumerated, namespaced message protocol, SHALL reject unknown or malformed messages without side effects, and SHALL return `{ok:true, ...}` or `{ok:false, error}`.
-15. (BROWSER-VERIFIED) WHEN two fixture tabs have been left for longer than the demo Tombstone threshold and a third tab was recently active, THEN the Graveyard SHALL list exactly the two dead tabs; no tab SHALL close before `Bury all` is clicked; after the click exactly those two SHALL close and appear as Buried_Entries; and `Reopen` SHALL open a tab at the saved URL.
+15. (BROWSER-VERIFIED) WHEN, in Demo_Mode, fixture tabs A and B in one window have each been away for at least 26 seconds while a third tab C of that window is in front, and the user clicks `Bury all (2)` in the popup, opened as a foreground tab, with a real Playwright click, THEN within 10 seconds A and B SHALL be open with the same group id, which is the Graveyard_Group (defined in graveyard-groups) id recorded for the window; that group SHALL be titled `Graveyard`, coloured `grey`, and collapsed; C and the popup tab SHALL be outside every tab group; the number of open tabs SHALL equal the number just before the click; the Buried_Entries list SHALL be empty; and the popup SHALL show `Bury all (0)` disabled and `Empty graveyard (2)`. WHEN, after those steps, the user clicks `Empty graveyard (2)` with a real Playwright click, THEN within 10 seconds A and B SHALL be closed, C SHALL be open, exactly two Buried_Entries SHALL hold A's and B's URLs, and the `Empty graveyard` button SHALL be hidden; and after a real Playwright click on `Reopen` for A, within 10 seconds a new tab SHALL be open at A's URL and only B's Buried_Entry SHALL be left (graveyard-groups Requirement 11 criteria 8 and 9). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): The browser test now checks that `Bury all` moves tabs without closing them and that `Empty graveyard` is the step that saves and closes them.
+
 16. WHEN a `graveyard:resurrect-tab` reply is `ok:true` with `delivered` exactly `false`, THE popup SHALL refresh its state and show the warning `Reset saved, but this tab is not responding. The decay clears when the page reloads.`
-17. WHEN a `graveyard:bury` reply is `ok:true` with a non-empty `notClosed` array of length N, THE popup SHALL refresh its state and show the warning `Could not close N tab.` followed by `It is still open.` when N is 1, or `Could not close N tabs.` followed by `They are still open.` otherwise; the Buried_Entries for those tabs remain listed (criterion 10). A `graveyard:bury` reply without both a `buried` array and a `notClosed` array SHALL be treated as a failed command (criterion 13).
+17. WHEN a `graveyard:bury` reply is `ok:true` with both a `moved` array and a `notMoved` array, THE popup SHALL refresh its state and, when `notMoved` has a length N greater than 0, show the warning `Could not move N tab to the Graveyard group.` when N is 1, or `Could not move N tabs to the Graveyard group.` otherwise. IF a `graveyard:bury` reply is missing, is not `ok:true`, or is `ok:true` without both a `moved` array and a `notMoved` array, THEN THE popup SHALL treat the command as failed, roll back to the last confirmed state, and show `Could not bury those tabs. Try again.` WHEN a `graveyard:empty` reply is `ok:true` with both a `buried` array and a `notClosed` array, THE popup SHALL refresh its state and, when `notClosed` has a length N greater than 0, show the warning `Could not close N tab. It is still open.` when N is 1, or `Could not close N tabs. They are still open.` when N is 2 or more; the Buried_Entries for those tabs remain listed (criterion 10). IF the `graveyard:empty` request fails, or its reply is not `ok:true`, or the reply lacks either the `buried` array or the `notClosed` array, THEN THE popup SHALL roll back to the last confirmed state and show `Could not empty the graveyard. Try again.` (graveyard-groups Requirement 3 criteria 10 and 11 and Requirement 4 criteria 13 and 14). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): `Bury all` now reports the tabs it could not move rather than tabs it could not close, and the closing warning moved to the new `Empty graveyard` command.
+
 18. WHEN a `graveyard:reopen` reply is `ok:true` with `entryRemoved` exactly `false`, THE popup SHALL refresh its state and show the warning `Reopened, but the entry could not be removed from the list.`
 19. WHEN a `graveyard:popup-state` reply has `rulesLoaded` exactly `false` and no Dead_Tabs are listed, THE popup SHALL show `Could not load the decay rules, so no tabs are listed.` in place of `No dead tabs.`; a missing `rulesLoaded` SHALL be treated as `true`.
 20. THE warnings in criteria 16–18 SHALL replace any previous notice, SHALL be cleared when the next command starts, and SHALL NOT be shown if the state refresh after the command fails (the popup shows its unreachable state instead).
@@ -194,8 +250,14 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 
 #### Acceptance Criteria
 
-1. THE extension SHALL store open-tab data (title, URL, Absence start, Registers) only in `chrome.storage.session`, which Chrome clears when the browser closes.
-2. THE extension SHALL store only Demo_Mode and Buried_Entries in `chrome.storage.local`.
+1. THE extension SHALL store open-tab and group data (Tab_Records with their title, URL, Absence start, and Registers; window entries; Graveyard_Group records; exemption state; and Auto_Bury attempts, with Graveyard_Group and Auto_Bury as defined in graveyard-groups) only in `chrome.storage.session`, which Chrome clears when the browser closes (graveyard-groups Requirement 9 criterion 1). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): The new group records, exemption state, and Auto_Bury attempts describe open tabs, so they follow the same session-only rule as Tab_Records.
+
+2. THE extension SHALL store only Demo_Mode, Auto_Bury (defined in graveyard-groups), and the Buried_List (defined in graveyard-groups) of Buried_Entries in `chrome.storage.local`, and SHALL add Buried_Entries to the Buried_List only while handling `graveyard:empty` (graveyard-groups Requirement 9 criterion 2). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): The Auto_Bury setting has to last across browser restarts, and only `Empty graveyard` now creates Buried_Entries.
+
 3. THE extension SHALL NOT store page text, history beyond the buried tabs, scroll data, or any data from incognito tabs.
 4. THE content script SHALL send only the page title and meter values; the URL SHALL come from `sender.url`.
 5. Diagnostics SHALL be prefixed `[poltergeist:graveyard]` and SHALL NOT log titles, URLs, or stored records.
@@ -224,7 +286,10 @@ Out of scope: syncing across devices, tab grouping, site-specific behaviour, per
 1. `vitest.config.js` SHALL include `app2-tab-graveyard/test/**/*.test.js` and keep excluding `.pw.js` files.
 2. THE meter tests SHALL cover the Time_Away_Meter rules of Requirement 3, including a property test over random hide/show/advance/reset sequences that compares `timeAway` with a reference model.
 3. THE effect tests SHALL cover tombstone rendering, placeholder text, `textContent` safety for a title containing markup, rejection of untrusted clicks, re-render on visibility, and exact restoration after undo; THE index tests SHALL cover `readMeter` and contained `onAction` errors; THE trusted-click path SHALL be verified by a real click in the browser suite.
-4. THE worker tests SHALL cover activation tracking, the `tabs.get` guard, startup seeding, replaced and removed tabs, demo epochs, report capping, serialized updates, worker restart, Bury save-before-close and intersection, close only on `graveyard:bury`, reopen URL validation, the 200-entry cap, and unknown messages.
+4. THE worker tests SHALL cover activation tracking, the `tabs.get` guard, startup seeding, replaced and removed tabs, demo epochs, report capping, serialized updates, worker restart, `Empty graveyard` save-before-close and selection of only the requested tabs that are still Closable_Tabs (defined in graveyard-groups), close only on `graveyard:empty`, reopen URL validation, the 200-entry cap, and unknown messages. THE existing property test SHALL be named "Property 3: Nothing closes without Empty graveyard", SHALL allow only `graveyard:empty` from an Extension_Page (defined in graveyard-groups) to close tabs, and SHALL keep 100 runs per property, and THE source-scan test "closes tabs only from the Empty graveyard handler (source scan)" SHALL find exactly one `tabs.remove` in `background.js`, inside the `graveyard:empty` handler (graveyard-groups Requirement 11 criteria 1 to 3). (amended by graveyard-groups)
+
+   Reason (graveyard-groups): Closing moved from the `graveyard:bury` handler to the `graveyard:empty` handler, so the tests that guard closing follow it there.
+
 5. THE content and popup tests SHALL cover seeded startup, reports, Resurrect commit-then-reset, apply-reset, demo restart with a single instance, `pagehide`/`pageshow`, failure paths, and popup rendering, Bury, Reopen, and rollback.
 6. THE packaging tests SHALL cover both apps in the Skeleton_Sync, the wrapper's unchanged contract, the Graveyard_Validator's success and failure cases, and a failing `check:graveyard` on an extra permission without writing files.
 7. `playwright.config.js` SHALL add a `graveyard-extension` project with `testDir` `app2-tab-graveyard/test/browser` on the bundled Chromium channel, and SHALL keep the existing two projects unchanged.

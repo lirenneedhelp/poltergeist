@@ -87,13 +87,13 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Demo_Mode duration: current-tab `Away for … (demo time)` and dead-row `Abandoned … (demo time)` scaled by 3600 (e.g. awaySeconds 120 → `Away for 5 days (demo time)`); normal mode unchanged
     - _Requirements: 11.5, 1.10_
 
-- [ ] 6. Prior spec documents
-  - [ ] 6.1 Amend `.kiro/specs/tab-graveyard-app/requirements.md`
+- [x] 6. Prior spec documents
+  - [x] 6.1 Amend `.kiro/specs/tab-graveyard-app/requirements.md`
     - Replace each item listed in 10.1 in place, ending with `(amended by graveyard-groups)` and a `Reason (graveyard-groups):` paragraph
     - Add each `Note (graveyard-groups):` paragraph listed in 10.2
     - Keep every number, Glossary term, and haunt-polish text unchanged
     - _Requirements: 10.1, 10.2, 10.4, 10.5, 10.6_
-  - [ ] 6.2 Add notes to `.kiro/specs/tab-graveyard-app/design.md`
+  - [x] 6.2 Add notes to `.kiro/specs/tab-graveyard-app/design.md`
     - Add the three `Note (graveyard-groups):` paragraphs listed in 10.3; leave the Prior_Spec `tasks.md` unchanged
     - _Requirements: 10.3, 10.4, 10.6_
 

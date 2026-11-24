@@ -57,6 +57,8 @@ Content from the cited sources was rephrased for compliance with licensing restr
 
 `storage` is the only permission. The content script is declared statically for the Web_Scope. That declaration produces Chrome's "read and change all your data on all websites" install warning, which is inherent to a haunt that runs on every page. No `host_permissions` are declared, because the worker never fetches pages, never injects scripts, and never reads protected `Tab` properties. Tab ids, `active`, and `windowId` are available without permission, and so are `tabs.remove` and `tabs.create`.
 
+Note (graveyard-groups): The Manifest now declares `storage` and `tabGroups`. `tabGroups` is needed to read and set the Graveyard_Group's title, colour, and collapsed state and to receive its update and removal events. No other permission is needed, because `tabs.group`, `tabs.ungroup`, `tabs.onUpdated`, the `pinned`, `audible`, and `groupId` properties, and `action.setBadgeText` need none (graveyard-groups Requirement 1 criterion 5; Graveyard_Group is defined in the graveyard-groups Glossary).
+
 ## Architecture
 
 ### Runtime boundaries
@@ -301,6 +303,8 @@ Content messages require `sender.id === runtime.id`, an integer `sender.tab.id`,
 
 `tabs.remove` appears only in step 6, which a test enforces by scanning the source and by spying on calls.
 
+Note (graveyard-groups): The save-before-close flow above now handles `graveyard:empty` on the selected Closable_Tabs, and it no longer needs the rules (graveyard-groups Requirement 4 criteria 4 to 11). `graveyard:bury` now moves tabs into their windows' Graveyard_Groups and replies `{ok: true, moved, notMoved}` (graveyard-groups Requirement 3 criteria 3 to 6). Closable_Tab and Graveyard_Group are defined in the graveyard-groups Glossary.
+
 ### Runtime_Controller (`app2-tab-graveyard/content.js`)
 
 The controller is a classic script with the same shape as Doomscroll: two top-level function declarations (`graveyardCreateDemoProfile`, `graveyardCreateController`) and a contained async bootstrap.
@@ -403,6 +407,8 @@ For every set of completed Absences and page reports for one tab and one epoch, 
 For every sequence of tracker events, content messages, popup messages other than `graveyard:bury`, and timer advances, `tabs.remove` is never called. For `graveyard:bury`, the closed ids are a subset of the requested ids that are Dead_Tabs at handling time, and each has a saved Buried_Entry before `tabs.remove` is called.
 
 **Validates: Requirements 7.7–7.10, 6.13**
+
+Note (graveyard-groups): `graveyard:empty` is now the only message that closes tabs, and `graveyard:bury` closes no tab. The property's test is now named "Property 3: Nothing closes without Empty graveyard" (graveyard-groups Requirement 11 criterion 1).
 
 ### Property 4: Demo scaling preserves shape and order
 

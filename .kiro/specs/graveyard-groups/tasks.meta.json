@@ -191,6 +191,37 @@
         "chatSessionId": "sess_9b70f79f-ec03-4ad7-80d2-08135f11bebe",
         "timestamp": 1795505050148
       }
+    ],
+    "6.1 Amend `.kiro/specs/tab-graveyard-app/requirements.md`": [
+      {
+        "executionId": "f5898edb-bbdd-4a4e-8d8f-31c32e490a32",
+        "chatSessionId": "sess_2cf844a9-d693-4f57-8a67-618a55c4fb41",
+        "timestamp": 1795505611759
+      },
+      {
+        "executionId": "f5898edb-bbdd-4a4e-8d8f-31c32e490a32",
+        "chatSessionId": "sess_2cf844a9-d693-4f57-8a67-618a55c4fb41",
+        "timestamp": 1795505843481
+      }
+    ],
+    "6.2 Add notes to `.kiro/specs/tab-graveyard-app/design.md`": [
+      {
+        "executionId": "7c55054e-e040-4d3f-8f59-fa4a9d1c7921",
+        "chatSessionId": "sess_d746f177-86ea-4e4a-a5e6-7dcad4860c56",
+        "timestamp": 1795505908176
+      },
+      {
+        "executionId": "7c55054e-e040-4d3f-8f59-fa4a9d1c7921",
+        "chatSessionId": "sess_d746f177-86ea-4e4a-a5e6-7dcad4860c56",
+        "timestamp": 1795505977185
+      }
+    ],
+    "6. Prior spec documents": [
+      {
+        "executionId": "7c55054e-e040-4d3f-8f59-fa4a9d1c7921",
+        "chatSessionId": "sess_d746f177-86ea-4e4a-a5e6-7dcad4860c56",
+        "timestamp": 1795505977234
+      }
     ]
   }
 }
