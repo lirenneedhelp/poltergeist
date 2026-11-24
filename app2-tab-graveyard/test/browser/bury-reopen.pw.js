@@ -1,16 +1,25 @@
-// Bury and Reopen from the popup (Requirements 7.15, 10.9), in Demo_Mode
-// (Tombstone at 24 s).
+// Bury, Empty graveyard, and Reopen from the popup (graveyard-groups Requirements
+// 11.8 and 11.9), in Demo_Mode (Tombstone at 24 s).
 //
-// A and B are left in the background for 26 s while C is in front. popup.html is
-// then opened as an ordinary foreground tab (so real Playwright clicks reach it);
-// that briefly backgrounds C, which stays far below every dead threshold. The
-// Graveyard must list exactly A and B and nothing may close before the click.
-// `Bury all` closes exactly A and B and lists them as Buried_Entries; `Reopen` on
-// A opens a new tab at A's saved URL and removes only A's entry.
+// Both tests start the same way, each on a fresh profile. A and B are left in the
+// background for 26 s while C is in front. popup.html is then opened as an
+// ordinary foreground tab (so real Playwright clicks reach it); that briefly
+// backgrounds C, which stays far below every dead threshold. The Graveyard must
+// list exactly A and B and nothing may close before the click.
 //
-// Tab counts come from `chrome.tabs.query({})` in the worker, which needs no
-// permission for ids. Closed tabs are confirmed both by Playwright (page closed)
-// and by `chrome.tabs.get` rejecting in the worker.
+// `Bury all` moves A and B into the window's Graveyard_Group (titled `Graveyard`,
+// grey, collapsed) without closing them: the tab count holds, no Buried_Entry is
+// saved, and C and the popup tab stay outside every tab group. `Empty graveyard`
+// then saves A and B as Buried_Entries and closes them; `Reopen` on A opens a new
+// tab at A's saved URL and removes only A's entry. (The save-before-close order is
+// verified in the Unit_Suite.)
+//
+// Group state is read in the worker with the fixture's `tabInfo`, `groupInfo`, and
+// `recordedGroupId` helpers. These run in the default new headless mode: Chromium
+// reports group title, colour, and collapsed state there, so no test here runs
+// headed. Tab counts come from `chrome.tabs.query({})` in the worker, which needs
+// no permission for ids. Closed tabs are confirmed both by Playwright (page
+// closed) and by `chrome.tabs.get` rejecting in the worker.
 import {
   test, expect, FIXTURE, fixtureTitle,
 } from './extension-fixture.js';
@@ -20,16 +29,21 @@ const LONG_AWAY_MS = 26_000;
 const TOMBSTONE_S = 24;
 const WAIT_MS = 10_000;
 const BURIED_KEY = 'graveyard.buried';
+const NO_GROUP = -1;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-test('Bury all closes exactly the dead tabs, and Reopen restores one at its saved URL', async ({
-  context, serviceWorker, extensionId, openFixture, activate, tabIdOf, sendControl, readRecord, diagnostics,
-}) => {
-  test.setTimeout(90_000);
+/**
+ * The steps and evidence of Requirement 11.8: A and B dead with C in front, the
+ * popup opened as a foreground tab, and a real click on `Bury all (2)` that moves
+ * A and B into the Graveyard_Group and closes nothing.
+ */
+async function buryDeadPair({
+  context, serviceWorker, extensionId, openFixture, activate, sendControl, readRecord,
+  tabInfo, groupInfo, recordedGroupId,
+}) {
   const titleA = fixtureTitle(FIXTURE.a);
   const titleB = fixtureTitle(FIXTURE.b);
-
   const tabCount = () => serviceWorker.evaluate(async () => (await chrome.tabs.query({})).length);
   const tabOpen = (id) => serviceWorker.evaluate((tabId) => chrome.tabs.get(tabId).then(() => true, () => false), id);
   const storedBuried = () => serviceWorker.evaluate(async (key) => (await chrome.storage.local.get(key))[key] ?? [], BURIED_KEY);
@@ -56,13 +70,12 @@ test('Bury all closes exactly the dead tabs, and Reopen restores one at its save
 
   // Open the popup as a page in front of C.
   const countBeforePopup = await tabCount();
-  const popupUrl = `chrome-extension://${extensionId}/popup.html`;
   const popup = await context.newPage();
-  await popup.goto(popupUrl, { waitUntil: 'load' });
+  await popup.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: 'load' });
   await popup.bringToFront();
   await expect(popup.locator('#main')).toHaveAttribute('aria-busy', 'false', { timeout: WAIT_MS });
   await expect.poll(tabCount).toBe(countBeforePopup + 1);
-  const countListed = await tabCount();
+  const popupTabId = await popup.evaluate(() => chrome.tabs.getCurrent().then((t) => t.id));
 
   // The Graveyard lists exactly A and B, each abandoned at least the Tombstone threshold.
   const deadRows = popup.locator('#dead-list > li');
@@ -83,11 +96,14 @@ test('Bury all closes exactly the dead tabs, and Reopen restores one at its save
   for (const row of state.dead) expect(row.awaySeconds).toBeGreaterThanOrEqual(TOMBSTONE_S);
   expect(state.buried).toEqual([]);
   await expect(popup.locator('#buried-empty')).toBeVisible();
+  await expect(popup.locator('#empty')).toBeHidden();
 
-  // Listing closes nothing: the count holds and A, B, and C are all still open.
+  // Listing closes and groups nothing: the count holds and every tab is open and ungrouped.
   await sleep(1_000);
-  expect(await tabCount()).toBe(countListed);
-  for (const id of [tabA, tabB, tabC]) expect(await tabOpen(id), `tab ${id} open before Bury`).toBe(true);
+  const countBeforeClick = await tabCount();
+  for (const id of [tabA, tabB, tabC, popupTabId]) {
+    expect((await tabInfo(id))?.groupId, `tab ${id} open and ungrouped before Bury`).toBe(NO_GROUP);
+  }
   expect([a.isClosed(), b.isClosed(), c.isClosed()]).toEqual([false, false, false]);
 
   // A real Playwright click on Bury all.
@@ -95,25 +111,80 @@ test('Bury all closes exactly the dead tabs, and Reopen restores one at its save
   await expect(buryButton).toBeEnabled();
   await buryButton.click();
 
-  // Exactly A and B close; C stays open.
+  // Within 10 s, A and B share one group id, which is the one recorded for the window.
+  const { windowId } = await tabInfo(tabC);
+  await expect.poll(async () => {
+    const [infoA, infoB, recorded] = await Promise.all([tabInfo(tabA), tabInfo(tabB), recordedGroupId(windowId)]);
+    return infoA !== null && infoB !== null && infoA.groupId !== NO_GROUP
+      && infoA.groupId === infoB.groupId && infoA.groupId === recorded;
+  }, { timeout: WAIT_MS, intervals: [100] }).toBe(true);
+  const groupId = await recordedGroupId(windowId);
+  expect(await groupInfo(groupId)).toEqual({ title: 'Graveyard', color: 'grey', collapsed: true, windowId });
+
+  // C and the popup tab stay outside every group; nothing closed; nothing was saved.
+  expect((await tabInfo(tabC)).groupId).toBe(NO_GROUP);
+  expect((await tabInfo(popupTabId)).groupId).toBe(NO_GROUP);
+  expect(await tabCount()).toBe(countBeforeClick);
+  for (const id of [tabA, tabB, tabC]) expect(await tabOpen(id), `tab ${id} open after Bury`).toBe(true);
+  expect([a.isClosed(), b.isClosed(), c.isClosed()]).toEqual([false, false, false]);
+  expect(await storedBuried()).toEqual([]);
+
+  // The popup offers Empty graveyard for the two moved tabs.
+  await expect(popup.getByRole('button', { name: 'Bury all (0)' })).toBeDisabled({ timeout: WAIT_MS });
+  await expect(popup.getByRole('button', { name: 'Empty graveyard (2)' })).toBeVisible({ timeout: WAIT_MS });
+  await expect(popup.locator('#dead-list > li')).toHaveCount(0);
+  await expect(popup.locator('#buried-empty')).toBeVisible();
+  await expect(popup.locator('#notice')).toBeHidden();
+
+  return { a, b, c, tabA, tabB, tabC, popup, titleA, titleB, tabCount, tabOpen, storedBuried };
+}
+
+test('Bury all moves without closing', async ({
+  context, serviceWorker, extensionId, openFixture, activate, sendControl, readRecord,
+  tabInfo, groupInfo, recordedGroupId, diagnostics,
+}) => {
+  test.setTimeout(90_000);
+  await buryDeadPair({
+    context, serviceWorker, extensionId, openFixture, activate, sendControl, readRecord,
+    tabInfo, groupInfo, recordedGroupId,
+  });
+  diagnostics.expectClean();
+});
+
+test('Empty graveyard closes and saves', async ({
+  context, serviceWorker, extensionId, openFixture, activate, tabIdOf, sendControl, readRecord,
+  tabInfo, groupInfo, recordedGroupId, diagnostics,
+}) => {
+  test.setTimeout(90_000);
+  const {
+    a, b, c, tabA, tabB, tabC, popup, titleA, titleB, tabCount, tabOpen, storedBuried,
+  } = await buryDeadPair({
+    context, serviceWorker, extensionId, openFixture, activate, sendControl, readRecord,
+    tabInfo, groupInfo, recordedGroupId,
+  });
+  expect((await tabInfo(tabC)).groupId).toBe(NO_GROUP);
+  const countBeforeEmpty = await tabCount();
+
+  // A real Playwright click on Empty graveyard.
+  await popup.getByRole('button', { name: 'Empty graveyard (2)' }).click();
+
+  // Within 10 s, exactly A and B close; C stays open.
   await expect.poll(() => a.isClosed() && b.isClosed(), { timeout: WAIT_MS, intervals: [100] }).toBe(true);
   expect(await tabOpen(tabA)).toBe(false);
   expect(await tabOpen(tabB)).toBe(false);
   expect(await tabOpen(tabC)).toBe(true);
   expect(c.isClosed()).toBe(false);
-  await expect.poll(tabCount).toBe(countListed - 2);
-  const countAfterBury = await tabCount();
+  await expect.poll(tabCount).toBe(countBeforeEmpty - 2);
+  const countAfterEmpty = await tabCount();
 
-  // Two Buried_Entries, in storage and in the popup; the Graveyard is empty.
-  const entries = await storedBuried();
-  expect(entries).toHaveLength(2);
-  expect(entries.map((e) => e.url).sort()).toEqual([FIXTURE.a, FIXTURE.b].sort());
-  for (const entry of entries) expect(entry.awaySeconds).toBeGreaterThanOrEqual(TOMBSTONE_S);
-  const reopenButtons = popup.locator('#buried-list button[data-entry-id]');
-  await expect(reopenButtons).toHaveCount(2, { timeout: WAIT_MS });
+  // Exactly two Buried_Entries, with A's and B's URLs, in storage and in the popup; Empty is hidden.
+  await expect.poll(async () => (await storedBuried()).map((e) => e.url).sort(), { timeout: WAIT_MS })
+    .toEqual([FIXTURE.a, FIXTURE.b].sort());
+  for (const entry of await storedBuried()) expect(entry.awaySeconds).toBeGreaterThanOrEqual(TOMBSTONE_S);
+  await expect(popup.locator('#empty')).toBeHidden({ timeout: WAIT_MS });
+  await expect(popup.locator('#buried-list button[data-entry-id]')).toHaveCount(2, { timeout: WAIT_MS });
   await expect(popup.getByRole('button', { name: `Reopen ${titleA}` })).toBeVisible();
   await expect(popup.getByRole('button', { name: `Reopen ${titleB}` })).toBeVisible();
-  await expect(popup.locator('#dead-list > li')).toHaveCount(0);
   await expect(popup.getByRole('button', { name: 'Bury all (0)' })).toBeDisabled();
   await expect(popup.locator('#notice')).toBeHidden();
 
@@ -121,7 +192,7 @@ test('Bury all closes exactly the dead tabs, and Reopen restores one at its save
   const pagesBefore = new Set(context.pages());
   await popup.getByRole('button', { name: `Reopen ${titleA}` }).click();
 
-  // A new tab opens at A's saved URL and loads the fixture with the content script.
+  // Within 10 s, a new tab opens at A's saved URL and loads the fixture with the content script.
   let reopened = null;
   await expect.poll(() => {
     reopened = context.pages().find((p) => !pagesBefore.has(p) && p.url() === FIXTURE.a) ?? null;
@@ -132,14 +203,13 @@ test('Bury all closes exactly the dead tabs, and Reopen restores one at its save
   const reopenedId = await tabIdOf(reopened);
   expect(reopenedId).not.toBe(tabA);
   expect(await tabOpen(reopenedId)).toBe(true);
-  await expect.poll(tabCount).toBe(countAfterBury + 1);
+  await expect.poll(tabCount).toBe(countAfterEmpty + 1);
 
-  // A's entry disappears; B's stays. The popup is now behind the new tab, so read it without rAF waits.
+  // Only B's entry is left. The popup is now behind the new tab, so read it without rAF waits.
   await expect.poll(() => popup.evaluate(() =>
     Array.from(document.querySelectorAll('#buried-list button[data-entry-id]'), (btn) => btn.getAttribute('aria-label'))),
   { timeout: WAIT_MS, intervals: [100] }).toEqual([`Reopen ${titleB}`]);
-  const remaining = await storedBuried();
-  expect(remaining.map((e) => e.url)).toEqual([FIXTURE.b]);
+  expect((await storedBuried()).map((e) => e.url)).toEqual([FIXTURE.b]);
   expect(c.isClosed()).toBe(false);
 
   diagnostics.expectClean();

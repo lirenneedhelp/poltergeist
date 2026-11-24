@@ -222,6 +222,49 @@
         "chatSessionId": "sess_d746f177-86ea-4e4a-a5e6-7dcad4860c56",
         "timestamp": 1795505977234
       }
+    ],
+    "7.1 Add fixture helpers and check headless risks first": [
+      {
+        "executionId": "b57d4c83-7dd9-4a1f-9f28-53c5a3746b81",
+        "chatSessionId": "sess_0e3702b3-dc38-4203-a1f4-f94b900d59e5",
+        "timestamp": 1795506094987
+      },
+      {
+        "executionId": "b57d4c83-7dd9-4a1f-9f28-53c5a3746b81",
+        "chatSessionId": "sess_0e3702b3-dc38-4203-a1f4-f94b900d59e5",
+        "timestamp": 1795506740140
+      }
+    ],
+    "7.2 Update `test/browser/bury-reopen.pw.js`": [
+      {
+        "executionId": "c6580ba4-bd37-4744-87e1-4b5a25f6898f",
+        "chatSessionId": "sess_55524b5c-0989-42cc-bec6-d1a37db67443",
+        "timestamp": 1795506765173
+      },
+      {
+        "executionId": "c6580ba4-bd37-4744-87e1-4b5a25f6898f",
+        "chatSessionId": "sess_55524b5c-0989-42cc-bec6-d1a37db67443",
+        "timestamp": 1795507030559
+      }
+    ],
+    "7.3 Add `test/browser/graveyard-groups.pw.js`": [
+      {
+        "executionId": "42f78c94-cfce-44b6-b34e-b36576c5c515",
+        "chatSessionId": "sess_7df0c26d-e72a-40ec-aa8d-6411909d5c35",
+        "timestamp": 1795507100532
+      },
+      {
+        "executionId": "42f78c94-cfce-44b6-b34e-b36576c5c515",
+        "chatSessionId": "sess_7df0c26d-e72a-40ec-aa8d-6411909d5c35",
+        "timestamp": 1795507800454
+      }
+    ],
+    "7. Browser tests": [
+      {
+        "executionId": "42f78c94-cfce-44b6-b34e-b36576c5c515",
+        "chatSessionId": "sess_7df0c26d-e72a-40ec-aa8d-6411909d5c35",
+        "timestamp": 1795507800763
+      }
     ]
   }
 }

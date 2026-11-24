@@ -79,6 +79,7 @@ export const ARTIFACT_SELECTOR = '[data-poltergeist]';
 /** Storage keys written by background.js. */
 export const TAB_KEY_PREFIX = 'graveyard.tab.';
 export const WINDOW_KEY_PREFIX = 'graveyard.window.';
+export const GROUP_KEY_PREFIX = 'graveyard.group.';
 
 const WAIT_MS = 10_000;
 const LAUNCH_TIMEOUT_MS = 30_000;
@@ -318,6 +319,51 @@ export const test = base.extend({
       const got = await chrome.storage.session.get(key);
       return got[key] ?? null;
     }, `${TAB_KEY_PREFIX}${tabId}`));
+  },
+
+  /**
+   * A tab's `{windowId, active, pinned, audible, groupId}` from `chrome.tabs.get`
+   * in the worker (`groupId` is -1 outside every group), or null if the tab is gone.
+   * Only these fields are returned; no URL or title leaves the worker.
+   */
+  tabInfo: async ({ serviceWorker }, use) => {
+    await use((tabId) => serviceWorker.evaluate(async (id) => {
+      try {
+        const tab = await chrome.tabs.get(id);
+        return { windowId: tab.windowId, active: tab.active, pinned: tab.pinned, audible: Boolean(tab.audible), groupId: tab.groupId };
+      } catch {
+        return null;
+      }
+    }, tabId));
+  },
+
+  /**
+   * A tab group's `{title, color, collapsed, windowId}` from `chrome.tabGroups.get`
+   * in the worker (which holds the `tabGroups` permission; test-only read), or null
+   * if the group does not exist.
+   */
+  groupInfo: async ({ serviceWorker }, use) => {
+    await use((groupId) => serviceWorker.evaluate(async (id) => {
+      try {
+        const group = await chrome.tabGroups.get(id);
+        return { title: group.title, color: group.color, collapsed: group.collapsed, windowId: group.windowId };
+      } catch {
+        return null;
+      }
+    }, groupId));
+  },
+
+  /** The Graveyard_Group id the worker has recorded for a window (`graveyard.group.<windowId>`), or null. */
+  recordedGroupId: async ({ serviceWorker }, use) => {
+    await use((windowId) => serviceWorker.evaluate(async (key) => {
+      const got = await chrome.storage.session.get(key);
+      return got[key] ?? null;
+    }, `${GROUP_KEY_PREFIX}${windowId}`));
+  },
+
+  /** The toolbar badge text for all windows, from `chrome.action.getBadgeText({})` in the worker. */
+  badgeText: async ({ serviceWorker }, use) => {
+    await use(() => serviceWorker.evaluate(() => chrome.action.getBadgeText({})));
   },
 
   /**

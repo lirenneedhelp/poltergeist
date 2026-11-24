@@ -97,15 +97,15 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Add the three `Note (graveyard-groups):` paragraphs listed in 10.3; leave the Prior_Spec `tasks.md` unchanged
     - _Requirements: 10.3, 10.4, 10.6_
 
-- [ ] 7. Browser tests
-  - [ ] 7.1 Add fixture helpers and check headless risks first
+- [x] 7. Browser tests
+  - [x] 7.1 Add fixture helpers and check headless risks first
     - In `test/browser/extension-fixture.js`, add worker-evaluated helpers `tabInfo`, `groupInfo`, `recordedGroupId`, `badgeText`
     - Before writing the other browser tests, run a short probe in the fixture's Chromium that groups two tabs and reads title, colour, and collapsed state, and makes one tab audible with a trusted click and a Web Audio oscillator; if headless does not report `audible` or group state, switch the affected test to `test.use({ headless: false })` and record the reason in its header comment
     - _Requirements: 11.8, 11.10, 11.11, 11.12_
-  - [ ] 7.2 Update `test/browser/bury-reopen.pw.js`
+  - [x] 7.2 Update `test/browser/bury-reopen.pw.js`
     - Replace the old Bury test with "Bury all moves without closing" and add "Empty graveyard closes and saves", both with real Playwright clicks and the evidence of 11.8 and 11.9; update comments describing `Bury all`
     - _Requirements: 11.7, 11.8, 11.9_
-  - [ ] 7.3 Add `test/browser/graveyard-groups.pw.js`
+  - [x] 7.3 Add `test/browser/graveyard-groups.pw.js`
     - "Resurrect ungroups", "Pinned and audible tabs are exempt" (with the audio steps and the 1 s `pinned`/`audible` sampler), and "Badge counts dead tabs", each on a fresh profile with a 90 s timeout and `diagnostics.expectClean()`
     - _Requirements: 11.10, 11.11, 11.12_
 
