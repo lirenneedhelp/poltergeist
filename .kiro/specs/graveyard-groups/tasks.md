@@ -109,7 +109,7 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - "Resurrect ungroups", "Pinned and audible tabs are exempt" (with the audio steps and the 1 s `pinned`/`audible` sampler), and "Badge counts dead tabs", each on a fresh profile with a 90 s timeout and `diagnostics.expectClean()`
     - _Requirements: 11.10, 11.11, 11.12_
 
-- [ ] 8. Final checkpoint
+- [x] 8. Final checkpoint
   - Run `npm test`, `npm run build:skeletons` (same `git status --porcelain` before and after), and `npm run test:browser`; each must exit 0 with no skipped test, and no Doomscroll or skeleton test file may change
   - Ensure all tests pass, ask the user if questions arise.
   - _Requirements: 11.13_
