@@ -74,15 +74,17 @@ Paths without a directory are under `app2-tab-graveyard/`.
     - Death watch: one report with exactly `type`, `title`, `heldSeconds`, `epoch` at 24 s in Demo_Mode; none while visible; none after stop or dispose; re-arms after apply-reset while hidden
     - _Requirements: 11.5_
 
-- [ ] 5. Popup changes
-  - [ ] 5.1 Update `popup.html`, `popup.css`, and `popup.js`
+- [x] 5. Popup changes
+  - [x] 5.1 Update `popup.html`, `popup.css`, and `popup.js`
     - Add the `#empty` button (with the `danger` style moved from Bury) and the `Auto-bury dead tabs` checkbox; static `.actions` row and stacked `.footer`, no animation
     - `parseState` reads `autoBury` and `closable`; render `Empty graveyard (M)` only for confirmed M > 0, disabled while busy; `No dead tabs outside tab groups.` text
     - `buryAll` requires `moved` and `notMoved` arrays and shows the not-moved warning; `emptyGraveyard` sends the first 500 closable ids and handles warnings and rollback; `setAutoBury` mirrors `setDemo`
     - The popup calls no `tabGroups`, `tabs.group`, `tabs.ungroup`, or `action` API and reads only the active tab's `id`
-    - _Requirements: 1.10, 3.1, 3.2, 3.10, 3.11, 3.12, 4.2, 4.3, 4.13, 4.14, 4.15, 4.16, 8.1, 8.3, 8.12, 9.5, 9.6_
-  - [ ] 5.2 Update `popup.test.js`
+    - Demo_Mode duration lines: `Away for X` and `Abandoned X` use `formatDuration(awaySeconds * 3600)` plus ` (demo time)` when the confirmed state has `demoMode` true; normal mode and Buried rows unchanged
+    - _Requirements: 1.10, 3.1, 3.2, 3.10, 3.11, 3.12, 3.14, 4.2, 4.3, 4.13, 4.14, 4.15, 4.16, 8.1, 8.3, 8.12, 9.5, 9.6_
+  - [x] 5.2 Update `popup.test.js`
     - `popupState()` helper gains `autoBury: false, closable: []`; Bury with `moved`/`notMoved` (N = 1, 2, rollback on a missing array); Empty hidden at M = 0, shown at M ≥ 1, ids sent, disabled in flight, warnings, rollback; Auto-bury checked from state, message sent, rollback text; `No dead tabs outside tab groups.`; source scan for forbidden APIs
+    - Demo_Mode duration: current-tab `Away for … (demo time)` and dead-row `Abandoned … (demo time)` scaled by 3600 (e.g. awaySeconds 120 → `Away for 5 days (demo time)`); normal mode unchanged
     - _Requirements: 11.5, 1.10_
 
 - [ ] 6. Prior spec documents

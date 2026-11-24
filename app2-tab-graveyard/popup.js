@@ -2,7 +2,8 @@
 // protocol in background.js. From the Tabs API it reads the active tab's id and
 // nothing else (no url, title, pendingUrl, or favIconUrl); every title, URL, and
 // duration comes from graveyard:popup-state. Page data is set with textContent
-// only, and URLs are shown as their host.
+// only, and URLs are shown as their host. The popup calls no tabGroups, tabs.group,
+// tabs.ungroup, or action API; only the worker moves tabs and sets the badge.
 
 // Kept in sync with MESSAGE in background.js. Importing background.js here would
 // register a second set of worker listeners inside the popup page.
@@ -12,7 +13,17 @@ export const POPUP_MESSAGE = Object.freeze({
   BURY: 'graveyard:bury',
   REOPEN: 'graveyard:reopen',
   SET_DEMO: 'graveyard:set-demo',
+  EMPTY: 'graveyard:empty',
+  SET_AUTO_BURY: 'graveyard:set-auto-bury',
 });
+
+/** Ids a graveyard:empty may carry (Requirement 4.3). */
+export const MAX_EMPTY_IDS = 500;
+
+// Same values as DEMO_TIME_SCALE and DEMO_SUFFIX in content.js (graveyardCreateDemoProfile), so the
+// popup's durations match the Tombstone's in Demo_Mode (Requirement 3.14).
+export const DEMO_TIME_SCALE = 3600;
+export const DEMO_SUFFIX = ' (demo time)';
 
 export const STAGE_LABEL = Object.freeze({ alive: 'Alive', fogged: 'Fogged', rotting: 'Rotting', dead: 'Dead' });
 
@@ -22,6 +33,7 @@ export const TEXT = Object.freeze({
   notHaunted: 'Not haunted here',
   unknownStage: 'Unknown',
   noDead: 'No dead tabs.',
+  noDeadOutsideGroups: 'No dead tabs outside tab groups.',
   rulesMissing: 'Could not load the decay rules, so no tabs are listed.',
   noBuried: 'Nothing buried yet.',
   untitled: 'Untitled tab',
@@ -31,13 +43,17 @@ export const TEXT = Object.freeze({
   reopenFailed: 'Could not reopen that tab. Try again.',
   reopenKept: 'Reopened, but the entry could not be removed from the list.',
   demoFailed: 'Could not change demo mode. Try again.',
+  emptyFailed: 'Could not empty the graveyard. Try again.',
+  autoBuryFailed: 'Could not change auto-bury. Try again.',
 });
 
 const FAILURE_TEXT = Object.freeze({
   resurrect: TEXT.resurrectFailed,
   bury: TEXT.buryFailed,
+  empty: TEXT.emptyFailed,
   reopen: TEXT.reopenFailed,
   demo: TEXT.demoFailed,
+  autoBury: TEXT.autoBuryFailed,
 });
 
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -46,8 +62,11 @@ const isTabId = (v) => Number.isInteger(v) && v >= 0;
 const nonNegative = (v) => (isFiniteNumber(v) && v > 0 ? v : 0);
 
 export const buryLabel = (count) => `Bury all (${count})`;
+export const emptyLabel = (count) => `Empty graveyard (${count})`;
 export const notClosedText = (count) =>
   `Could not close ${count} tab${count === 1 ? '' : 's'}. ${count === 1 ? 'It is' : 'They are'} still open.`;
+export const notMovedText = (count) =>
+  `Could not move ${count} tab${count === 1 ? '' : 's'} to the Graveyard group.`;
 
 const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
@@ -63,6 +82,14 @@ export function formatDuration(seconds) {
   if (s < 3600) return plural(Math.floor(s / 60), 'minute');
   if (s < 48 * 3600) return plural(Math.floor(s / 3600), 'hour');
   return plural(Math.floor(s / 86400), 'day');
+}
+
+/**
+ * An Away_Time as shown on the current-tab line and the dead-list rows: in Demo_Mode
+ * scaled by DEMO_TIME_SCALE with DEMO_SUFFIX, as the Tombstone shows it (Requirement 3.14).
+ */
+export function awayDuration(seconds, demoMode) {
+  return demoMode ? `${formatDuration(seconds * DEMO_TIME_SCALE)}${DEMO_SUFFIX}` : formatDuration(seconds);
 }
 
 /** The host of a URL (with any port), or '' when it cannot be parsed. Nothing else of the URL is shown. */
@@ -117,9 +144,11 @@ export function parseState(reply) {
   const stage = known && Object.hasOwn(STAGE_LABEL, reply.current.stage) ? reply.current.stage : null;
   return {
     demoMode: reply.demoMode,
+    autoBury: reply.autoBury === true,
     rulesLoaded: reply.rulesLoaded !== false,
     current: { known, stage, awaySeconds: known ? nonNegative(reply.current.awaySeconds) : 0 },
     dead: reply.dead.map(parseDead).filter((r) => r !== null),
+    closable: Array.isArray(reply.closable) ? reply.closable.filter(isTabId) : [],
     buried: reply.buried.map(parseBuried).filter((r) => r !== null),
   };
 }
@@ -140,17 +169,20 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     deadEmpty: doc.getElementById('dead-empty'),
     deadList: doc.getElementById('dead-list'),
     bury: doc.getElementById('bury'),
+    empty: doc.getElementById('empty'),
     buriedEmpty: doc.getElementById('buried-empty'),
     buriedList: doc.getElementById('buried-list'),
     demo: doc.getElementById('demo'),
+    autoBury: doc.getElementById('auto-bury'),
   };
 
   const state = {
     phase: 'loading', // 'loading' | 'ready' | 'error'
     tabId: null,
     data: null, // last state confirmed by the worker (parseState output); controls roll back to it
-    busy: null, // null | 'resurrect' | 'bury' | 'reopen' | 'demo': one command in flight at a time
+    busy: null, // null | 'resurrect' | 'bury' | 'empty' | 'reopen' | 'demo' | 'autoBury': one command in flight at a time
     pendingDemo: null, // requested Demo_Mode while that command is in flight
+    pendingAutoBury: null, // requested Auto_Bury while that command is in flight
     notice: null, // null | { kind: 'error' | 'warning', text }
   };
   let listsFrom; // the data object the lists were last built from
@@ -195,11 +227,11 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     return text;
   }
 
-  function deadRow(row) {
+  function deadRow(row, demoMode) {
     const li = doc.createElement('li');
     li.className = 'row';
     li.dataset.tabId = String(row.tabId);
-    li.append(rowText(row.title, row.url, `Abandoned ${formatDuration(row.awaySeconds)}`));
+    li.append(rowText(row.title, row.url, `Abandoned ${awayDuration(row.awaySeconds, demoMode)}`));
     return li;
   }
 
@@ -221,7 +253,7 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
   function renderLists(data) {
     if (data === listsFrom) return;
     listsFrom = data;
-    el.deadList.replaceChildren(...(data ? data.dead.map(deadRow) : []));
+    el.deadList.replaceChildren(...(data ? data.dead.map((row) => deadRow(row, data.demoMode)) : []));
     el.buriedList.replaceChildren(...(data ? data.buried.map(buriedRow) : []));
   }
 
@@ -241,7 +273,7 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     } else if (ready) {
       stageKey = data.current.stage ?? 'unknown';
       stageText = STAGE_LABEL[data.current.stage] ?? TEXT.unknownStage;
-      awayText = `Away for ${formatDuration(data.current.awaySeconds)}`;
+      awayText = `Away for ${awayDuration(data.current.awaySeconds, data.demoMode)}`;
     }
     el.current.dataset.stage = stageKey;
     el.currentStage.textContent = stageText;
@@ -253,9 +285,16 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     const deadCount = ready ? data.dead.length : 0;
     el.deadList.hidden = deadCount === 0;
     el.deadEmpty.hidden = !ready || deadCount > 0;
-    el.deadEmpty.textContent = ready && !data.rulesLoaded ? TEXT.rulesMissing : TEXT.noDead;
+    const closableCount = ready ? data.closable.length : 0;
+    let emptyText = TEXT.noDead;
+    if (ready && !data.rulesLoaded) emptyText = TEXT.rulesMissing;
+    else if (closableCount > 0) emptyText = TEXT.noDeadOutsideGroups;
+    el.deadEmpty.textContent = emptyText;
     el.bury.textContent = buryLabel(deadCount);
     el.bury.disabled = !ready || deadCount === 0 || busy;
+    el.empty.textContent = emptyLabel(closableCount);
+    el.empty.hidden = closableCount === 0;
+    el.empty.disabled = !ready || closableCount === 0 || busy;
 
     // Buried
     const buriedCount = ready ? data.buried.length : 0;
@@ -266,6 +305,10 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     // Demo mode
     el.demo.checked = state.pendingDemo ?? (ready ? data.demoMode : false);
     el.demo.disabled = !ready || busy;
+
+    // Auto-bury
+    el.autoBury.checked = state.pendingAutoBury ?? (ready ? data.autoBury : false);
+    el.autoBury.disabled = !ready || busy;
 
     if (state.notice) {
       el.notice.hidden = false;
@@ -311,6 +354,7 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     if (!outcome) {
       state.busy = null;
       state.pendingDemo = null;
+      state.pendingAutoBury = null;
       state.notice = { kind: 'error', text: FAILURE_TEXT[kind] };
       render();
       return false;
@@ -319,6 +363,7 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     const fresh = await fetchState(state.tabId);
     state.busy = null;
     state.pendingDemo = null;
+    state.pendingAutoBury = null;
     if (fresh) {
       state.data = fresh;
       state.notice = outcome.notice;
@@ -344,6 +389,16 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     if (!canCommand() || state.data.dead.length === 0) { render(); return false; }
     const tabIds = state.data.dead.map((row) => row.tabId);
     return command('bury', { type: POPUP_MESSAGE.BURY, tabIds }, (reply) => {
+      if (!Array.isArray(reply.moved) || !Array.isArray(reply.notMoved)) return null;
+      const n = reply.notMoved.length;
+      return { notice: n > 0 ? { kind: 'warning', text: notMovedText(n) } : null };
+    });
+  }
+
+  async function emptyGraveyard() {
+    if (!canCommand() || state.data.closable.length === 0) { render(); return false; }
+    const tabIds = state.data.closable.slice(0, MAX_EMPTY_IDS);
+    return command('empty', { type: POPUP_MESSAGE.EMPTY, tabIds }, (reply) => {
       if (!Array.isArray(reply.buried) || !Array.isArray(reply.notClosed)) return null;
       const n = reply.notClosed.length;
       return { notice: n > 0 ? { kind: 'warning', text: notClosedText(n) } : null };
@@ -363,6 +418,12 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
     return command('demo', { type: POPUP_MESSAGE.SET_DEMO, enabled }, (reply) => (reply.demoMode === enabled ? { notice: null } : null));
   }
 
+  async function setAutoBury(enabled) {
+    if (!canCommand() || typeof enabled !== 'boolean' || enabled === state.data.autoBury) { render(); return false; }
+    state.pendingAutoBury = enabled;
+    return command('autoBury', { type: POPUP_MESSAGE.SET_AUTO_BURY, enabled }, (reply) => (reply.autoBury === enabled ? { notice: null } : null));
+  }
+
   function onBuriedClick(event) {
     const button = event.target?.closest?.('button[data-entry-id]');
     if (!button || !el.buriedList.contains(button)) return undefined;
@@ -372,12 +433,14 @@ export function createPopup({ chrome: chromeApi, document: doc, locale } = {}) {
   function init() {
     el.resurrect.addEventListener('click', () => resurrect());
     el.bury.addEventListener('click', () => buryAll());
+    el.empty.addEventListener('click', () => emptyGraveyard());
     el.buriedList.addEventListener('click', onBuriedClick);
     el.demo.addEventListener('change', () => setDemo(el.demo.checked));
+    el.autoBury.addEventListener('change', () => setAutoBury(el.autoBury.checked));
     return load();
   }
 
-  return { init, load, render, resurrect, buryAll, reopen, setDemo, state };
+  return { init, load, render, resurrect, buryAll, emptyGraveyard, reopen, setDemo, setAutoBury, state };
 }
 
 // Guarded bootstrap: runs only on the real extension page, not when imported by tests.

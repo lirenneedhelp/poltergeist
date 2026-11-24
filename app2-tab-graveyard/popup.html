@@ -24,7 +24,10 @@
       <h2 id="graveyard-heading">Graveyard</h2>
       <p id="dead-empty" class="empty" hidden>No dead tabs.</p>
       <ul id="dead-list" class="list" aria-labelledby="graveyard-heading" hidden></ul>
-      <button type="button" id="bury" class="danger" disabled>Bury all (0)</button>
+      <div class="actions">
+        <button type="button" id="bury" disabled>Bury all (0)</button>
+        <button type="button" id="empty" class="danger" hidden>Empty graveyard (0)</button>
+      </div>
     </section>
 
     <section class="section" aria-labelledby="buried-heading">
@@ -37,6 +40,10 @@
       <label class="control" for="demo">
         <input type="checkbox" id="demo" name="demo" disabled>
         <span>Demo mode</span>
+      </label>
+      <label class="control" for="auto-bury">
+        <input type="checkbox" id="auto-bury" name="auto-bury" disabled>
+        <span>Auto-bury dead tabs</span>
       </label>
     </footer>
   </main>

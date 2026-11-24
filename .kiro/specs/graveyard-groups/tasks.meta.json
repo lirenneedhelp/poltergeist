@@ -160,6 +160,37 @@
         "chatSessionId": "sess_5c5489cd-1a8c-412e-9f65-819a298eefd9",
         "timestamp": 1795503151245
       }
+    ],
+    "5.1 Update `popup.html`, `popup.css`, and `popup.js`": [
+      {
+        "executionId": "28da12e6-6eed-4068-bb4d-d089341b264c",
+        "chatSessionId": "sess_2bcd49da-2da8-4889-bdb4-3563a00007f7",
+        "timestamp": 1795504456729
+      },
+      {
+        "executionId": "28da12e6-6eed-4068-bb4d-d089341b264c",
+        "chatSessionId": "sess_2bcd49da-2da8-4889-bdb4-3563a00007f7",
+        "timestamp": 1795504722878
+      }
+    ],
+    "5.2 Update `popup.test.js`": [
+      {
+        "executionId": "debb1e50-7c48-427d-9ae3-c5b3ff1d3a5d",
+        "chatSessionId": "sess_9b70f79f-ec03-4ad7-80d2-08135f11bebe",
+        "timestamp": 1795504782669
+      },
+      {
+        "executionId": "debb1e50-7c48-427d-9ae3-c5b3ff1d3a5d",
+        "chatSessionId": "sess_9b70f79f-ec03-4ad7-80d2-08135f11bebe",
+        "timestamp": 1795505050070
+      }
+    ],
+    "5. Popup changes": [
+      {
+        "executionId": "debb1e50-7c48-427d-9ae3-c5b3ff1d3a5d",
+        "chatSessionId": "sess_9b70f79f-ec03-4ad7-80d2-08135f11bebe",
+        "timestamp": 1795505050148
+      }
     ]
   }
 }

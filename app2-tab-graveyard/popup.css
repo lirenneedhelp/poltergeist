@@ -234,7 +234,15 @@ button.danger:disabled {
   cursor: not-allowed;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .footer {
+  display: grid;
+  gap: 2px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
 }
