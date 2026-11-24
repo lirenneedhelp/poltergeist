@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Check the app package when its rules.json is saved",
+      "trigger": "PostFileSave",
+      "description": "Runs the Package_Check of the registered app whose folder directly contains the saved rules.json. Read-only.",
+      "matcher": "(?:^|[\\\\/])rules\\.json$",
+      "action": {
+        "type": "command",
+        "command": "node scripts/rules-hook.mjs"
+      },
+      "timeout": 120
+    }
+  ]
+}

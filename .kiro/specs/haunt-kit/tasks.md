@@ -8,21 +8,21 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
 
 ## Tasks
 
-- [ ] 1. App_Registry file and Rules_Hook
-  - [ ] 1.1 Move the App_Registry to `scripts/app-registry.json` and load it in the Skeleton_Sync
+- [x] 1. App_Registry file and Rules_Hook
+  - [x] 1.1 Move the App_Registry to `scripts/app-registry.json` and load it in the Skeleton_Sync
     - Create `scripts/app-registry.json` with the `doomscroll` and `graveyard` entries, one entry per line, as in design section 1.3
     - In `scripts/sync-skeleton.mjs` add `REGISTRY_PATH` and `loadRegistry(file)` (shape checks on key, `dir`, `label`, `validator`, `buildScript`; throws naming the file and the bad field) and keep exporting a deep-frozen `APPS = loadRegistry()`
     - Make `runValidator` call `validatePackage(repoRoot, { key, ...APPS[key] })`; leave `parseArgs`, `check`, `build`, messages and exit codes unchanged so `sync.test.js` keeps passing
     - Set `vitest.config.js` `include` to `['skeleton/test/**/*.test.js', 'app*/test/**/*.test.js', 'test/**/*.test.js']`
     - _Requirements: 3.3, 3.7, 13.1, 13.3, 16.5_
 
-  - [ ] 1.2 Implement the Rules_Hook
+  - [x] 1.2 Implement the Rules_Hook
     - Create `scripts/rules-hook.mjs` exporting `findRulesPath(event)`, `appForRulesPath(filePath, { repoRoot, apps })` and `run({ filePath, repoRoot, apps, check })`, with the CLI flow of design section 1.4 (path from `argv[2]`, else from STDIN event JSON, resolved against `cwd`)
     - Map only `<dir>/rules.json` directly inside a registered `dir`; print the "nothing to check" line and exit 0 otherwise; run exactly that app's Package_Check in-process and exit with its code; write nothing
     - Create `.kiro/hooks/check-rules-on-save.json` (`v1`, one `PostFileSave` hook, matcher `(?:^|[\\/])rules\.json$`, command `node scripts/rules-hook.mjs`, timeout 120)
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 1.3 Write `test/rules-hook.test.js`
+  - [x] 1.3 Write `test/rules-hook.test.js`
     - Example-based checks (invariant 16): `app1-doomscroll/rules.json`, `app1-doomscroll\rules.json`, `./app1-doomscroll/rules.json` and the absolute form map to `doomscroll`; `app2-tab-graveyard/rules.json` maps to `graveyard`; `demo-site/presets/doomscroll.json`, `app1-doomscroll/skeleton/rules.json`, root `rules.json` and a path outside the repository map to no app; an event JSON carrying a path is handled the same way
     - Check the hook file's trigger, command action and matcher (matches `rules.json` with both separators, rejects `myrules.json` and `rules.json.bak`)
     - Check the exit code is non-zero when the mapped check fails and 0 otherwise, that the saved file's bytes are unchanged, and that an entry added to a temporary repository's registry is found with no hook edit

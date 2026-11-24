@@ -1,0 +1,4 @@
+{
+  "doomscroll": { "dir": "app1-doomscroll", "label": "Doomscroll", "validator": "./validate-doomscroll-package.mjs", "buildScript": "build:doomscroll" },
+  "graveyard": { "dir": "app2-tab-graveyard", "label": "Tab Graveyard", "validator": "./validate-graveyard-package.mjs", "buildScript": "build:graveyard" }
+}

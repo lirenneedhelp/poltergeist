@@ -4,17 +4,48 @@
 //   node scripts/sync-skeleton.mjs [--check] --app <key>  limit to one or more apps (repeatable)
 // After a build or a passing check, each processed app's package validator runs.
 // Node built-ins only; nothing here ships in an extension.
-import { promises as fs } from 'node:fs';
+import { promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SCRIPTS_DIR = path.dirname(fileURLToPath(import.meta.url));
+export const REPO_ROOT = path.resolve(SCRIPTS_DIR, '..');
+export const REGISTRY_PATH = path.join(SCRIPTS_DIR, 'app-registry.json');
 
-/** Registered apps. `validator` is resolved relative to this script and must export validatePackage(repoRoot). */
-export const APPS = Object.freeze({
-  doomscroll: Object.freeze({ dir: 'app1-doomscroll', label: 'Doomscroll', validator: './validate-doomscroll-package.mjs', buildScript: 'build:doomscroll' }),
-  graveyard: Object.freeze({ dir: 'app2-tab-graveyard', label: 'Tab Graveyard', validator: './validate-graveyard-package.mjs', buildScript: 'build:graveyard' }),
-});
+const KEY_RE = /^[a-z][a-z0-9-]{1,29}$/;
+const DIR_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const VALIDATOR_RE = /^\.\/[a-z0-9-]+\.mjs$/;
+const ENTRY_FIELDS = ['dir', 'label', 'validator', 'buildScript'];
+
+/**
+ * Read, shape-check and deep-freeze the App_Registry. Throws naming the file and the bad key or field.
+ * `validator` is resolved relative to this script and must export validatePackage(repoRoot, app).
+ */
+export function loadRegistry(file = REGISTRY_PATH) {
+  const fail = (what) => { throw new Error(`Invalid app registry ${file}: ${what}`); };
+  let data;
+  try {
+    data = JSON.parse(readFileSync(file, 'utf8'));
+  } catch (e) {
+    throw new Error(`Cannot read app registry ${file}: ${e.message}`);
+  }
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) fail('top level must be an object');
+  const apps = {};
+  for (const [key, entry] of Object.entries(data)) {
+    if (!KEY_RE.test(key)) fail(`key "${key}" must match ${KEY_RE}`);
+    if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) fail(`${key} must be an object`);
+    const { dir, label, validator, buildScript } = entry;
+    if (typeof dir !== 'string' || !DIR_RE.test(dir)) fail(`${key}.dir must be one path segment matching ${DIR_RE}`);
+    if (typeof label !== 'string' || label.trim() === '') fail(`${key}.label must be a non-empty string`);
+    if (typeof validator !== 'string' || !VALIDATOR_RE.test(validator)) fail(`${key}.validator must match ${VALIDATOR_RE}`);
+    if (buildScript !== `build:${key}`) fail(`${key}.buildScript must be "build:${key}"`);
+    apps[key] = Object.freeze(Object.fromEntries(ENTRY_FIELDS.map((f) => [f, entry[f]])));
+  }
+  return Object.freeze(apps);
+}
+
+/** Registered apps, read from scripts/app-registry.json at import. */
+export const APPS = loadRegistry();
 
 function appOf(appKey) {
   if (typeof appKey !== 'string' || !Object.hasOwn(APPS, appKey)) throw new Error(`Unknown app: ${appKey}`);
@@ -120,7 +151,7 @@ async function runValidator(repoRoot, appKey) {
   let errors;
   try {
     const { validatePackage } = await import(validator);
-    ({ ok, errors } = await validatePackage(repoRoot));
+    ({ ok, errors } = await validatePackage(repoRoot, { key: appKey, ...APPS[appKey] }));
   } catch (e) {
     ok = false;
     errors = [`cannot run ${validator} (${e.message})`];
