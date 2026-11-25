@@ -3,7 +3,6 @@ name: Deploy Playground to GitHub Pages
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,16 +21,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
-
-      - name: Set up Pages
-        uses: actions/configure-pages@v5
+        uses: actions/checkout@v7
 
       - name: Upload demo-site as the Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: demo-site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
