@@ -380,3 +380,14 @@ is lit too early; and the fog following squares filled, so it only clears
 when the ritual is really complete.
 **Evidence:** commits <task 7>, <fix>; tests 1017 → <count>; browser tests
 pass twice; screenshot of the stuck board (docs/kiro-evidence/ritual-stuck.png).
+
+## 2026-11-26: haunt-kit Task 10 (Playground) and GitHub Pages
+**What happened:** a no-install Playground page in `demo-site/` runs the
+skeleton on a fake feed, with Doomscroll and Tab Graveyard presets, a
+speed slider up to 3600× (matching the Graveyard demo time), a rules
+editor and the ritual. Deployed to GitHub Pages by a workflow (task 10.7,
+added to the spec after I pointed out the hackathon requires a URL).
+**Live at:** https://lirenneedhelp.github.io/poltergeist/
+**Deploy note:** the first run succeeded; the next two failed in GitHub's
+artifact service ("Fetching artifact metadata failed"), including one with
+an identical workflow, so the failure was on GitHub's side.
