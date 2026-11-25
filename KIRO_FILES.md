@@ -349,3 +349,12 @@ Reset and Hint buttons, render, one-time focus, and undo through `teardown`.
 Path drawing, the ending and the chime are stubs for tasks 5.5 to 5.7.
 **Evidence:** `npx vitest --run skeleton/test` 414 passed; with the docs,
 authoring and rules-hook tests, 472 passed.
+
+## 2026-11-25: haunt-kit Tasks 5.5–5.11 (Candle Path ritual)
+**What happened:** the ritual now draws the path (mouse and arrow keys),
+lights each candle, thins the fog, plays the ghost's banishing ending and
+reports `exorcised`. The full puzzle passed its tests, so the simpler
+hold-to-light fallback wasn't needed.
+**Evidence:** commits c7b2ea5, 16b45fb, df999c1; tests 926 → 1017. Break-it
+checks: accepting fake input, completing on an incomplete path, and the
+wrong action name each failed 2–17 tests.
