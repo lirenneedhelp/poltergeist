@@ -1,0 +1,118 @@
+{
+  "$id": "poltergeist/rule-schema.json",
+  "title": "Poltergeist rule file",
+  "description": "A rules.json file: either an array of rules or an object with a 'rules' array. Time meters (timeOnSite, timeSinceActive, timeAway) are in seconds, scrollDistance is in pixels. timeAway is the longest time the page was hidden since the last reset. JSON Schema draft-07 style.",
+  "oneOf": [
+    { "type": "array", "items": { "$ref": "#/definitions/rule" } },
+    {
+      "type": "object",
+      "required": ["rules"],
+      "additionalProperties": false,
+      "properties": {
+        "rules": { "type": "array", "items": { "$ref": "#/definitions/rule" } }
+      }
+    }
+  ],
+  "definitions": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "match", "trigger", "effect", "undo"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+        "description": { "type": "string" },
+        "enabled": { "type": "boolean", "default": true },
+        "match": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "description": "Chrome match pattern, e.g. *://*.example.com/*, or <all_urls>" }
+        },
+        "trigger": {
+          "type": "object",
+          "required": ["meter", "threshold"],
+          "additionalProperties": false,
+          "properties": {
+            "meter": { "enum": ["timeOnSite", "scrollDistance", "timeSinceActive", "timeAway"] },
+            "threshold": { "type": "number", "minimum": 0, "description": "Rule fires when meter >= threshold" },
+            "rampTo": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Meter value at which intensity reaches 1. Must be > threshold. Omit for a flat intensity of 1."
+            }
+          }
+        },
+        "effect": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": { "type": "string" },
+            "params": { "type": "object" }
+          }
+        },
+        "undo": {
+          "type": "object",
+          "required": ["mode"],
+          "additionalProperties": false,
+          "properties": {
+            "mode": { "enum": ["instant", "fade"] },
+            "durationMs": { "type": "integer", "minimum": 0, "maximum": 10000 }
+          }
+        }
+      }
+    },
+    "params-ritual": {
+      "type": "object",
+      "description": "Params of the ritual effect: a full-page candle puzzle. Draw one path through every square, passing the numbered candles in order. Finishing it reports the \"exorcised\" action; blocks interaction once intensity reaches blockAt. Documentation only: the validator does not read this definition. Any value of the wrong type or outside its range uses the default.",
+      "properties": {
+        "heading": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "default": "Light the candles to banish the ghost",
+          "description": "Heading text, 1 to 200 characters. Default \"Light the candles to banish the ghost\". Other values use the default."
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "default": "Draw one path through every square, passing the candles in order. Candle N must be your last square. Drag back to undo.",
+          "description": "Instruction text, 1 to 300 characters. Default \"Draw one path through every square, passing the candles in order. Candle N must be your last square. Drag back to undo.\", where N is replaced by the Board's candle count. A custom string is shown exactly as written, with no replacement. Other values use the default."
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 7,
+          "default": 5,
+          "description": "Board size in squares per side. Integer from 3 to 7. Default 5. Other values use the default."
+        },
+        "candles": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 9,
+          "default": 5,
+          "description": "Number of candles. Integer from 2 to 9, and at most size x size. Default 5. Other values use the default."
+        },
+        "sound": {
+          "type": "boolean",
+          "default": false,
+          "description": "Play a short generated chime when the last candle lights. Only the boolean true turns it on. Default false."
+        },
+        "maxOpacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.96,
+          "description": "Overlay opacity at intensity 1. Number from 0 to 1. Default 0.96. Other values use the default."
+        },
+        "blockAt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Intensity at which the overlay blocks pointer input and takes focus. Number from 0 to 1. Default 1. Other values use the default."
+        }
+      }
+    }
+  }
+}

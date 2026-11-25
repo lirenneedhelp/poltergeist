@@ -218,31 +218,38 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Generate an app with `--root` into a temporary copy, load it unpacked in Chrome, turn Demo_Mode on, open a page matching its hosts and check that Fog appears within 7 s; record the date, Chrome version and result in `KIRO_FILES.md`
     - _Requirements: 13.9_
 
-- [ ] 10. Haunt Playground
-  - [ ] 10.1 Add the Playground sync target to `scripts/sync-skeleton.mjs`
+- [x] 10. Haunt Playground
+  - [x] 10.1 Add the Playground sync target to `scripts/sync-skeleton.mjs`
     - Add `SITE`, `checkSite(repoRoot)` and `buildSite(repoRoot)` per design section 5.1; `main` processes the site after the apps when no `--app` is given; keep `parseArgs` and the per-app build lines unchanged
     - Run `npm run build:skeletons` to write `demo-site/skeleton/` and `demo-site/presets/doomscroll.json` and `graveyard.json`
     - _Requirements: 11.1, 11.4, 14.2_
 
-  - [ ] 10.2 Build the Playground page
+  - [x] 10.2 Build the Playground page
     - `demo-site/index.html` (header, `main#feed`, `aside#panel[popover="manual"]` with preset buttons and the Graveyard note, speed slider and output, rules editor, Apply, Stop, error list, "Try the ritual" and its status), `playground.css`, `playground.js` (boot only) and `playground-core.js` (`scaleRules`, `renderFeed`, `createPlayground`) per design sections 5.2 and 5.3
     - Relative paths inside `demo-site/` only, no inline scripts, no remote code, no `eval`, all runtime text via `textContent`
     - _Requirements: 14.1, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 14.10, 14.12_
 
-  - [ ] 10.3 Add the local server and the Playwright project
+  - [x] 10.3 Add the local server and the Playwright project
     - Create `scripts/serve-playground.mjs` (`startServer`, 127.0.0.1, GET and HEAD only, path containment, no listing, small content-type map) and add `"playground": "node scripts/serve-playground.mjs"` to `package.json`
     - Add the `playground` project to `playwright.config.js` with `testDir: 'test/browser'`
     - _Requirements: 14.1, 14.11_
 
-  - [ ] 10.4 Write `test/playground.test.js` and extend the packaging drift checks
-    - jsdom tests of `createPlayground` with a recording API and a fake `fetch` (invariant 20): each preset, a valid hand-written list, invalid JSON and invalid rules at speeds 1, 60 and 600; Apply all-or-nothing, error lines and clearing, `match` set to `['<all_urls>']`, editor text unchanged, speed restart from the last accepted rules, preset load failure naming the preset, "Try the ritual" undo and completion message
+  - [x] 10.4 Write `test/playground.test.js` and extend the packaging drift checks
+    - jsdom tests of `createPlayground` with a recording API and a fake `fetch` (invariant 20): each preset, a valid hand-written list, invalid JSON and invalid rules at speeds 1, 60, 600 and 3600; `#speed` has `max` `3600` and `clampSpeed` keeps 3600 and clamps 3601 to 3600; the Graveyard note's text equals the exact sentence of Requirement 14.8; Apply all-or-nothing, error lines and clearing, `match` set to `['<all_urls>']`, editor text unchanged, speed restart from the last accepted rules, preset load failure naming the preset, "Try the ritual" undo and completion message
     - Scans of `demo-site/` HTML and JS outside `skeleton/` for inline scripts, remote URLs, `eval` and `innerHTML`; server path containment and method checks
     - In `test/packaging.test.js` add the Playground targets to invariant 17: `demo-site/skeleton/` equals the Skeleton, each Preset equals its app's `rules.json`, and a changed preset or Playground copy makes `check:skeletons` fail and name the file
     - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 14.10, 14.12_
 
-  - [ ] 10.5 Write `test/browser/playground.pw.js`
-    - Start the server on port 0, open the Playground, block and record other-origin requests, check at least 20 posts and page height above the window, set speed 600 and see `600×`, click the Doomscroll preset and expect `[data-poltergeist="fog"]` within 10 s, with no page errors and no other-origin requests
-    - _Requirements: 14.3, 14.11_
+  - [x] 10.5 Write `test/browser/playground.pw.js`
+    - Start the server on port 0, open the Playground, block and record other-origin requests, check at least 20 posts and page height above the window, check that `#speed` has the `max` attribute `3600`, set speed 600 and see `600×`, click the Doomscroll preset and expect `[data-poltergeist="fog"]` within 10 s, with no page errors and no other-origin requests
+    - _Requirements: 14.3, 14.7, 14.11_
+
+  - [x] 10.6 Raise the speed maximum to 3600× and update the Graveyard note
+    - In `demo-site/index.html` change `#speed` to `max="3600"` and replace the `p.note` text with `The Tab Graveyard preset decays only while this tab is hidden. Switch to another tab, then come back. At 3600× the tombstone appears after about 24 seconds away.`
+    - In `demo-site/playground-core.js` set `MAX_SPEED` to 3600 and update the `clampSpeed` and `setSpeed` comments from 600 to 3600 (leave `RITUAL_UNDO_MS = 600`, which is a fade duration); nothing else in the speed logic changes
+    - Runs before tasks 10.4 and 10.5, whose descriptions already include the 3600 checks; if either test file already exists when this task runs, update it the same way (speed list gains 3600, `max` is `3600`, exact note text)
+    - `demo-site/index.html` and `playground-core.js` are not Generated_Skeleton or Preset files, so no generated copy changes; run `npm run check:skeletons` to confirm it still passes and do not edit `demo-site/skeleton/` or `demo-site/presets/` by hand
+    - _Requirements: 14.7, 14.8_
 
 - [ ] 11. README guides
   - [ ] 11.1 Add the two README guides
@@ -322,8 +329,8 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     { "id": 19, "tasks": ["9.1", "10.1"] },
     { "id": 20, "tasks": ["9.2", "10.2"] },
     { "id": 21, "tasks": ["9.3", "10.3"] },
-    { "id": 22, "tasks": ["10.4", "10.5", "11.1"] },
-    { "id": 23, "tasks": ["11.2"] }
+    { "id": 22, "tasks": ["10.6", "11.1"] },
+    { "id": 23, "tasks": ["10.4", "10.5", "11.2"] }
   ]
 }
 ```

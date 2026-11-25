@@ -36,7 +36,7 @@ Requirement 16 (compatibility) is handled in every part and summarised in "Compa
 7. **Doomscroll ticks the engine right after the reset.** `meters.reset('timeOnSite')` followed by `ghost.engine.tick()` makes the reset take effect at once instead of up to 250 ms later. Without it the finale browser test's 2-second budget (Requirement 10.10) would be 1300 + 250 + 600 = 2150 ms in the worst case. `engine.js` does not change; `tick()` is already public.
 8. **Reduced motion turns the fade-out into an instant opacity drop.** The Ritual_Contract forbids CSS transitions while Reduced_Motion is true, and Requirement 9.3 requires the host to stay until `durationMs`. Under Reduced_Motion, `undo` with a positive duration sets opacity 0 before it returns with no transition, stops input at once and removes the host after `durationMs` with the one-shot teardown timer.
 9. **README uses `--` for scaffolder flags.** Without `--`, npm would swallow `--hosts`. The README shows `npm run new-haunt <name> -- --hosts <pattern,...>`, the command in Requirement 15.1(a).
-10. **The Playground controls sit in the top layer.** At 600× speed the Doomscroll preset's Block overlay blocks pointers within 2.4 seconds and covers the whole page. The control panel is a `popover="manual"` element shown at load, which the browser draws above every `z-index`, so Apply, Stop and the presets always stay usable.
+10. **The Playground controls sit in the top layer.** The speed slider goes up to 3600×, the same scale as Tab Graveyard's `DEMO_TIME_SCALE`. At 600× the Doomscroll preset's Block overlay blocks pointers within 2.4 seconds and covers the whole page; at 3600× it does so within 0.4 seconds. The control panel is a `popover="manual"` element shown at load, which the browser draws above every `z-index`, so Apply, Stop and the presets always stay usable.
 
 The open points from earlier drafts (the Effect_Hook file path, the README scaffolder command and repeated undo while fading) were resolved in the requirements (Requirements 2.3, 15.1(a) and 9.4 to 9.6).
 
@@ -736,8 +736,8 @@ demo-site/
 - `header`: title "Haunt Playground" and a one-line introduction.
 - `main#feed`: an empty container. `renderFeed` adds 24 `article` posts (title and body from a fixed word list, `min-height` 160 px), so the page is taller than the window (Requirement 14.3).
 - `aside#panel[popover="manual"]` (decision 10), shown with `showPopover?.()` at boot and fixed to the right side. It contains:
-  - buttons `#preset-doomscroll` ("Doomscroll") and `#preset-graveyard` ("Tab Graveyard"), and the note "The Tab Graveyard preset decays only while this tab is hidden. Switch to another tab and come back." (Requirement 14.8);
-  - `label[for=speed]`, `input#speed[type=range][min=1][max=600][step=1][value=1]` and `output#speed-value` showing `1×` (Requirement 14.7);
+  - buttons `#preset-doomscroll` ("Doomscroll") and `#preset-graveyard` ("Tab Graveyard"), and the note `p.note` with the exact text "The Tab Graveyard preset decays only while this tab is hidden. Switch to another tab, then come back. At 3600× the tombstone appears after about 24 seconds away." (Requirement 14.8). The Graveyard Preset's tombstone threshold is 86400 s of `timeAway`, and 86400 / 3600 = 24 s;
+  - `label[for=speed]`, `input#speed[type=range][min=1][max=3600][step=1][value=1]` and `output#speed-value` showing `1×` (Requirement 14.7);
   - `label[for=rules]`, `textarea#rules`, buttons `#apply` ("Apply") and `#stop` ("Stop haunt"), and `ul#errors[aria-live=polite]`;
   - button `#try-ritual` ("Try the ritual") and `p#ritual-status[aria-live=polite]`.
 
@@ -778,7 +778,7 @@ New project in `playwright.config.js`: `{ name: 'playground', testDir: 'test/bro
 1. Starts `startServer({ port: 0 })` in `beforeAll` and closes it in `afterAll`.
 2. Opens the URL. A route aborts and records any request to another origin.
 3. Checks that the feed has at least 20 posts and that `document.documentElement.scrollHeight > innerHeight`.
-4. Fills `#speed` with `600` (Playwright's `fill` on a range input fires `input` and `change`) and checks `#speed-value` reads `600×`.
+4. Checks that `#speed` has the `max` attribute `"3600"` (Requirement 14.7), then fills `#speed` with `600` (Playwright's `fill` on a range input fires `input` and `change`) and checks `#speed-value` reads `600×`.
 5. Clicks `#preset-doomscroll` and expects `[data-poltergeist="fog"]` to be attached within 10 s. The fog threshold at 600× is 0.2 s.
 6. Asserts no page errors and no other-origin requests.
 
@@ -864,7 +864,7 @@ Startup compatibility (Requirements 16.6, 16.7) needs no code change: `startPolt
  * @typedef {object} PlaygroundState
  * @property {object|null} ghost          running startPoltergeist result
  * @property {object|null} lastAccepted   deep clone of the last rules document validateRules accepted
- * @property {number} speed               integer 1..600
+ * @property {number} speed               integer 1..3600
  * @property {object|null} trial          live trial ritual handle
  */
 ```
@@ -1001,7 +1001,7 @@ In this spec each property is an **invariant checked by example-based Vitest tes
 
 ### Property 20: Playground Apply is all-or-nothing and scales correctly
 
-*For any* editor content in the fixed list (each preset, a hand-written valid list, invalid JSON, rules that fail `validateRules`) and any speed in {1, 60, 600}, Apply either stops the running haunt (no `[data-poltergeist]` left), clears the errors and starts a haunt whose rules equal the content with every `threshold` and `rampTo` divided by the speed and every `match` equal to `['<all_urls>']`, or shows one error line per problem and leaves the running haunt, its effects and the editor text unchanged. A preset load failure behaves like the second case and names the preset. A speed change restarts from the last accepted rules.
+*For any* editor content in the fixed list (each preset, a hand-written valid list, invalid JSON, rules that fail `validateRules`) and any speed in {1, 60, 600, 3600}, Apply either stops the running haunt (no `[data-poltergeist]` left), clears the errors and starts a haunt whose rules equal the content with every `threshold` and `rampTo` divided by the speed and every `match` equal to `['<all_urls>']`, or shows one error line per problem and leaves the running haunt, its effects and the editor text unchanged. A preset load failure behaves like the second case and names the preset. A speed change restarts from the last accepted rules.
 
 **Validates: Requirements 14.4, 14.5, 14.6, 14.7, 14.8, 14.12**
 
@@ -1071,7 +1071,7 @@ The meter names in the steering doc's "Meter rules" equal the schema's meter enu
 | `test/packaging.test.js` | Vitest (node), temp repos | 10.9, 11.1 to 11.4, 11.6, 14.2; schema documentation (11.3); Properties 17, 18 (Doomscroll and Graveyard parts) |
 | `test/scaffolder.test.js` | Vitest (node), temp repos, `spawnSync`, about 120 s timeout | 12.1 to 12.14, 13.1 to 13.8; jsdom run of the generated `popup.js` with a `chrome` mock (12.9); VM run of the generated `content.js` (12.7, 12.14); Properties 18 (Generic part), 19 |
 | `test/playground.test.js` | Vitest (jsdom) | 14.1, 14.3 to 14.10, 14.12 (`createPlayground` with a recording API and a fake `fetch`; scans of `demo-site/` HTML and JS outside `skeleton/`); Property 20 |
-| `test/browser/playground.pw.js` | Playwright (playground project) | 14.3 (height), 14.11 |
+| `test/browser/playground.pw.js` | Playwright (playground project) | 14.3 (height), 14.7 (`max` 3600), 14.11 |
 | `test/docs.test.js` | Vitest (node) | 15.1 to 15.5; Property 21 (README part) |
 
 The Generated_App's own starter tests (`test/package.test.js`, `test/background.test.js`) are written by the Scaffolder. They run inside `test/scaffolder.test.js` against the temporary copy, and in the real repository only for apps that are actually generated there.

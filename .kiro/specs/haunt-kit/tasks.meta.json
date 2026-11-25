@@ -481,6 +481,85 @@
         "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
         "timestamp": 1795621107348
       }
+    ],
+    "10.1 Add the Playground sync target to `scripts/sync-skeleton.mjs`": [
+      {
+        "executionId": "a03cd7f9-1998-4a6c-b9cf-ad10b1e0fbe9",
+        "chatSessionId": "sess_d59327e7-27de-4af5-8dd6-dcc4b7385325",
+        "timestamp": 1795621582605
+      },
+      {
+        "executionId": "a03cd7f9-1998-4a6c-b9cf-ad10b1e0fbe9",
+        "chatSessionId": "sess_d59327e7-27de-4af5-8dd6-dcc4b7385325",
+        "timestamp": 1795621847212
+      }
+    ],
+    "10.2 Build the Playground page": [
+      {
+        "executionId": "d2fb1328-d516-46c1-adf0-ce12e8b44de8",
+        "chatSessionId": "sess_f00d3018-7124-47d2-baa2-f604044b45c1",
+        "timestamp": 1795622030135
+      },
+      {
+        "executionId": "d2fb1328-d516-46c1-adf0-ce12e8b44de8",
+        "chatSessionId": "sess_f00d3018-7124-47d2-baa2-f604044b45c1",
+        "timestamp": 1795622262366
+      }
+    ],
+    "10.3 Add the local server and the Playwright project": [
+      {
+        "executionId": "ff47cde2-435b-45a3-8fb2-a3812038acf6",
+        "chatSessionId": "sess_effe2b28-97a5-43f8-96d7-da614c562897",
+        "timestamp": 1795622297951
+      },
+      {
+        "executionId": "ff47cde2-435b-45a3-8fb2-a3812038acf6",
+        "chatSessionId": "sess_effe2b28-97a5-43f8-96d7-da614c562897",
+        "timestamp": 1795623149836
+      }
+    ],
+    "10.4 Write `test/playground.test.js` and extend the packaging drift checks": [
+      {
+        "executionId": "a1385925-80ad-4b53-9f7b-1d112d79c6be",
+        "chatSessionId": "sess_e4c5c699-4a0f-4088-b2bf-87711dd1face",
+        "timestamp": 1795624609897
+      },
+      {
+        "executionId": "a1385925-80ad-4b53-9f7b-1d112d79c6be",
+        "chatSessionId": "sess_e4c5c699-4a0f-4088-b2bf-87711dd1face",
+        "timestamp": 1795624872332
+      }
+    ],
+    "10.5 Write `test/browser/playground.pw.js`": [
+      {
+        "executionId": "88df1508-6660-4ab9-8153-def1a1a16a36",
+        "chatSessionId": "sess_858e1943-2ade-4d94-a3a0-a4e3dec91a66",
+        "timestamp": 1795625575440
+      },
+      {
+        "executionId": "88df1508-6660-4ab9-8153-def1a1a16a36",
+        "chatSessionId": "sess_858e1943-2ade-4d94-a3a0-a4e3dec91a66",
+        "timestamp": 1795625655772
+      }
+    ],
+    "10.6 Raise the speed maximum to 3600× and update the Graveyard note": [
+      {
+        "executionId": "bfa42189-84cb-414d-b04b-0c7875fef648",
+        "chatSessionId": "sess_d3fca72b-7378-441e-b979-a0babdf51013",
+        "timestamp": 1795625695237
+      },
+      {
+        "executionId": "bfa42189-84cb-414d-b04b-0c7875fef648",
+        "chatSessionId": "sess_d3fca72b-7378-441e-b979-a0babdf51013",
+        "timestamp": 1795625760185
+      }
+    ],
+    "10. Haunt Playground": [
+      {
+        "executionId": "bfa42189-84cb-414d-b04b-0c7875fef648",
+        "chatSessionId": "sess_d3fca72b-7378-441e-b979-a0babdf51013",
+        "timestamp": 1795625760260
+      }
     ]
   }
 }

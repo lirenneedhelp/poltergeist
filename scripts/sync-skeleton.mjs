@@ -3,6 +3,7 @@
 //   node scripts/sync-skeleton.mjs --check                read-only drift check for every app
 //   node scripts/sync-skeleton.mjs [--check] --app <key>  limit to one or more apps (repeatable)
 // After a build or a passing check, each processed app's package validator runs.
+// Without --app, the Playground (demo-site/skeleton/ and demo-site/presets/) is also built or checked.
 // Node built-ins only; nothing here ships in an extension.
 import { promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -144,6 +145,103 @@ export async function build(repoRoot, appKey) {
   return [...files.keys()];
 }
 
+/**
+ * The Playground sync target. Not an app: it has no registry entry, no validator and no build script of its own.
+ * presets maps a file in demo-site/presets/ to the registry key of the app whose rules.json it copies.
+ */
+export const SITE = Object.freeze({
+  dir: 'demo-site', label: 'Playground',
+  presets: Object.freeze({ 'doomscroll.json': 'doomscroll', 'graveyard.json': 'graveyard' }),
+});
+
+/** Source path of one preset, or { missing } when its app is not registered or has no rules.json. */
+function presetSource(root, appKey) {
+  const dir = Object.hasOwn(APPS, appKey) ? APPS[appKey].dir : appKey;
+  const rel = `${dir}/rules.json`;
+  return { rel, file: path.join(root, dir, 'rules.json'), registered: Object.hasOwn(APPS, appKey) };
+}
+
+/** Expected site content: Map keyed skeleton/<rel> and presets/<file>, plus the sources that could not be read. */
+async function readSiteSource(root) {
+  const map = new Map();
+  for (const [rel, buf] of await readMap(path.join(root, 'skeleton'))) map.set(`skeleton/${rel}`, buf);
+  const missingSources = [];
+  for (const [file, appKey] of Object.entries(SITE.presets)) {
+    const src = presetSource(root, appKey);
+    if (!src.registered) { missingSources.push(src.rel); continue; }
+    try {
+      map.set(`presets/${file}`, await fs.readFile(src.file));
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      missingSources.push(src.rel);
+    }
+  }
+  return { map, missingSources };
+}
+
+/** Read-only. Compares skeleton/ production files with demo-site/skeleton/, and each preset with its app's rules.json. */
+export async function checkSite(repoRoot) {
+  const root = path.resolve(repoRoot);
+  const { map: source, missingSources } = await readSiteSource(root);
+  const target = new Map();
+  for (const [rel, buf] of await readMap(path.join(root, SITE.dir, 'skeleton'))) target.set(`skeleton/${rel}`, buf);
+  for (const [rel, buf] of await readMap(path.join(root, SITE.dir, 'presets'))) target.set(`presets/${rel}`, buf);
+  // A preset whose source is missing is reported as a missing source, not compared.
+  for (const [file, appKey] of Object.entries(SITE.presets)) {
+    if (missingSources.includes(presetSource(root, appKey).rel)) target.delete(`presets/${file}`);
+  }
+  const result = compareFileMaps(source, target);
+  const diagnostics = [...missingSources.map((rel) => `missing source: ${rel}`), ...formatDiagnostics(result)];
+  return { ...result, ok: result.ok && !missingSources.length, diagnostics };
+}
+
+/** Replaces demo-site/skeleton/ and demo-site/presets/ only. Throws before writing when a preset source is missing. */
+export async function buildSite(repoRoot) {
+  const root = path.resolve(repoRoot);
+  const targets = { skeleton: path.join(root, SITE.dir, 'skeleton'), presets: path.join(root, SITE.dir, 'presets') };
+  for (const [name, target] of Object.entries(targets)) {
+    const rel = path.relative(root, target).replaceAll('\\', '/');
+    if (rel !== `${SITE.dir}/${name}` || path.isAbsolute(rel)) throw new Error(`Refusing to replace unexpected target: ${target}`);
+  }
+  const { map, missingSources } = await readSiteSource(root); // read everything first so a failure leaves the copies intact
+  if (missingSources.length) throw new Error(missingSources.map((rel) => `missing source: ${rel}`).join('; '));
+  await fs.rm(targets.skeleton, { recursive: true, force: true });
+  await fs.rm(targets.presets, { recursive: true, force: true });
+  const files = [];
+  const presets = [];
+  for (const [key, buf] of map) {
+    const [kind, ...rest] = key.split('/');
+    const dest = path.join(targets[kind], ...rest);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.writeFile(dest, buf);
+    (kind === 'skeleton' ? files : presets).push(rest.join('/'));
+  }
+  return { files, presets };
+}
+
+async function processSite(repoRoot, checkOnly) {
+  const { dir, label } = SITE;
+  if (checkOnly) {
+    const result = await checkSite(repoRoot);
+    if (!result.ok) {
+      console.error(`${label} copies are out of sync (run: npm run build:skeletons):`);
+      for (const line of result.diagnostics) console.error(`  ${line}`);
+      return false;
+    }
+    console.log(`${label} copies are in sync.`);
+    return true;
+  }
+  let written;
+  try {
+    written = await buildSite(repoRoot);
+  } catch (e) {
+    console.error(`${label} copies could not be built: ${e.message}`);
+    return false;
+  }
+  console.log(`Synchronized ${written.files.length} file(s) into ${dir}/skeleton/ and ${written.presets.length} preset(s) into ${dir}/presets/.`);
+  return true;
+}
+
 /** Dynamic import keeps validators off the static graph (they import the sync modules) and loads only processed apps. */
 async function runValidator(repoRoot, appKey) {
   const { label, validator } = appOf(appKey);
@@ -212,6 +310,8 @@ export async function main(args = process.argv.slice(2), repoRoot = REPO_ROOT) {
   for (const appKey of parsed.apps) {
     if (!(await processApp(repoRoot, appKey, parsed.checkOnly))) ok = false;
   }
+  // The Playground is processed only when every app is (no --app given).
+  if (!args.includes('--app') && !(await processSite(repoRoot, parsed.checkOnly))) ok = false;
   return ok ? 0 : 1;
 }
 

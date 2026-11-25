@@ -4,7 +4,7 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { APPS, REPO_ROOT, main } from '../scripts/sync-skeleton.mjs';
+import { APPS, REPO_ROOT, SITE, checkSite, main } from '../scripts/sync-skeleton.mjs';
 import { validatePackage as validateDoomscroll } from '../scripts/validate-doomscroll-package.mjs';
 import { validatePackage as validateGraveyard } from '../scripts/validate-graveyard-package.mjs';
 
@@ -129,6 +129,96 @@ describe('Generated_Skeletons', () => {
         expect(stderr).toContain(diagnostic);
       });
     }
+  }
+});
+
+describe('Playground copies (demo-site/skeleton/ and demo-site/presets/)', () => {
+  const PRESETS = { 'doomscroll.json': DOOM, 'graveyard.json': GRAVE };
+
+  // Haunt Kit invariant 17: Generated copies are exact
+  it('the committed Playground copies are in sync in the real repository', async () => {
+    const res = await checkSite(REPO_ROOT);
+    expect(res.diagnostics).toEqual([]);
+    expect(res.ok).toBe(true);
+  });
+
+  // Haunt Kit invariant 17: Generated copies are exact
+  it('build:skeletons makes demo-site/skeleton/ equal the Skeleton and each Preset equal its app rules.json', async () => {
+    const root = await makeRepo();
+    // Stale content the build must replace.
+    await put(root, `${SITE.dir}/skeleton/effects/ritual.js`, 'stale\n');
+    await put(root, `${SITE.dir}/skeleton/test/leftover.test.js`, 'stale\n');
+    await put(root, `${SITE.dir}/presets/doomscroll.json`, '[]\n');
+    await put(root, `${SITE.dir}/index.html`, 'hand-written\n');
+
+    const { code, stderr } = await run([], root);
+    expect(stderr).toBe('');
+    expect(code).toBe(0);
+
+    const production = new Map([...(await readTree(abs(root, 'skeleton')))].filter(([rel]) => !rel.startsWith('test/')));
+    const target = await readTree(abs(root, `${SITE.dir}/skeleton`));
+    expect([...target.keys()].sort()).toEqual([...production.keys()].sort());
+    for (const [rel, buf] of production) expect(buf.equals(target.get(rel)), `${SITE.dir}/skeleton/${rel}`).toBe(true);
+
+    const presets = await readTree(abs(root, `${SITE.dir}/presets`));
+    expect([...presets.keys()].sort()).toEqual(Object.keys(PRESETS).sort());
+    for (const [file, dir] of Object.entries(PRESETS)) {
+      const src = await fs.readFile(abs(root, `${dir}/rules.json`));
+      expect(src.equals(presets.get(file)), file).toBe(true);
+    }
+    // Hand-written Playground files are left alone.
+    expect(await fs.readFile(abs(root, `${SITE.dir}/index.html`), 'utf8')).toBe('hand-written\n');
+    expect((await run(['--check'], root)).code).toBe(0);
+  });
+
+  // Haunt Kit invariant 17: Generated copies are exact
+  const SITE_DRIFT = [
+    {
+      name: 'one changed line in the Playground skeleton/effects/ritual.js',
+      diagnostic: 'changed: skeleton/effects/ritual.js',
+      mutate: async (root) => {
+        const rel = `${SITE.dir}/skeleton/effects/ritual.js`;
+        const lines = (await fs.readFile(abs(root, rel), 'utf8')).split('\n');
+        lines[0] = `${lines[0]} // drift`;
+        await fs.writeFile(abs(root, rel), lines.join('\n'));
+      },
+    },
+    {
+      name: 'a missing Playground skeleton/ritual/candle-path.js',
+      diagnostic: 'missing: skeleton/ritual/candle-path.js',
+      mutate: (root) => fs.rm(abs(root, `${SITE.dir}/skeleton/ritual/candle-path.js`)),
+    },
+    {
+      name: 'an extra file in the Playground skeleton',
+      diagnostic: 'extra:   skeleton/effects/extra.js',
+      mutate: (root) => put(root, `${SITE.dir}/skeleton/effects/extra.js`, 'export const extra = 1;\n'),
+    },
+    {
+      name: 'a changed Graveyard preset',
+      diagnostic: 'changed: presets/graveyard.json',
+      mutate: (root) => editJson(root, `${SITE.dir}/presets/graveyard.json`, (doc) => { doc.rules[0].trigger.threshold = 1; }),
+    },
+    {
+      name: 'a missing Doomscroll preset',
+      diagnostic: 'missing: presets/doomscroll.json',
+      mutate: (root) => fs.rm(abs(root, `${SITE.dir}/presets/doomscroll.json`)),
+    },
+    {
+      name: 'a changed app rules.json without a rebuild',
+      diagnostic: 'changed: presets/doomscroll.json',
+      mutate: (root) => editJson(root, `${DOOM}/rules.json`, (doc) => { doc.rules[0].description = 'edited'; }),
+    },
+  ];
+  for (const { name, diagnostic, mutate } of SITE_DRIFT) {
+    it(`check:skeletons fails and names the file for ${name}`, async () => {
+      const root = await makeRepo();
+      expect((await run([], root)).code).toBe(0);
+      await mutate(root);
+      const { code, stderr } = await run(['--check'], root);
+      expect(code).not.toBe(0);
+      expect(stderr).toContain(`${SITE.label} copies are out of sync (run: npm run build:skeletons):`);
+      expect(stderr).toContain(diagnostic);
+    });
   }
 });
 

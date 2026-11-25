@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Haunt Playground</title>
+  <link rel="stylesheet" href="playground.css">
+  <script type="module" src="playground.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Haunt Playground</h1>
+    <p>Edit Poltergeist rules, speed up time and watch this fake feed get haunted. No extension needed.</p>
+  </header>
+
+  <main id="feed" class="feed" aria-label="Fake feed"></main>
+
+  <aside id="panel" class="panel" popover="manual" aria-label="Playground controls">
+    <section class="group">
+      <h2>Presets</h2>
+      <div class="row">
+        <button type="button" id="preset-doomscroll">Doomscroll</button>
+        <button type="button" id="preset-graveyard">Tab Graveyard</button>
+      </div>
+      <p class="note">The Tab Graveyard preset decays only while this tab is hidden. Switch to another tab, then come back. At 3600× the tombstone appears after about 24 seconds away.</p>
+    </section>
+
+    <section class="group">
+      <h2>Speed</h2>
+      <label for="speed">Time speed</label>
+      <div class="row">
+        <input id="speed" type="range" min="1" max="3600" step="1" value="1">
+        <output id="speed-value" for="speed">1×</output>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>Rules</h2>
+      <label for="rules">Rules JSON</label>
+      <textarea id="rules" spellcheck="false" rows="14"></textarea>
+      <div class="row">
+        <button type="button" id="apply">Apply</button>
+        <button type="button" id="stop">Stop haunt</button>
+      </div>
+      <ul id="errors" class="errors" aria-live="polite"></ul>
+    </section>
+
+    <section class="group">
+      <h2>Ritual</h2>
+      <button type="button" id="try-ritual">Try the ritual</button>
+      <p id="ritual-status" class="note" aria-live="polite"></p>
+    </section>
+  </aside>
+</body>
+</html>

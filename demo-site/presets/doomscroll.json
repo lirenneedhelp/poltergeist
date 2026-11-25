@@ -1,0 +1,60 @@
+{
+  "rules": [
+    {
+      "id": "doomscroll-fog",
+      "description": "Feeds slowly fade into blurred grayscale fog.",
+      "enabled": true,
+      "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
+      "trigger": { "meter": "timeOnSite", "threshold": 120, "rampTo": 300 },
+      "effect": { "type": "fog", "params": { "maxBlur": 5, "maxGrayscale": 0.8, "tint": "#9eb2a4", "noise": 0.0, "mist": 0.5, "driftMs": 20000 } },
+      "undo": { "mode": "fade", "durationMs": 400 }
+    },
+    {
+      "id": "doomscroll-flicker",
+      "description": "The page begins to flicker.",
+      "enabled": true,
+      "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
+      "trigger": { "meter": "timeOnSite", "threshold": 300, "rampTo": 600 },
+      "effect": { "type": "flicker", "params": { "maxDepth": 0.22, "periodMs": 1600 } },
+      "undo": { "mode": "instant" }
+    },
+    {
+      "id": "doomscroll-rot",
+      "description": "Page text decays into glyph rot.",
+      "enabled": true,
+      "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
+      "trigger": { "meter": "timeOnSite", "threshold": 600, "rampTo": 900 },
+      "effect": { "type": "rot", "params": { "maxFraction": 0.55, "glyphs": "▓▒░█" } },
+      "undo": { "mode": "instant" }
+    },
+    {
+      "id": "doomscroll-block",
+      "description": "The page is covered with a break message.",
+      "enabled": true,
+      "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
+      "trigger": { "meter": "timeOnSite", "threshold": 1200, "rampTo": 1500 },
+      "effect": {
+        "type": "block",
+        "params": {
+          "maxOpacity": 0.96,
+          "blockAt": 0.8,
+          "message": "You have scrolled long enough. Close this tab and take a break.",
+          "detail": "You lost {duration} to this feed.",
+          "durationMeter": "timeOnSite",
+          "figure": "ghost",
+          "fadeInMs": 1500
+        }
+      },
+      "undo": { "mode": "fade", "durationMs": 600 }
+    },
+    {
+      "id": "doomscroll-ritual",
+      "description": "A candle ritual stands between you and the feed.",
+      "enabled": true,
+      "match": ["https://www.youtube.com/*", "https://x.com/*", "https://www.instagram.com/*"],
+      "trigger": { "meter": "timeOnSite", "threshold": 1500 },
+      "effect": { "type": "ritual", "params": { "size": 5, "candles": 5, "sound": false } },
+      "undo": { "mode": "fade", "durationMs": 600 }
+    }
+  ]
+}

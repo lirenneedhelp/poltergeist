@@ -11,7 +11,8 @@
     "check:skeletons": "node scripts/sync-skeleton.mjs --check",
     "pretest": "npm run check:graveyard",
     "test": "npm run check:doomscroll && vitest --run",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "playground": "node scripts/serve-playground.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
