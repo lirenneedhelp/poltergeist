@@ -141,7 +141,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Run `npm run build:skeletons` so every Generated_Skeleton matches the final `ritual.js`
     - _Requirements: 9.9, 9.10, 9.11, 11.1_
 
-- [ ] 6. Checkpoint - Ensure the skeleton and authoring tests pass
+- [x] 6. Checkpoint - Ensure the skeleton and authoring tests pass
   - Run `npx vitest --run skeleton/test test/authoring.test.js test/rules-hook.test.js test/docs.test.js`. The full `npm test` package checks pass only after task 7.2 adds the two resource strings. Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 7. Doomscroll finale and packaging
