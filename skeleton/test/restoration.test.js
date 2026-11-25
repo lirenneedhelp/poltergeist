@@ -76,6 +76,141 @@ describe('ritual: apply then undo', () => {
   });
 });
 
+// Haunt Kit invariant 10: Undo reaches the Restored_State (ending and duration cases)
+describe('ritual: ending and duration cases', () => {
+  const ritual = builtinEffects.ritual;
+  const hostCount = () => document.querySelectorAll('div[data-poltergeist="ritual"]').length;
+  const trusted = { isTrusted: true };
+
+  const start = (reduced = false, params = {}) => {
+    const env = { ...makeEnv(reduced), onAction: vi.fn() };
+    const before = snap();
+    let h;
+    for (const i of INTENSITIES) h = ritual.apply(env, params, i, h);
+    return { env, before, h };
+  };
+
+  // Drive the path to completion through the Hint handler, one cell per call.
+  const finish = (h) => {
+    const total = h.board.size * h.board.size;
+    for (let k = 0; k < total && !h.complete; k += 1) h.on.hint(trusted);
+    expect(h.complete).toBe(true);
+  };
+
+  // Haunt Kit invariant 10: undo mid-Banishing_Ending restores the page and cancels the action
+  it('undo 600 ms into the 1200 ms Banishing_Ending restores the page and makes no Exorcised_Action', () => {
+    const { env, before, h } = start(false);
+    finish(h);
+    vi.advanceTimersByTime(600);
+    expect(env.onAction).not.toHaveBeenCalled();
+    ritual.undo(h, { durationMs: 0 });
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+    vi.advanceTimersByTime(2000);
+    expect(env.onAction).not.toHaveBeenCalled();
+    expect(snap()).toEqual(before);
+  });
+
+  // Haunt Kit invariant 10: a zero, absent or non-finite-positive duration is instant
+  it.each([
+    ['0', { durationMs: 0 }],
+    ['absent (no options)', undefined],
+    ['absent (empty options)', {}],
+    ['-5', { durationMs: -5 }],
+    ['NaN', { durationMs: NaN }],
+    ['Infinity', { durationMs: Infinity }],
+  ])('durationMs %s restores the page before undo returns', (_label, opts) => {
+    const { env, before, h } = start(false);
+    if (opts === undefined) ritual.undo(h);
+    else ritual.undo(h, opts);
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+    vi.advanceTimersByTime(2000);
+    expect(snap()).toEqual(before);
+    expect(env.onAction).not.toHaveBeenCalled();
+  });
+
+  // Haunt Kit invariant 10: a positive duration keeps the host until it ends
+  it.each([false, true])('host stays 1 ms before durationMs 500 ends, then is gone (reducedMotion=%s)', (reduced) => {
+    const { before, h } = start(reduced);
+    ritual.undo(h, { durationMs: 500 });
+    vi.advanceTimersByTime(499);
+    expect(hostCount()).toBe(1);
+    vi.advanceTimersByTime(51);
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+  });
+
+  // Haunt Kit invariant 10: undo on a fading handle leaves the fade alone or finishes it
+  it('a positive undo while fading changes nothing; an instant undo finishes the fade', () => {
+    const { env, before, h } = start(false);
+    ritual.undo(h, { durationMs: 500 });
+    const fading = snap();
+    expect(() => ritual.undo(h, { durationMs: 200 })).not.toThrow();
+    expect(snap()).toEqual(fading);
+    vi.advanceTimersByTime(499);
+    expect(hostCount()).toBe(1);
+    ritual.undo(h, { durationMs: 0 });
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+    expect(env.onAction).not.toHaveBeenCalled();
+  });
+
+  // Haunt Kit invariant 10: a second undo is a no-op
+  it('a second undo after the ritual is restored makes no DOM change, no error and no action', () => {
+    const { env, before, h } = start(false);
+    finish(h);
+    ritual.undo(h, { durationMs: 0 });
+    expect(snap()).toEqual(before);
+    expect(() => ritual.undo(h, { durationMs: 0 })).not.toThrow();
+    expect(() => ritual.undo(h, { durationMs: 300 })).not.toThrow();
+    vi.advanceTimersByTime(2000);
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+    expect(env.onAction).not.toHaveBeenCalled();
+  });
+
+  // Haunt Kit invariant 10: undo closes the chime's audio context before it returns
+  describe('sound true', () => {
+    let contexts;
+    beforeEach(() => {
+      contexts = [];
+      const param = () => ({ setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {} });
+      window.AudioContext = class {
+        constructor() {
+          this.currentTime = 0;
+          this.destination = {};
+          this.close = vi.fn(() => Promise.resolve());
+          this.osc = { type: '', frequency: param(), connect() {}, start() {}, stop: vi.fn() };
+          contexts.push(this);
+        }
+        createOscillator() {
+          return this.osc;
+        }
+        createGain() {
+          return { gain: param(), connect() {} };
+        }
+      };
+    });
+    afterEach(() => {
+      delete window.AudioContext;
+    });
+
+    it.each([0, 300])('undo with durationMs %s closes the audio context before returning', (d) => {
+      const { env, before, h } = start(false, { sound: true });
+      finish(h);
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].close).not.toHaveBeenCalled();
+      ritual.undo(h, { durationMs: d });
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(2000);
+      expect(snap()).toEqual(before);
+      expect(hostCount()).toBe(0);
+      expect(env.onAction).not.toHaveBeenCalled();
+    });
+  });
+});
+
 // Haunt Kit invariant 11: Reduced_Motion means no motion
 describe('ritual: reduced motion', () => {
   const ritual = builtinEffects.ritual;

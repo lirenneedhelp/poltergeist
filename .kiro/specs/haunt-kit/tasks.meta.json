@@ -268,6 +268,61 @@
         "chatSessionId": "sess_47d5f7e4-4422-4099-8caf-da60b3eda630",
         "timestamp": 1795594060921
       }
+    ],
+    "5.8 Write `skeleton/test/ritual.test.js`": [
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594128440
+      },
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594763628
+      }
+    ],
+    "5.9 Extend the Restoration_Suite for the ending and duration cases": [
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594131717
+      },
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594764603
+      }
+    ],
+    "5.10 Write `skeleton/test/ritual-compat.test.js`": [
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594132099
+      },
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594765432
+      }
+    ],
+    "5.11 Hold_Ritual decision point and final rebuild": [
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594769528
+      },
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594824628
+      }
+    ],
+    "5. Ritual effect, created through the Effect_Hook": [
+      {
+        "executionId": "02dc0a2c-c4b0-473f-9b22-a2c021a04b2b",
+        "chatSessionId": "sess_ae890fad-b8ab-449d-b312-39ca918e55a0",
+        "timestamp": 1795594824696
+      }
     ]
   }
 }

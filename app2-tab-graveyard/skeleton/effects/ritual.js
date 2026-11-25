@@ -9,9 +9,10 @@
 // the Reset and Hint buttons, and ends in update(). A path that checkPath
 // accepts calls complete(): with motion the ghost fades for 1200 ms and a
 // one-shot timer then reports env.onAction('exorcised'); under Reduced_Motion
-// the action is reported in the completing handler. The Web Audio chime is
-// added by a later task; its hook is marked below. undo clears the ending
-// timer and animation, so an undone ritual never reports the action.
+// the action is reported in the completing handler. With `sound: true` the
+// first time candle N lights plays one generated Web Audio chime. undo clears
+// the ending timer and animation and closes the chime's audio context, so an
+// undone ritual never reports the action and leaves no audio running.
 
 import { clamp01, teardown, handleState, LIVE, numberIn } from './util.js';
 import { generateBoard, checkPath } from '../ritual/candle-path.js';
@@ -162,7 +163,58 @@ function render(handle) {
 function update(handle) {
   handle.lit = countLit(handle);
   render(handle);
-  // Task 5.7 hook: start the chime the first time lit reaches N when handle.sound is true.
+  if (handle.sound === true && !handle.chimed && handle.lit === handle.board.candles.length) {
+    startChime(handle);
+  }
+}
+
+// ---- Web Audio chime (design section 2.7) ----
+
+const CHIME_S = 0.9; // the oscillator stops at most 1 s after it starts (8.1)
+
+/**
+ * Play one generated chime. Runs once per handle: `chimed` is set first, so a
+ * failure or a later re-light never retries (8.2). No audio file is loaded
+ * (8.4). Every failure is logged and swallowed so completion proceeds (8.5).
+ */
+function startChime(handle) {
+  handle.chimed = true;
+  const win = handle.env.window;
+  const AC = win ? win.AudioContext || win.webkitAudioContext : undefined;
+  if (typeof AC !== 'function') {
+    console.error('[poltergeist] ritual sound: Web Audio API unavailable');
+    return;
+  }
+  let ctx = null;
+  try {
+    ctx = new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const t = ctx.currentTime;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, t);
+    osc.frequency.linearRampToValueAtTime(990, t + 0.25);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + CHIME_S);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    handle.audio = { ctx, osc }; // set before start so a throwing start is closed by stopChime
+    osc.start(t);
+    osc.stop(t + CHIME_S);
+  } catch (err) {
+    console.error('[poltergeist] ritual sound:', err);
+    // a context was made but the chime failed: close it now so nothing is left open
+    if (handle.audio) stopChime(handle);
+    else if (ctx) {
+      try {
+        const closing = ctx.close();
+        if (closing && typeof closing.catch === 'function') closing.catch(() => {});
+      } catch {
+        // closing is best effort
+      }
+    }
+  }
 }
 
 // ---- Completion and Banishing_Ending (design section 2.6) ----

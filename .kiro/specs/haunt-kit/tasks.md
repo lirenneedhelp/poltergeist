@@ -78,7 +78,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Add examples (invariant 13): `reset('timeOnSite')` returns true and `values().timeOnSite` is 0; `scrollDistance`, `timeSinceActive`, `bogus` and `undefined` return false with `values()` deep-equal to before
     - _Requirements: 10.8, 16.2, 16.8_
 
-- [ ] 5. Ritual effect, created through the Effect_Hook
+- [x] 5. Ritual effect, created through the Effect_Hook
   - [x] 5.1 Create `skeleton/effects/ritual.js` as a new file in Kiro so the Effect_Hook fires
     - Create the file with Kiro's file-create tool (not from a terminal or git), so the `PostFileCreate` Effect_Hook runs; record in `KIRO_FILES.md` that the hook prompt ran and what it changed, or that it did not fire and the five steps were done by hand
     - First version: `description`, param resolution table of design section 2.2, `apply` (intensity clamp, opacity `round3(maxOpacity × i)`, `pointer-events` by `blockAt`, one-time focus of the Board, heading and instructions update on a live handle), the Ritual_Host with open shadow root and zero light-DOM children, the static stylesheet, Ritual_Veil, Board grid, trail, status line with `aria-live="polite"`, Reset and Hint buttons, and `render` (candle `data-lit` and `aria-label`, status text, veil opacity `round3(0.85 × (N − Lit_Count) / (N − 1))`)
@@ -120,22 +120,22 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - `stopChime` in `begin` and `finish` stops the oscillator and closes the context before `undo` returns, swallowing failures
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
 
-  - [ ] 5.8 Write `skeleton/test/ritual.test.js`
+  - [x] 5.8 Write `skeleton/test/ritual.test.js`
     - jsdom tests with `makeEnv`, `installAnimateSpy` and fake timers; trusted input through `handle.on.*` with `{ isTrusted: true }` objects
     - Invariant 4 (apply opacity, pointer-events and param defaults over fixed lists; live-handle stability with different `size` and `candles`); invariant 5 (move acceptance over scripted states and targets, keyboard and drag agree); invariant 6 (render matches path for N in 2, 5, 9); invariant 7 (Reset and Hint; Hint completes after `size² − 1` activations); invariant 8 (exactly one `exorcised` at 1200 ms, none at 1199 ms, same-handler under Reduced_Motion, none after undo at 0, 600 or 1199 ms); invariant 9 (untrusted `pointerdown`, `pointermove`, `pointerover`, `keydown` arrows, Space and Enter, and `click` on a Cell, the Board, Reset and Hint change nothing); invariant 11 (no motion under Reduced_Motion); invariant 12 (stubbed `AudioContext`: one context for `sound` true, none for false or `"true"`, completion still fires when the constructor throws, `undo` closes the context)
     - Source scans of `ritual.js` for `innerHTML`, `url(`, `chrome.`, `window.close`, `location`, `beforeunload` and audio file extensions; DOM checks for the light-DOM-free host, colour limits and no "zip"
     - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.10, 6.11, 6.12, 6.13, 6.14, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 9.8_
 
-  - [ ] 5.9 Extend the Restoration_Suite for the ending and duration cases
+  - [x] 5.9 Extend the Restoration_Suite for the ending and duration cases
     - In `skeleton/test/restoration.test.js` add `undo` 600 ms into the 1200 ms Banishing_Ending (Restored_State, no ritual host, no Exorcised_Action after advancing 2000 ms more), durations 0, absent, −5, `NaN` and `Infinity`, the host still present 1 ms before a positive duration ends, a second `undo` as a no-op, and `sound` true with a stubbed audio context closed before `undo` returns (invariant 10)
     - _Requirements: 8.6, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
 
-  - [ ] 5.10 Write `skeleton/test/ritual-compat.test.js`
+  - [x] 5.10 Write `skeleton/test/ritual-compat.test.js`
     - `startPoltergeist` with a registry without `ritual` and rules without `ritual` starts and applies and undoes as before
     - Rules that use `ritual` with such a registry throw `Invalid Poltergeist rules:` with `rules[<i>].effect.type: must be one of [fog, flicker, rot, block, tombstone]`, with no meter listeners and no effect DOM created
     - _Requirements: 16.6, 16.7_
 
-  - [ ] 5.11 Hold_Ritual decision point and final rebuild
+  - [x] 5.11 Hold_Ritual decision point and final rebuild
     - Run `npx vitest --run skeleton/test`. If any test for Requirements 5 to 8 still fails, replace the Board part of `ritual.js` with the Hold_Ritual of design section 2.11 (three candles, one hold button, chained one-shot 1000 ms timers, release unlights all, completion at 3000 ms), keep every other part, adapt the Board-specific tests to the Hold_Ritual, and record the decision and its reason in `KIRO_FILES.md` and in `design.md`
     - If every test passes, write no Hold_Ritual code
     - Run `npm run build:skeletons` so every Generated_Skeleton matches the final `ritual.js`
