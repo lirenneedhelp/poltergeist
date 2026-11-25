@@ -251,6 +251,11 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - `demo-site/index.html` and `playground-core.js` are not Generated_Skeleton or Preset files, so no generated copy changes; run `npm run check:skeletons` to confirm it still passes and do not edit `demo-site/skeleton/` or `demo-site/presets/` by hand
     - _Requirements: 14.7, 14.8_
 
+  - [x] 10.7 Add the GitHub Pages deploy workflow
+    - Create `.github/workflows/pages.yml` that runs on every push to `main`, uploads `demo-site/` with `actions/upload-pages-artifact` and deploys it with `actions/deploy-pages` (permissions `contents: read`, `pages: write`, `id-token: write`; `github-pages` environment)
+    - Change no other file
+    - _Requirements: 14.1_
+
 - [ ] 11. README guides
   - [ ] 11.1 Add the two README guides
     - `## Build your own haunt in 10 minutes` with the five numbered steps of Requirement 15.1, each command in a code block, including `npm run new-haunt <name> -- --hosts <pattern,...>` and `npm run playground`

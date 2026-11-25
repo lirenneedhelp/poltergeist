@@ -28,7 +28,7 @@ Change markers: `AUTHORING` changes `.kiro/`; `SKELETON` changes shared code und
 
 Verification: Vitest example-based unit tests, the existing restoration and browser suites, new Playwright tests for the Doomscroll finale and the Playground, and a manual load of a generated app in Chrome. This spec adds no property-based tests. Where a criterion says "for each of a fixed list of seeds", the test loops over a hard-coded list of example seeds.
 
-Out of scope: changes to the behaviour of Tab Graveyard, Fog, Flicker, Rot, Block or Tombstone; changes to `engine.js` or `match.js`; rituals other than Candle Path and the Hold_Ritual fallback; publishing the Playground (the page is only made ready for GitHub Pages); Chrome Web Store packaging.
+Out of scope: changes to the behaviour of Tab Graveyard, Fog, Flicker, Rot, Block or Tombstone; changes to `engine.js` or `match.js`; rituals other than Candle Path and the Hold_Ritual fallback; Chrome Web Store packaging.
 
 ## Glossary
 
