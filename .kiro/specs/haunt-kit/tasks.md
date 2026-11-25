@@ -28,28 +28,28 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Check the exit code is non-zero when the mapped check fails and 0 otherwise, that the saved file's bytes are unchanged, and that an entry added to a temporary repository's registry is found with no hook edit
     - _Requirements: 3.2, 3.4, 3.5, 3.6, 3.7, 3.8_
 
-- [ ] 2. Steering doc, Effect_Hook and README seed
-  - [ ] 2.1 Write the Steering_Doc `.kiro/steering/haunt-authoring.md`
+- [x] 2. Steering doc, Effect_Hook and README seed
+  - [x] 2.1 Write the Steering_Doc `.kiro/steering/haunt-authoring.md`
     - Front matter `inclusion: fileMatch` and `fileMatchPattern: ["skeleton/effects/**", "skeleton/ritual/**", "**/rules.json"]`
     - Sections "Effect contract" (items a to j), "Meter rules" (items a to d, meters with units, `timeAway` and `timeOnSite` resettable), "Ritual contract" (items a to f) and "Adding an effect" (the six numbered steps), each rule one list item, worded as in Requirement 1
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-  - [ ] 2.2 Create the Effect_Hook and document both hooks
+  - [x] 2.2 Create the Effect_Hook and document both hooks
     - Create `.kiro/hooks/new-effect.json` (`v1`, one `PostFileCreate` hook with an `agent` action) with the matcher and the fixed prompt from design section 1.2, including the stop instruction for files that export no `apply`
     - Add `## new-effect.json` and `## check-rules-on-save.json` sections to `.kiro/hooks/README.md`: file names, accepted and excluded paths, the `poltergeist` folder-name convention, and that the Effect_Hook fires only on file-create events Kiro emits
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ] 2.3 Create the README seed
+  - [x] 2.3 Create the README seed
     - Create `README.md` with a short introduction and an `## Effects` section listing each effect registered in `skeleton/effects/index.js` as ``- `<name>`: <description>``, with text equal to its `description` export
     - _Requirements: 15.5_
 
-  - [ ] 2.4 Write `test/authoring.test.js`
+  - [x] 2.4 Write `test/authoring.test.js`
     - Steering doc (invariant 21, steering part): front matter patterns equal Requirement 1.1; the meter names under "Meter rules" equal the schema's meter set; the resettable names equal the names for which `meters.reset` returns true (task 4.1 runs in an earlier wave)
     - Effect_Hook (invariant 15): trigger `PostFileCreate`, action type `agent`, matcher contains no lookaround, matches `skeleton/effects/<name>.js` with `/` and `\`, `./`-prefixed and absolute Windows and POSIX paths; rejects one example each for `skeleton/test/`, `skeleton/ritual/`, `app1-doomscroll/skeleton/effects/`, `demo-site/skeleton/effects/`, a subfolder of `skeleton/effects/` and a non-`.js` file; prompt lists the five steps in order and contains the stop sentence
     - Hooks README has both sections
     - _Requirements: 1.6, 2.6, 2.5_
 
-  - [ ] 2.5 Write `test/docs.test.js` with the effect-list check
+  - [x] 2.5 Write `test/docs.test.js` with the effect-list check
     - Assert the README `## Effects` lines map every registered effect name to its `description` export and list no unregistered effect
     - _Requirements: 15.5_
 
@@ -69,7 +69,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - _Requirements: 4.8, 4.9, 4.11_
 
 - [ ] 4. Make `timeOnSite` resettable
-  - [ ] 4.1 Extend `meters.reset` in `skeleton/meters.js`
+  - [x] 4.1 Extend `meters.reset` in `skeleton/meters.js`
     - Accept `timeOnSite` (set to 0, return true); keep `timeAway` as is; return false and change nothing for `scrollDistance`, `timeSinceActive` and unknown names
     - _Requirements: 10.8, 16.8_
 

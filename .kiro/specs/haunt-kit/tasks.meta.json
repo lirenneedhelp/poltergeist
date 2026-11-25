@@ -43,6 +43,85 @@
         "chatSessionId": "sess_617122e6-cb88-42cd-9e63-c9db62246d9e",
         "timestamp": 1795538573630
       }
+    ],
+    "2.1 Write the Steering_Doc `.kiro/steering/haunt-authoring.md`": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591160061
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591480320
+      }
+    ],
+    "2.2 Create the Effect_Hook and document both hooks": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591160119
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591481305
+      }
+    ],
+    "2.3 Create the README seed": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591160197
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591481745
+      }
+    ],
+    "2.5 Write `test/docs.test.js` with the effect-list check": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591496364
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591558720
+      }
+    ],
+    "4.1 Extend `meters.reset` in `skeleton/meters.js`": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591631414
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591703248
+      }
+    ],
+    "2.4 Write `test/authoring.test.js`": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591703626
+      },
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591841528
+      }
+    ],
+    "2. Steering doc, Effect_Hook and README seed": [
+      {
+        "executionId": "ce3f771d-c2a2-4f1a-b37d-4037437ca026",
+        "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
+        "timestamp": 1795591841595
+      }
     ]
   }
 }

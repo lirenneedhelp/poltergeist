@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Wire up a new skeleton effect",
+      "trigger": "PostFileCreate",
+      "description": "When Kiro creates skeleton/effects/<name>.js, finish the wiring the haunt-authoring steering doc requires.",
+      "matcher": "^(?:.*[\\\\/]poltergeist[\\\\/]|\\.[\\\\/])?skeleton[\\\\/]effects[\\\\/][^\\\\/]+\\.js$",
+      "action": {
+        "type": "agent",
+        "prompt": "Kiro created a file directly under skeleton/effects/. This hook matches only skeleton/effects/<name>.js, so the created file is the skeleton/effects/<name>.js file you just created, and <name> is its base name without \".js\". Follow .kiro/steering/haunt-authoring.md.\nFirst open that file. If it does not export a function named apply (for example skeleton/effects/util.js or another helper module), stop now and do not create, edit or delete any file.\nOtherwise do these steps in order:\n1. Register the effect in skeleton/effects/index.js under <name>, unless <name> is already registered.\n2. Document the effect and each of its params, with default and allowed range, in skeleton/rule-schema.json under definitions[\"params-<name>\"]. Do not change effect.properties.type.\n3. Add a restoration test for the effect to skeleton/test/restoration.test.js (and add <name> to the registry list asserted there), and add a reduced-motion test for the effect.\n4. Run npm run build:skeletons to rebuild every generated skeleton. Never edit app*/skeleton/ or demo-site/skeleton/ by hand.\n5. Add the effect to the effect list in README.md, with its registered name and its description export."
+      }
+    }
+  ]
+}

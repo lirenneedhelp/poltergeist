@@ -105,8 +105,18 @@ export function createMeters({ window, document, now = () => performance.now(), 
           : Math.max(heldAway, Math.max(0, lastTick - awayStartedAt) / 1000),
       };
     },
-    /** Reset a resettable meter. Only timeAway is resettable; returns false for any other name. */
+    /**
+     * Reset a resettable meter and return true. Resettable meters:
+     *   timeOnSite  accumulated seconds go back to 0 and count up again from there.
+     *   timeAway    held absence goes back to 0; an absence in progress restarts from now.
+     * Returns false and changes nothing for any other name (scrollDistance,
+     * timeSinceActive, unknown names, undefined).
+     */
     reset(name) {
+      if (name === 'timeOnSite') {
+        timeOnSite = 0;
+        return true;
+      }
       if (name !== 'timeAway') return false;
       heldAway = 0;
       if (awayStartedAt !== null) awayStartedAt = now();
