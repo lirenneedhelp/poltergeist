@@ -71,11 +71,11 @@ describe('content.js classic loader shape', () => {
 });
 
 describe('doomscrollCreateDemoProfile', () => {
-  it('produces the 2-5 / 5-10 / 10-15 / 20-25 second demo stages that validate', () => {
+  it('produces the 2-5 / 5-10 / 10-15 / 20-25 / 25 second demo stages that validate', () => {
     const { doomscrollCreateDemoProfile } = loadContent();
     const before = plain(NORMAL);
     const demo = plain(doomscrollCreateDemoProfile(NORMAL));
-    expect(demo.rules.map((r) => [r.trigger.threshold, r.trigger.rampTo])).toEqual([[2, 5], [5, 10], [10, 15], [20, 25]]);
+    expect(demo.rules.map((r) => [r.trigger.threshold, r.trigger.rampTo])).toEqual([[2, 5], [5, 10], [10, 15], [20, 25], [25, undefined]]);
     expect(validateRules(demo, builtinEffects).valid).toBe(true);
     expect(NORMAL).toEqual(before);
   });

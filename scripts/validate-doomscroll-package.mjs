@@ -24,6 +24,7 @@ export const EXPECTED_RULES = Object.freeze([
   { id: 'doomscroll-flicker', threshold: 300, rampTo: 600, type: 'flicker', params: { maxDepth: 0.22, periodMs: 1600 }, undo: { mode: 'instant' } },
   { id: 'doomscroll-rot', threshold: 600, rampTo: 900, type: 'rot', params: { maxFraction: 0.55, glyphs: '▓▒░█' }, undo: { mode: 'instant' } },
   { id: 'doomscroll-block', threshold: 1200, rampTo: 1500, type: 'block', params: { maxOpacity: 0.96, blockAt: 0.8, message: MESSAGE, detail: 'You lost {duration} to this feed.', durationMeter: 'timeOnSite', figure: 'ghost', fadeInMs: 1500 }, undo: { mode: 'fade', durationMs: 600 } },
+  { id: 'doomscroll-ritual', threshold: 1500, type: 'ritual', params: { size: 5, candles: 5, sound: false }, undo: { mode: 'fade', durationMs: 600 } },
 ]);
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -46,7 +47,9 @@ export function validateRulesDocument(doc) {
     const at = `rules.json: ${exp.id}`;
     if (r.enabled !== true) errors.push(`${at}: enabled must be true`);
     if (!sortedSame(r.match, HOSTS) || !same(r.match, HOSTS)) errors.push(`${at}: match must be exactly the approved hosts`);
-    if (!same(r.trigger, { meter: 'timeOnSite', threshold: exp.threshold, rampTo: exp.rampTo })) errors.push(`${at}: trigger must be timeOnSite ${exp.threshold}->${exp.rampTo}`);
+    if (!same(r.trigger, { meter: 'timeOnSite', threshold: exp.threshold, rampTo: exp.rampTo })) errors.push(exp.rampTo === undefined
+      ? `${at}: trigger must be timeOnSite ${exp.threshold} with no rampTo`
+      : `${at}: trigger must be timeOnSite ${exp.threshold}->${exp.rampTo}`);
     if (!isObj(r.effect) || r.effect.type !== exp.type || !same(r.effect.params, exp.params)) errors.push(`${at}: effect type/params differ from expected`);
     if (!same(r.undo, exp.undo)) errors.push(`${at}: undo must be ${JSON.stringify(exp.undo)}`);
   });

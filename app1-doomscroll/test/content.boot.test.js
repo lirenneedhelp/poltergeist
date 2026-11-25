@@ -291,8 +291,8 @@ describe('Normal_Profile immutability and 1/60 scaling (via loader)', () => {
     const h = await boot({ initial: { ok: true, paused: false, demoMode: true } });
     const demo = h.log.starts[0].opts.rules.rules;
     expect(demo.map((r) => r.trigger.threshold)).toEqual(NORMAL.rules.map((r) => r.trigger.threshold / 60));
-    expect(demo.map((r) => r.trigger.rampTo)).toEqual(NORMAL.rules.map((r) => r.trigger.rampTo / 60));
-    expect(demo.map((r) => r.trigger.threshold)).toEqual([2, 5, 10, 20]);
+    expect(demo.map((r) => r.trigger.rampTo)).toEqual(NORMAL.rules.map((r) => (r.trigger.rampTo === undefined ? undefined : r.trigger.rampTo / 60)));
+    expect(demo.map((r) => r.trigger.threshold)).toEqual([2, 5, 10, 20, 25]);
     // Effects params are deep-cloned, not shared.
     demo[0].effect.params.maxBlur = 999;
     const h2 = await boot();

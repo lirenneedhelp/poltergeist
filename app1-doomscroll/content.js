@@ -157,16 +157,51 @@ function doomscrollCreateController({ loadPackage, report = () => {} } = {}) {
 
     const demoEpoch = state.demoEpoch;
     const seed = mode === 'demo' ? state.demoSnapshot : state.normalSnapshot;
+    // The entry is created first so the onAction closure can tell whether the
+    // instance that fired an action is still the current one.
+    const entry = { mode, ghost: null, demoEpoch };
     let ghost;
     try {
-      ghost = api.startPoltergeist({ rules, initialMeters: { ...seed } });
+      ghost = api.startPoltergeist({
+        rules,
+        initialMeters: { ...seed },
+        onAction: (name) => handleAction(entry, name),
+      });
     } catch (error) {
       // No instance was returned, so there is nothing this app can claim to clean up.
       state.fault = { kind: 'start', error };
       reportOnce('start', 'starting the haunt failed; Doomscroll is halted on this page', error);
       return;
     }
-    state.current = { mode, ghost, demoEpoch };
+    entry.ghost = ghost;
+    state.current = entry;
+  }
+
+  /**
+   * Exorcised_Action from a ritual: reset timeOnSite on the same instance so the
+   * engine undoes every rule with its own undo mode. Every other action name,
+   * and every stale or disposed instance, is ignored. Never throws.
+   */
+  function handleAction(entry, name) {
+    if (name !== 'exorcised') return;
+    if (state.disposed || state.current !== entry || !entry.ghost) return;
+    let ok = false;
+    try {
+      ok = entry.ghost.meters.reset('timeOnSite') === true;
+    } catch (error) {
+      reportOnce('reset', 'resetting time on site after the ritual failed', error);
+      return;
+    }
+    if (!ok) {
+      reportOnce('reset', 'resetting time on site after the ritual failed');
+      return;
+    }
+    try {
+      // Apply the reset now instead of up to one tick interval later.
+      entry.ghost.engine.tick();
+    } catch (error) {
+      reportOnce('reset-tick', 'applying the reset failed; it applies on the next tick', error);
+    }
   }
 
   /** Append one reconciliation to the serialized queue. */

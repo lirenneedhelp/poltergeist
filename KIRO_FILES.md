@@ -358,3 +358,25 @@ hold-to-light fallback wasn't needed.
 **Evidence:** commits c7b2ea5, 16b45fb, df999c1; tests 926 → 1017. Break-it
 checks: accepting fake input, completing on an incomplete path, and the
 wrong action name each failed 2–17 tests.
+
+## 2026-11-25: haunt-kit Task 7 (Doomscroll ritual finale) and first playtest
+**Kiro feature:** spec tasks; Opus 5.5 High. I accidentally ran all of task 7
+in one go, so I checked everything afterwards: full `npm test`, the browser
+tests twice, and a hand test in Chrome.
+**What happened:** after the block screen, Doomscroll now shows the Candle
+Path ritual (at 25 minutes, or 25 seconds in demo mode). Solving it resets
+the timer and every effect fades out; the haunting then starts over. It's a
+pause, not a lock: the tab can always be closed.
+**What I caught (first real playtest):** I lit all 5 candles with 9 squares
+still empty and got stuck. The status said "5 of 5 candles lit" and the fog
+had cleared, so it looked finished, and nothing told me that the last
+candle has to be the final square or that dragging back undoes a step.
+All 1017 tests passed; the rules were correct, but a player couldn't tell
+what they were.
+**What I changed:** asked Kiro to amend the spec and the ritual: instructions
+that say the last candle must be last and that dragging back undoes; a
+status showing candles and squares; a specific message when the last candle
+is lit too early; and the fog following squares filled, so it only clears
+when the ritual is really complete.
+**Evidence:** commits <task 7>, <fix>; tests 1017 → <count>; browser tests
+pass twice; screenshot of the stuck board (docs/kiro-evidence/ritual-stuck.png).

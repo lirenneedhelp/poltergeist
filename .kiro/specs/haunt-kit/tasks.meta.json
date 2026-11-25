@@ -335,6 +335,152 @@
         "chatSessionId": "sess_51bde9bc-b459-4d64-9766-34031d9df1d0",
         "timestamp": 1795614926397
       }
+    ],
+    "7.1 Add the fifth Doomscroll rule and extend its Package_Validator": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615291241
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615537355
+      }
+    ],
+    "7.3 Wire `onAction` in `app1-doomscroll/content.js`": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615291356
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615538532
+      }
+    ],
+    "7.4 Edit the named Doomscroll test assertions": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615554711
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615618266
+      }
+    ],
+    "7.5 Write `app1-doomscroll/test/finale.test.js`": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615623715
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795617846702
+      }
+    ],
+    "7.6 Write `test/packaging.test.js`": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795615624179
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795617847692
+      }
+    ],
+    "7.7 Write `app1-doomscroll/test/browser/finale.pw.js`": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795617848132
+      },
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795617981878
+      }
+    ],
+    "7. Doomscroll finale and packaging": [
+      {
+        "executionId": "3bde4627-591a-4721-af04-7c6b655a4527",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795617981941
+      }
+    ],
+    "13.1 Update the ritual's instructions, status and veil": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619676521
+      },
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619927253
+      }
+    ],
+    "13.4 Update the finale browser test status strings": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619676779
+      },
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619927704
+      }
+    ],
+    "13.2 Update the pinned ritual assertions and add the amendment examples": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619932734
+      },
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795620417937
+      }
+    ],
+    "13.3 Rebuild the Generated_Skeletons": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795619933436
+      },
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795620418446
+      }
+    ],
+    "13.5 Checkpoint - Ensure the amendment tests pass": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795620425698
+      },
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795621107282
+      }
+    ],
+    "13. Candle Path playtest amendment": [
+      {
+        "executionId": "a61d1a59-1f0c-4fba-9c5e-5f34ba119470",
+        "chatSessionId": "sess_8c973444-0675-4c74-9b02-206f8a61952a",
+        "timestamp": 1795621107348
+      }
     ]
   }
 }

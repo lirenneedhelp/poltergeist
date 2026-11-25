@@ -76,8 +76,8 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 300,
-          "default": "Draw one path through every square, passing the candles in order.",
-          "description": "Instruction text, 1 to 300 characters. Default \"Draw one path through every square, passing the candles in order.\". Other values use the default."
+          "default": "Draw one path through every square, passing the candles in order. Candle N must be your last square. Drag back to undo.",
+          "description": "Instruction text, 1 to 300 characters. Default \"Draw one path through every square, passing the candles in order. Candle N must be your last square. Drag back to undo.\", where N is replaced by the Board's candle count. A custom string is shown exactly as written, with no replacement. Other values use the default."
         },
         "size": {
           "type": "integer",

@@ -81,7 +81,7 @@ sequenceDiagram
   participant M as meters
   participant E as engine
   U->>R: trusted Hint click / arrow key / drag (last move)
-  R->>R: checkPath true, mark complete, status "5 of 5 candles lit"
+  R->>R: checkPath true, mark complete, status "5 of 5 candles · 25 of 25 squares"
   alt Reduced_Motion false
     R->>R: play Banishing_Ending (ghost fades over 1200 ms)
     R->>R: one-shot timer at 1200 ms, set exorcised
@@ -309,7 +309,7 @@ Param resolution (Requirement 5.5). The result is read once per `apply`, and the
 | Param | Accepted | Default |
 |---|---|---|
 | `heading` | string, 1 to 200 characters (code points) | `Light the candles to banish the ghost` |
-| `instructions` | string, 1 to 300 characters | `Draw one path through every square, passing the candles in order.` |
+| `instructions` | string, 1 to 300 characters | `Draw one path through every square, passing the candles in order. Candle <N> must be your last square. Drag back to undo.`, with `<N>` replaced by the Board's candle count |
 | `size` | integer 3 to 7 | 5 |
 | `candles` | integer 2 to min(9, size²) | 5 |
 | `sound` | exactly `true` | `false` |
@@ -318,6 +318,8 @@ Param resolution (Requirement 5.5). The result is read once per `apply`, and the
 
 A `params` value that is not a plain object counts as `{}`. `size` and `candles` are passed to `generateBoard` as given, and the ritual reads the resolved values back from the Board, so the generator is the one place those ranges live.
 
+The `<N>` substitution applies only to the default (Requirement 5.11): when `instructions` is absent or invalid, the shown text is the default with `<N>` replaced by `board.candles.length` of the live Board, so a 5-candle Board shows `Candle 5 must be your last square.` A valid custom `instructions` string is shown exactly as written, with no substitution. The longest default (N = 9) is well under 300 characters.
+
 `apply`:
 
 1. `i = typeof intensity === 'number' && !Number.isNaN(intensity) ? clamp01(intensity) : 0` (Requirement 5.6).
@@ -325,7 +327,7 @@ A `params` value that is not a plain object counts as `{}`. `size` and `candles`
 3. If the handle is not LIVE (fading), return it unchanged.
 4. Set `host.style.opacity = String(+(p.maxOpacity * i).toFixed(3))`, and set `host.style.pointerEvents` to `auto` when `i >= p.blockAt`, else `none`.
 5. The first time pointer-events becomes `auto` on this handle, remember `document.activeElement` and call `board.focus({ preventScroll: true })` (Requirement 6.10).
-6. Set the heading and instructions `textContent`.
+6. Set the heading and instructions `textContent` (the instructions default uses the live Board's candle count, as above).
 
 A later `apply` with the same live handle changes only those four things (Requirement 5.7). It never rebuilds the Board, never moves focus again and never re-fires the Exorcised_Action (Requirement 7.4).
 
@@ -353,7 +355,8 @@ div[data-poltergeist="ritual"]            host, inline: all:initial; position:fi
         svg.trail aria-hidden (viewBox 0 0 s s, pointer-events:none)
           polyline                         points = cell centres of the Player_Path
         svg.ghost aria-hidden (hidden until the Banishing_Ending)
-      p.status aria-live="polite"          "<Lit_Count> of <N> candles lit"
+      p.status aria-live="polite"          "<Lit_Count> of <N> candles · <Filled_Count> of <S> squares", or
+                                           "Candle <N> must be last. Back up and fill the empty squares." (section 2.5)
       div.controls
         button type=button "Reset"
         button type=button "Hint"
@@ -367,8 +370,9 @@ Every background colour inside the host has red, green and blue channels of at m
 handle = {
   env, host, root, els: { style, veil, card, heading, instructions, board, cells /* [row][col] */, trail, ghost, status, reset, hint },
   board,            // Board from generateBoard; never mutated
-  path,             // Player_Path: array of { row, col }
+  path,             // Player_Path: array of { row, col }; Filled_Count is path.length (derived, not stored)
   lit,              // Lit_Count
+                    // S = board.size ** 2 (derived, not stored)
   complete: false, exorcised: false, chimed: false,
   sound,            // resolved at creation
   focusedOnce: false, prevFocus: null,
@@ -418,7 +422,7 @@ tryMove(handle, cell):
   push cell; update; if path.length == size² and checkPath(board, path): complete()     # (6.2, 7.1)
 ```
 
-`update(handle)` recomputes `lit` as the number of candles on the path and calls `render` before the handler returns (Requirement 6.3). The first time `lit` reaches N on a handle with `sound` true, `update` starts the chime (section 2.7). A retract from the single-cell path cannot happen because there is no `path[len-2]` (Requirement 6.5).
+`update(handle)` recomputes `lit` as the number of candles on the path and calls `render`, which reads Filled_Count as `path.length`, before the handler returns (Requirement 6.3). The first time `lit` reaches N on a handle with `sound` true, `update` starts the chime (section 2.7). A retract from the single-cell path cannot happen because there is no `path[len-2]` (Requirement 6.5).
 
 - **Pointer (Requirement 6.8).** `pointerdown` on the board: guard, primary button only (`button === 0 && isPrimary !== false`), and the target must be the Path_End cell. It then sets `drag = { pointerId }`, releases any implicit pointer capture on the cell (touch) so later events target the cell under the finger, and adds `pointerup` and `pointercancel` listeners on `env.window` so a release outside the Board ends the drag. A `pointerover` on the board while dragging, with the same pointer, is one `tryMove` to the cell under the pointer. Re-entering the Path_End is rejected, and moving back onto the previous cell retracts. `pointerup` or `pointercancel` for that pointer clears `drag` and removes the two window listeners. A press anywhere else starts no drag. Fast drags that skip cells are rejected as non-adjacent moves; no interpolation is done.
 - **Keyboard (Requirement 6.9).** `keydown` on the board (the board has `tabindex="0"`, so it only fires while the Board has focus). After the guard, Arrow keys call `preventDefault()` and `stopPropagation()` and then `tryMove` to the neighbouring cell; `tryMove` rejects the move when complete. `stopPropagation` stops page shortcuts that listen in the bubble phase (for example a video player's arrow-key seeking) from acting under the overlay. Other keys are not touched.
@@ -427,21 +431,23 @@ tryMove(handle, cell):
 
 #### 2.5 Rendering and the Ritual_Veil
 
-`render(handle)` sets everything from `path` and `lit`:
+`render(handle)` sets everything from `path` and `lit`, with `filled = path.length` (Filled_Count) and `S = board.size ** 2`:
 
 - every cell's `data-on-path` and the Path_End's `data-end`;
 - every candle cell's `data-lit` and `aria-label` (`Candle 3, lit` or `Candle 3, unlit`), so each candle's state reaches assistive technology (Requirement 6.3);
 - the trail polyline `points` (cell centres in board units);
-- the status line `textContent = "<lit> of <N> candles lit"`;
-- the veil `style.opacity = String(+(0.85 * (N - lit) / (N - 1)).toFixed(3))`. N ≥ 2, so the divisor is never 0. The value is 0.85 with one candle lit and 0 with all lit (Requirement 5.8).
+- the status line `textContent` (Requirements 5.12, 5.13):
+  - when candle N is on the path and `filled < S`: `Candle <N> must be last. Back up and fill the empty squares.`, with the real N. This is the stuck state from the playtest: candle N is lit early, the move rule allows only retracts, and the count text alone made the ritual look finished;
+  - otherwise: `` `${lit} of ${N} candles · ${filled} of ${S} squares` ``, with a middle dot (U+00B7) and one space each side, for example `3 of 5 candles · 14 of 25 squares`;
+- the veil `style.opacity = String(+(0.85 * (S - filled) / (S - 1)).toFixed(3))`. `size` ≥ 3, so S ≥ 9 and the divisor is never 0. The value is 0.85 with one square filled, falls with every square added and is 0 only when the path covers every square (Requirement 5.8). The move rule (only retracts while candle N is lit) means a full path always ends on candle N with every candle in order, so `checkPath` is true and the veil clears fully only on completion.
 
-`render` runs when the Board is built (Requirement 6.1: path is `[candle 1]`, `lit` 1, status `1 of N candles lit`, veil 0.85) and after every accepted move, retract, Reset or Hint. Rejected moves call nothing, so status and veil stay unchanged (Requirement 6.6). When motion is allowed at creation, the veil gets an inline `transition: opacity 300ms linear`. Under Reduced_Motion it gets none.
+`render` runs when the Board is built (Requirement 6.1: path is `[candle 1]`, `lit` 1, `filled` 1, status `1 of N candles · 1 of S squares`, veil 0.85) and after every accepted move, retract, Reset or Hint. On completion the status is `N of N candles · S of S squares` and the veil is 0. Rejected moves call nothing, so status and veil stay unchanged (Requirement 6.6). When motion is allowed at creation, the veil gets an inline `transition: opacity 300ms linear`. Under Reduced_Motion it gets none.
 
 #### 2.6 Completion and Banishing_Ending
 
 `complete(handle)` (Requirement 7):
 
-1. `complete = true`, then `render` (status `N of N candles lit`).
+1. `complete = true`, then `render` (status `N of N candles · S of S squares`, veil 0).
 2. If `env.reducedMotion` is true: `exorcised = true`, then `fireExorcised(handle)` as the last statement (Requirement 7.3).
 3. Otherwise show `svg.ghost` (a ghost silhouette drawn with SVG paths, like the Block ghost but owned by this module). If `ghost.animate` exists, start `animate([{ opacity: 1, transform: 'translateY(0px)', filter: 'blur(0px)' }, { opacity: 0, transform: 'translateY(-32px)', filter: 'blur(6px)' }], { duration: 1200, easing: 'ease-in', fill: 'forwards' })`. Then set a one-shot `endingTimer = env.setTimeout(onEndingDone, 1200)` (Requirement 7.2). The timer, not the animation's `finished` promise, decides when the action fires, because jsdom has no Web Animations API and fake timers can drive a timer.
 4. `onEndingDone`: clear `endingTimer`; if the handle is not LIVE, return; hide the ghost; `exorcised = true`; `fireExorcised(handle)` last.
@@ -494,7 +500,7 @@ Restoring focus changes no markup, so the Restored_State comparison is unaffecte
 #### 2.9 Registration and schema documentation
 
 - `skeleton/effects/index.js`: `import * as ritual from './ritual.js';` and `builtinEffects = { fog, flicker, rot, block, tombstone, ritual }`. `EFFECT_TYPES` in `validator.js` derives from the registry, so it needs no edit.
-- `skeleton/rule-schema.json`: add `definitions["params-ritual"]`, a documentation-only object schema (the validator does not read it) with a `description` for the effect and, for each param, `type`, the range keywords (`minLength`/`maxLength`, `minimum`/`maximum`), `default` and a `description` that states the default and the allowed range in words, for example `"Integer from 3 to 7. Default 5. Other values use the default."` (Requirement 11.3). `definitions.rule.properties.effect.properties.type` stays `{ "type": "string" }`.
+- `skeleton/rule-schema.json`: add `definitions["params-ritual"]`, a documentation-only object schema (the validator does not read it) with a `description` for the effect and, for each param, `type`, the range keywords (`minLength`/`maxLength`, `minimum`/`maximum`), `default` and a `description` that states the default and the allowed range in words, for example `"Integer from 3 to 7. Default 5. Other values use the default."` (Requirement 11.3). The `instructions` entry keeps `minLength` 1 and `maxLength` 300, its `default` keyword is `"Draw one path through every square, passing the candles in order. Candle N must be your last square. Drag back to undo."` with the letter N, and its `description` states that N is replaced by the Board's candle count and that a custom string is shown as written. `definitions.rule.properties.effect.properties.type` stays `{ "type": "string" }`.
 
 #### 2.10 Meters change: `skeleton/meters.js`
 
@@ -800,6 +806,14 @@ Existing test assertions that change. Each one pins a list from Introduction dec
 
 The Graveyard row names the test by its title and the single `scripts.pretest` expectation. It does not depend on the rest of that file, which graveyard-groups may change. No exposed-list assertion needs an edit: both apps' package tests check the exposed list through their validators, which compute it from the import graph.
 
+Assertions edited by the Candle Path playtest amendment (task 13). In a real-Chrome playtest a user lit all five candles with nine squares still empty: the status said `5 of 5 candles lit` and the veil had cleared, so the ritual looked finished, and nothing said that candle N must be the last square or that dragging back undoes a step. The amendment changes the default instructions, the status text and the veil formula (Requirements 5.4, 5.5, 5.8, 5.11 to 5.13, 6.1, 6.3, 7.1, 10.10, 11.3). The move rule and `checkPath` do not change. These tests were written by this spec; decision 3 of the Introduction allows the edits:
+
+| File | Assertion change | Reason |
+|---|---|---|
+| `skeleton/test/ritual.test.js` | the status expectations (creation, `checkRender`, completion, the `onAction` failure case) use `<Lit_Count> of <N> candles · <Filled_Count> of <S> squares`; the `veilFor` helper becomes `round3(0.85 × (S − Filled_Count) / (S − 1))`; the instructions default expectations use the new text with N substituted; new examples cover the stuck message, the return to the count text after backing up, a custom `instructions` shown as written, and the veil values | pins the ritual's status text, veil opacity and default instructions |
+| `test/packaging.test.js` | the `PARAMS.instructions.default` expectation becomes the schema default with the letter N | pins the `params-ritual` instructions default |
+| `app1-doomscroll/test/browser/finale.pw.js` | the start status becomes `1 of 5 candles · 1 of 25 squares` and `DONE_STATUS` becomes `5 of 5 candles · 25 of 25 squares` | pins the ritual's start and done status |
+
 Assertions that keep passing without edits, checked during design: `sync.test.js` (registry keys, frozen `APPS`, `parseArgs([])`, build line count), Doomscroll `hook.test.js`, `validator.test.js` (`EFFECT_TYPES` follows the registry; the schema `type` stays a plain string), `demo-time.test.js` (handles a missing `rampTo`; the ritual has no `durationMeter`), `polish-safety.test.js` (scans only fog, block and tombstone), and the existing Doomscroll browser tests. In `doomscroll.pw.js` the Block overlay must be sampled as the top element between 24 s and 25 s, before the ritual covers it. Sampling runs every 100 ms, so the 1 s window is wide enough.
 
 Startup compatibility (Requirements 16.6, 16.7) needs no code change: `startPoltergeist` validates against the given registry before creating meters or the engine. With a registry without `ritual` and rules without `ritual` it behaves as before. With rules that use `ritual` it throws `Invalid Poltergeist rules:` with the line `rules[<i>].effect.type: must be one of [fog, flicker, rot, block, tombstone]`.
@@ -891,9 +905,9 @@ In this spec each property is an **invariant checked by example-based Vitest tes
 
 ### Property 4: apply is stable on a live handle and follows the opacity rule
 
-*For any* intensity in the fixed list (−1, 0, 0.25, 0.5, 0.999, 1, 2, `NaN`, `'x'`, `undefined`) and any `(maxOpacity, blockAt)` pair in the fixed list, including invalid values such as −0.1, 1.5, `'0.5'` and `null`, `apply` sets host opacity to `round3(maxOpacity' × i)` and pointer-events to `auto` exactly when `i ≥ blockAt'`. Here `i` is the clamped intensity (0 for non-numeric) and primes are the resolved values. A later `apply` on the same live handle, even with different `size` and `candles`, keeps the same host element, Board object and Player_Path and changes only opacity, pointer-events, heading and instructions. *For any* invalid `heading`, `instructions`, `size`, `candles` or `sound` value in the fixed list, the default is used and nothing throws.
+*For any* intensity in the fixed list (−1, 0, 0.25, 0.5, 0.999, 1, 2, `NaN`, `'x'`, `undefined`) and any `(maxOpacity, blockAt)` pair in the fixed list, including invalid values such as −0.1, 1.5, `'0.5'` and `null`, `apply` sets host opacity to `round3(maxOpacity' × i)` and pointer-events to `auto` exactly when `i ≥ blockAt'`. Here `i` is the clamped intensity (0 for non-numeric) and primes are the resolved values. A later `apply` on the same live handle, even with different `size` and `candles`, keeps the same host element, Board object and Player_Path and changes only opacity, pointer-events, heading and instructions. *For any* invalid `heading`, `instructions`, `size`, `candles` or `sound` value in the fixed list, the default is used and nothing throws. *For any* Board with N in {2, 5, 9}, the default instructions read `… Candle <N> must be your last square. Drag back to undo.` with that N, and a valid custom `instructions` string (including one that contains `<N>`) is shown exactly as written.
 
-**Validates: Requirements 5.2, 5.5, 5.6, 5.7**
+**Validates: Requirements 5.2, 5.5, 5.6, 5.7, 5.11**
 
 ### Property 5: The move rule accepts exactly the legal moves
 
@@ -903,9 +917,9 @@ In this spec each property is an **invariant checked by example-based Vitest tes
 
 ### Property 6: The rendered Board always matches the Player_Path
 
-*For any* step of the scripted sequences (Board creation, each accepted move, each retract, Reset, each Hint) on boards with N in {2, 5, 9}, before the handler returns: Lit_Count equals the number of candles on the Player_Path, each candle cell's `data-lit` and `aria-label` say lit exactly when the candle is on the path, the status line reads `<Lit_Count> of <N> candles lit`, and the veil opacity equals `round3(0.85 × (N − Lit_Count) / (N − 1))`.
+*For any* step of the scripted sequences (Board creation, each accepted move, each retract, Reset, each Hint) on boards with N in {2, 5, 9}, before the handler returns: Lit_Count equals the number of candles on the Player_Path, each candle cell's `data-lit` and `aria-label` say lit exactly when the candle is on the path, Filled_Count equals the Player_Path length, the status line reads `Candle <N> must be last. Back up and fill the empty squares.` when candle N is on the path and Filled_Count < S and `<Lit_Count> of <N> candles · <Filled_Count> of <S> squares` otherwise, and the veil opacity equals `round3(0.85 × (S − Filled_Count) / (S − 1))`. The veil is 0.85 at creation, strictly decreases with each square added, and is 0 only at completion, where the status reads `<N> of <N> candles · <S> of <S> squares`. In the "candle N lit early" script the stuck message shows the real N, and backing up until candle N is off the path brings back the count text.
 
-**Validates: Requirements 5.4, 5.8, 6.1, 6.3**
+**Validates: Requirements 5.4, 5.8, 5.12, 5.13, 6.1, 6.3, 7.1**
 
 ### Property 7: Reset and Hint keep the Board and move along the solution
 
@@ -1048,7 +1062,7 @@ The meter names in the steering doc's "Meter rules" equal the schema's meter enu
 | `test/authoring.test.js` | Vitest (node) | 1.1 to 1.6 (front matter, section structure, meter and resettable sets); 2.1 to 2.6 (hook format, matcher lists, prompt step order, stop sentence, hooks README section); Property 15, 21 (steering part) |
 | `test/rules-hook.test.js` | Vitest (node), temp repos, `spawnSync` | 3.1 to 3.8; Property 16 |
 | `skeleton/test/candle-path.test.js` | Vitest (node) | 4.1 to 4.11; Properties 1 to 3 |
-| `skeleton/test/ritual.test.js` | Vitest (jsdom) | 5.1 to 5.10, 6.1 to 6.14, 7.1 to 7.9, 8.1 to 8.7, 9.1 to 9.6, 9.8; Properties 4 to 9, 11, 12; source scans for `innerHTML`, `url(`, `chrome.`, `window.close`, `location`, `beforeunload` and audio file extensions |
+| `skeleton/test/ritual.test.js` | Vitest (jsdom) | 5.1 to 5.13, 6.1 to 6.14, 7.1 to 7.9, 8.1 to 8.7, 9.1 to 9.6, 9.8; Properties 4 to 9, 11, 12; source scans for `innerHTML`, `url(`, `chrome.`, `window.close`, `location`, `beforeunload` and audio file extensions |
 | `skeleton/test/restoration.test.js` | Vitest (jsdom), edited and extended | registry assertion (edited); new `ritual` describe block with the four cases of 9.7 plus the duration list; Property 10 |
 | `skeleton/test/meters.test.js` | Vitest, edited and extended | rejected-names assertion (edited); new `reset('timeOnSite')` example; Property 13 |
 | `skeleton/test/ritual-compat.test.js` | Vitest (jsdom) | 16.6, 16.7 (a registry without `ritual`, the exact error lines, no meter listeners and no effect DOM before the throw) |
@@ -1070,7 +1084,7 @@ The rules-hook, packaging and scaffolder tests copy only what they need into `os
 
 - `npm test`: `pretest` runs `check:skeletons` (every registry app's drift check and validator, plus the Playground copies), then `test` runs `check:doomscroll` and `vitest --run`.
 - `npm run test:browser`: all Playwright projects (skeleton-effects, doomscroll-extension, graveyard-extension, playground). Users run it in their own terminal; it is not a watch command.
-- Final task: both commands exit 0, with no test skipped or deleted (16.1). `git diff --exit-code <base> -- skeleton/engine.js skeleton/match.js skeleton/effects/{fog,flicker,rot,block,tombstone}.js` passes, and the matching Generated_Skeleton files follow from the drift check (16.3). `git diff --exit-code <base> --` on Graveyard's `rules.json`, `background.js`, `content.js`, popup files and `test/browser/` passes, and the manifest diff is limited to the two resource strings (16.4). The edited assertions are exactly the six rows in section 7 (16.2).
+- Final task: both commands exit 0, with no test skipped or deleted (16.1). `git diff --exit-code <base> -- skeleton/engine.js skeleton/match.js skeleton/effects/{fog,flicker,rot,block,tombstone}.js` passes, and the matching Generated_Skeleton files follow from the drift check (16.3). `git diff --exit-code <base> --` on Graveyard's `rules.json`, `background.js`, `content.js`, popup files and `test/browser/` passes, and the manifest diff is limited to the two resource strings (16.4). The edited assertions in tests that existed before Haunt Kit are exactly the six rows of the first table in section 7, and the playtest amendment edits only the three files of the second table (16.2).
 
 ### Manual checks
 

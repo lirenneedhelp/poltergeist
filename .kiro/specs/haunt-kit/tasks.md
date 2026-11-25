@@ -81,7 +81,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
 - [x] 5. Ritual effect, created through the Effect_Hook
   - [x] 5.1 Create `skeleton/effects/ritual.js` as a new file in Kiro so the Effect_Hook fires
     - Create the file with Kiro's file-create tool (not from a terminal or git), so the `PostFileCreate` Effect_Hook runs; record in `KIRO_FILES.md` that the hook prompt ran and what it changed, or that it did not fire and the five steps were done by hand
-    - First version: `description`, param resolution table of design section 2.2, `apply` (intensity clamp, opacity `round3(maxOpacity × i)`, `pointer-events` by `blockAt`, one-time focus of the Board, heading and instructions update on a live handle), the Ritual_Host with open shadow root and zero light-DOM children, the static stylesheet, Ritual_Veil, Board grid, trail, status line with `aria-live="polite"`, Reset and Hint buttons, and `render` (candle `data-lit` and `aria-label`, status text, veil opacity `round3(0.85 × (N − Lit_Count) / (N − 1))`)
+    - First version: `description`, param resolution table of design section 2.2, `apply` (intensity clamp, opacity `round3(maxOpacity × i)`, `pointer-events` by `blockAt`, one-time focus of the Board, heading and instructions update on a live handle), the Ritual_Host with open shadow root and zero light-DOM children, the static stylesheet, Ritual_Veil, Board grid, trail, status line with `aria-live="polite"`, Reset and Hint buttons, and `render` (candle `data-lit` and `aria-label`, status text per design section 2.5, veil opacity `round3(0.85 × (S − Filled_Count) / (S − 1))`; the squares-based status and veil are the playtest amendment, implemented in task 13.1)
     - `undo` through `util.js` `teardown` with `begin` and `finish` per design section 2.8 (instant for 0, absent or invalid durations; linear fade with motion; instant opacity 0 under Reduced_Motion; repeat calls per `teardown`), removing every listener and the host
     - Use only `createElement`/`createElementNS` and `textContent`; no resource loads, no nodes under `head` or `body`, background channels at most 64, no "zip" anywhere
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 6.1, 6.3, 6.10, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
@@ -110,7 +110,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.11, 6.12, 6.13, 6.14_
 
   - [x] 5.6 Implement completion and the Banishing_Ending in `ritual.js`
-    - `complete` when `checkPath` is true after a move or Hint: status `N of N candles lit`, no further path changes
+    - `complete` when `checkPath` is true after a move or Hint: status `N of N candles · S of S squares` (playtest amendment, task 13.1), no further path changes
     - Motion allowed: ghost SVG fade with `animate` when available and a one-shot 1200 ms timer that sets `exorcised` and calls `fireExorcised` last; Reduced_Motion: set `exorcised` and call `fireExorcised` in the same handler with no animation
     - `fireExorcised` logs `[poltergeist] ritual …` with `console.error` when `env.onAction` is missing or throws, keeping the Board shown; at most one action per handle; `begin` and `finish` clear the ending timer and cancel the animation so undo during the ending makes no action; no `chrome.*`, `window.close`, `location` or `beforeunload`/`unload`
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9_
@@ -144,8 +144,8 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
 - [x] 6. Checkpoint - Ensure the skeleton and authoring tests pass
   - Run `npx vitest --run skeleton/test test/authoring.test.js test/rules-hook.test.js test/docs.test.js`. The full `npm test` package checks pass only after task 7.2 adds the two resource strings. Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Doomscroll finale and packaging
-  - [ ] 7.1 Add the fifth Doomscroll rule and extend its Package_Validator
+- [x] 7. Doomscroll finale and packaging
+  - [x] 7.1 Add the fifth Doomscroll rule and extend its Package_Validator
     - Append `doomscroll-ritual` to `app1-doomscroll/rules.json` exactly as in design section 3.1, leaving the four existing rules byte-identical and in order
     - Add the fifth `EXPECTED_RULES` entry in `scripts/validate-doomscroll-package.mjs` and the `trigger must be timeOnSite 1500 with no rampTo` message when `rampTo` is undefined
     - _Requirements: 10.1, 10.2, 10.9_
@@ -154,33 +154,33 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Add `skeleton/effects/ritual.js` and `skeleton/ritual/candle-path.js` to `web_accessible_resources[0].resources` in `app1-doomscroll/manifest.json` and `app2-tab-graveyard/manifest.json`; change nothing else in either manifest and leave the rest of Graveyard's list as it is
     - _Requirements: 10.7, 11.2, 16.4_
 
-  - [ ] 7.3 Wire `onAction` in `app1-doomscroll/content.js`
+  - [x] 7.3 Wire `onAction` in `app1-doomscroll/content.js`
     - In `doomscrollCreateController`, pass `onAction: (name) => handleAction(entry, name)` to `startPoltergeist` and store `entry` as `state.current`
     - `handleAction` ignores names other than `exorcised` and stale or disposed instances, calls `entry.ghost.meters.reset('timeOnSite')`, reports a false or throwing reset with `reportOnce` under the `[poltergeist:doomscroll]` prefix, then calls `entry.ghost.engine.tick()` with its own guarded report; no `stop`, no new instance, no other meter touched
     - _Requirements: 10.3, 10.4, 10.5, 10.6, 10.7, 10.11, 10.12_
 
-  - [ ] 7.4 Edit the named Doomscroll test assertions
+  - [x] 7.4 Edit the named Doomscroll test assertions
     - `app1-doomscroll/test/package.test.js` "has the exact rules (ids, order, meters, params, message, undo)": undo list gains a fifth `{ mode: 'fade', durationMs: 600 }`
     - `app1-doomscroll/test/content.test.js` "produces the 2-5 / 5-10 / 10-15 / 20-25 second demo stages that validate": expected stages gain `[25, undefined]` and the title gains "/ 25"
     - `app1-doomscroll/test/content.boot.test.js` "demo values are exactly normal/60 and the normal profile is untouched, including nested data": threshold list becomes `[2, 5, 10, 20, 25]` and a missing `rampTo` maps to `undefined`
     - Change nothing else in these files
     - _Requirements: 16.1, 16.2_
 
-  - [ ] 7.5 Write `app1-doomscroll/test/finale.test.js`
+  - [x] 7.5 Write `app1-doomscroll/test/finale.test.js`
     - Controller harness recording `onAction`, `reset` and `tick` (invariant 14): an unknown action name, `exorcised` on the current instance (one reset, one tick, no stop or restart), `exorcised` from an instance replaced by pause, Demo_Mode toggle or motion restart, after dispose, and a reset that returns false or throws
     - Real skeleton in jsdom with the Doomscroll rules (match `<all_urls>`, seeded at `timeOnSite` 1500) and a wrapped registry recording each `undo` duration: Fog 400, Block and ritual 600, Flicker and Rot instant; Fog returns after `timeOnSite` restarts from 0; a later pause and resume continues from the reset value
     - Demo profile check that the ritual threshold is 25; scan that the content script adds no `beforeunload` and sends no tab-closing, reloading or navigating message; manifest permissions unchanged
     - _Requirements: 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.11, 10.12, 10.13_
 
-  - [ ] 7.6 Write `test/packaging.test.js`
+  - [x] 7.6 Write `test/packaging.test.js`
     - Temporary repository copies (whole app folders without `test/`)
     - Invariant 17: after `build:skeletons` each app's Generated_Skeleton equals the Skeleton byte for byte with no `skeleton/test/` file; one changed line in a copied `skeleton/effects/ritual.js`, a missing `skeleton/ritual/candle-path.js` and an extra file each make `check:skeletons` exit non-zero and name the file
     - Invariant 18 (Doomscroll and Graveyard parts): Doomscroll validator errors for a missing fifth rule, each changed field of the fifth rule, and each new module removed from `web_accessible_resources`; Graveyard validator error naming `skeleton/effects/ritual.js` when it is removed; both `ok` on unmutated copies
     - Schema check that `params-ritual` documents every param with default and range and `effect.properties.type` stays `{ "type": "string" }`
     - _Requirements: 10.9, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6_
 
-  - [ ] 7.7 Write `app1-doomscroll/test/browser/finale.pw.js`
-    - In the doomscroll-extension Playwright project with Demo_Mode on: wait for the Ritual_Host after Block blocks pointers, make trusted Hint clicks until the status reads `5 of 5 candles lit`, expect no `[data-poltergeist]` element within 2 s of the last click and the Fog element back within 5 s
+  - [x] 7.7 Write `app1-doomscroll/test/browser/finale.pw.js`
+    - In the doomscroll-extension Playwright project with Demo_Mode on: wait for the Ritual_Host after Block blocks pointers, make trusted Hint clicks until the status reads `5 of 5 candles · 25 of 25 squares` (playtest amendment, task 13.4), expect no `[data-poltergeist]` element within 2 s of the last click and the Fog element back within 5 s
     - _Requirements: 10.10_
 
 - [ ] 8. Scaffolder generation
@@ -260,12 +260,39 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
   - Ensure all tests pass, ask the user if questions arise.
   - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
 
+- [x] 13. Candle Path playtest amendment
+  - [x] 13.1 Update the ritual's instructions, status and veil
+    - In `skeleton/effects/ritual.js`: default `instructions` `Draw one path through every square, passing the candles in order. Candle <N> must be your last square. Drag back to undo.` with `<N>` replaced by the live Board's candle count, only when the param is absent or invalid; a valid custom `instructions` string is shown exactly as written
+    - Filled_Count as `path.length` and S as `size²`; status `<Lit_Count> of <N> candles · <Filled_Count> of <S> squares` (U+00B7 with one space each side), or `Candle <N> must be last. Back up and fill the empty squares.` while candle N is on the path and Filled_Count < S; veil opacity `round3(0.85 × (S − Filled_Count) / (S − 1))`; status and veil set before the handler returns on creation and after every accepted move, retract, Reset or Hint, per design section 2.5; the move rule and `checkPath` stay unchanged
+    - Keep the README `ritual` line equal to the `description` export; change both identically only if the wording should mention that the last candle is the final square
+    - In `skeleton/rule-schema.json` `definitions["params-ritual"].instructions`: `default` becomes the text with the letter N (`… Candle N must be your last square. Drag back to undo.`) and `description` states that N is replaced by the candle count; `minLength` 1 and `maxLength` 300 stay
+    - _Requirements: 5.4, 5.5, 5.8, 5.11, 5.12, 5.13, 6.1, 6.3, 7.1, 11.3, 15.5_
+
+  - [x] 13.2 Update the pinned ritual assertions and add the amendment examples
+    - In `skeleton/test/ritual.test.js` update the status expectations (creation, `checkRender`, completion, the `onAction` failure case), the `veilFor` helper to `round3(0.85 × (S − Filled_Count) / (S − 1))`, the instructions default expectations and the completion status `N of N candles · S of S squares`
+    - Add examples: the stuck message with the real N in the existing "candle N lit early" script; the count text again after backing up until candle N is off the path; a custom `instructions` param shown as written; veil 0.85 at creation, strictly decreasing as squares fill, and 0 only at completion
+    - In `test/packaging.test.js` update the `PARAMS.instructions.default` expectation to the schema default with the letter N
+    - _Requirements: 5.4, 5.5, 5.8, 5.11, 5.12, 5.13, 6.1, 6.3, 7.1, 11.3, 16.2_
+
+  - [x] 13.3 Rebuild the Generated_Skeletons
+    - Run `npm run build:skeletons` so every Generated_Skeleton gets the amended `skeleton/effects/ritual.js` and `skeleton/rule-schema.json`, then confirm `npm run check:skeletons` passes
+    - _Requirements: 11.1, 11.4, 16.5_
+
+  - [x] 13.4 Update the finale browser test status strings
+    - In `app1-doomscroll/test/browser/finale.pw.js` set the start status to `1 of 5 candles · 1 of 25 squares` and `DONE_STATUS` to `5 of 5 candles · 25 of 25 squares`; change nothing else
+    - _Requirements: 10.10, 16.2_
+
+  - [x] 13.5 Checkpoint - Ensure the amendment tests pass
+    - Run `npm test` and `npx playwright test --project=doomscroll-extension finale.pw.js`; both pass. Ensure all tests pass, ask the user if questions arise.
+    - _Requirements: 5.12, 5.13, 10.10, 16.1_
+
 ## Notes
 
 - No property-based tests: every test is example-based and lives inside the implementation task it verifies. Invariant numbers refer to the design's Correctness Properties, which this spec checks with fixed example lists.
 - Task 5.1 must create `skeleton/effects/ritual.js` through Kiro so the Effect_Hook fires; tasks 5.2 to 5.4 are the hook's steps in the hook's order.
 - Between task 5.4 and task 7.2 the app package checks report the two new modules missing from `web_accessible_resources`. This is expected; the checkpoint in task 6 runs only the skeleton and authoring suites.
 - The only existing assertions edited are the six in design section 7, in tasks 4.2, 5.3, 7.4 and 9.1.
+- Task 13 is the Candle Path playtest amendment. It edits the ritual assertions in `skeleton/test/ritual.test.js`, `test/packaging.test.js` and `app1-doomscroll/test/browser/finale.pw.js` that decision 3 allows (second table in design section 7), and depends only on completed tasks, so it runs before task 8.
 - Task 9.3 is a manual check recorded in `KIRO_FILES.md`; the Playwright and Vitest suites cover everything else.
 
 ## Task Dependency Graph
@@ -284,14 +311,19 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     { "id": 8, "tasks": ["5.7"] },
     { "id": 9, "tasks": ["5.8", "5.9", "5.10"] },
     { "id": 10, "tasks": ["5.11"] },
-    { "id": 11, "tasks": ["7.1", "7.2", "7.3", "8.1"] },
-    { "id": 12, "tasks": ["7.4", "7.5", "7.6", "8.2"] },
-    { "id": 13, "tasks": ["7.7", "8.3"] },
-    { "id": 14, "tasks": ["9.1", "10.1"] },
-    { "id": 15, "tasks": ["9.2", "10.2"] },
-    { "id": 16, "tasks": ["9.3", "10.3"] },
-    { "id": 17, "tasks": ["10.4", "10.5", "11.1"] },
-    { "id": 18, "tasks": ["11.2"] }
+    { "id": 11, "tasks": ["7.1", "7.2", "7.3"] },
+    { "id": 12, "tasks": ["7.4", "7.5", "7.6"] },
+    { "id": 13, "tasks": ["7.7"] },
+    { "id": 14, "tasks": ["13.1", "13.4"] },
+    { "id": 15, "tasks": ["13.2", "13.3"] },
+    { "id": 16, "tasks": ["13.5", "8.1"] },
+    { "id": 17, "tasks": ["8.2"] },
+    { "id": 18, "tasks": ["8.3"] },
+    { "id": 19, "tasks": ["9.1", "10.1"] },
+    { "id": 20, "tasks": ["9.2", "10.2"] },
+    { "id": 21, "tasks": ["9.3", "10.3"] },
+    { "id": 22, "tasks": ["10.4", "10.5", "11.1"] },
+    { "id": 23, "tasks": ["11.2"] }
   ]
 }
 ```

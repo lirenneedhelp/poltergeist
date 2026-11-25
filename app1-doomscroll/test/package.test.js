@@ -60,6 +60,7 @@ describe('real package', () => {
     expect(doc.rules[3].effect.params.message).toBe('You have scrolled long enough. Close this tab and take a break.');
     expect(doc.rules.map((r) => r.undo)).toEqual([
       { mode: 'fade', durationMs: 400 }, { mode: 'instant' }, { mode: 'instant' }, { mode: 'fade', durationMs: 600 },
+      { mode: 'fade', durationMs: 600 },
     ]);
     expect(validateRulesDocument(doc)).toEqual([]);
   });

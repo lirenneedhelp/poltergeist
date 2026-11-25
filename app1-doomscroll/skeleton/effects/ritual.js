@@ -23,7 +23,10 @@ export const description =
 
 const DEFAULTS = {
   heading: 'Light the candles to banish the ghost',
-  instructions: 'Draw one path through every square, passing the candles in order.',
+  // `<N>` becomes the live Board's candle count; only the default is substituted (5.11).
+  instructions:
+    'Draw one path through every square, passing the candles in order. ' +
+    'Candle <N> must be your last square. Drag back to undo.',
   sound: false,
   maxOpacity: 0.96,
   blockAt: 1,
@@ -104,7 +107,7 @@ function resolve(params) {
   const src = isPlainObject(params) ? params : {};
   return {
     heading: textIn(src.heading, MAX_HEADING, DEFAULTS.heading),
-    instructions: textIn(src.instructions, MAX_INSTRUCTIONS, DEFAULTS.instructions),
+    instructions: textIn(src.instructions, MAX_INSTRUCTIONS, null), // null: default, filled in by apply
     size: src.size,
     candles: src.candles,
     sound: src.sound === true,
@@ -131,10 +134,31 @@ function countLit(handle) {
   return handle.path.reduce((n, cell) => n + (candleAt(handle, cell) ? 1 : 0), 0);
 }
 
-/** Set every cell, the trail, the status line and the veil from `path` and `lit`. */
+/** The instructions text: a valid custom string as written, else the default with `<N>` = candle count. */
+function instructionsText(handle, p) {
+  return p.instructions !== null
+    ? p.instructions
+    : DEFAULTS.instructions.replace('<N>', String(handle.board.candles.length));
+}
+
+/**
+ * Status line (5.12, 5.13). While candle N is on the path with squares still
+ * empty, the move rule allows only retracts, so the line says how to get out.
+ */
+function statusText(lit, n, filled, total) {
+  if (lit >= n && filled < total) return `Candle ${n} must be last. Back up and fill the empty squares.`;
+  return `${lit} of ${n} candles \u00b7 ${filled} of ${total} squares`;
+}
+
+/**
+ * Set every cell, the trail, the status line and the veil from `path` and
+ * `lit`. Filled_Count is path.length and S is size² (design section 2.5).
+ */
 function render(handle) {
   const { board, path, lit, els } = handle;
   const n = board.candles.length;
+  const filled = path.length;
+  const total = board.size * board.size;
   const onPath = new Set(path.map((c) => c.row * board.size + c.col));
   const end = path[path.length - 1];
   for (let row = 0; row < board.size; row += 1) {
@@ -155,8 +179,9 @@ function render(handle) {
     el.setAttribute('aria-label', `Candle ${candle.number}, ${isLit ? 'lit' : 'unlit'}`);
   }
   els.polyline.setAttribute('points', path.map((c) => `${c.col + 0.5},${c.row + 0.5}`).join(' '));
-  els.status.textContent = `${lit} of ${n} candles lit`;
-  els.veil.style.opacity = round3((VEIL_MAX * (n - lit)) / (n - 1));
+  els.status.textContent = statusText(lit, n, filled, total);
+  // size >= 3, so total >= 9 and the divisor is never 0; 0 only when every square is filled (5.8).
+  els.veil.style.opacity = round3((VEIL_MAX * (total - filled)) / (total - 1));
 }
 
 /** Recompute Lit_Count and render; every accepted path change ends here. */
@@ -631,7 +656,7 @@ export function apply(env, params = {}, intensity, handle) {
   s.pointerEvents = blocking ? 'auto' : 'none';
   if (blocking) focusOnce(handle);
   handle.els.heading.textContent = p.heading;
-  handle.els.instructions.textContent = p.instructions;
+  handle.els.instructions.textContent = instructionsText(handle, p);
   return handle;
 }
 

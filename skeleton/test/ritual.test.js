@@ -103,7 +103,17 @@ const candleAt = (board, c) => {
 const litOf = (board, path) => path.filter((c) => candleAt(board, c)).length;
 const inGrid = (board, c) => c.row >= 0 && c.row < board.size && c.col >= 0 && c.col < board.size;
 const dist = (a, b) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
-const veilFor = (n, lit) => +((0.85 * (n - lit)) / (n - 1)).toFixed(3);
+const veilFor = (total, filled) => +((0.85 * (total - filled)) / (total - 1)).toFixed(3);
+const defaultInstructions = (n) =>
+  `Draw one path through every square, passing the candles in order. Candle ${n} must be your last square. Drag back to undo.`;
+/** Status text from Requirement 5 criteria 12 and 13. */
+function statusFor(board, path) {
+  const n = board.candles.length;
+  const total = board.size * board.size;
+  const lit = litOf(board, path);
+  if (lit === n && path.length < total) return `Candle ${n} must be last. Back up and fill the empty squares.`;
+  return `${lit} of ${n} candles \u00b7 ${path.length} of ${total} squares`;
+}
 
 /** 'retract', 'extend' or null (rejected), from the rule text of Requirements 6.2 to 6.7 and 7.1. */
 function oracle(board, path, complete, c) {
@@ -223,7 +233,7 @@ describe('overlay DOM (5.2, 5.3, 5.4, 5.9, 5.10)', () => {
   it('shows heading, instructions, the size x size grid with candle numbers, Reset, Hint and a polite status', () => {
     const h = make({ params: { size: 6, candles: 7 } });
     expect(h.els.heading.textContent).toBe('Light the candles to banish the ghost');
-    expect(h.els.instructions.textContent).toBe('Draw one path through every square, passing the candles in order.');
+    expect(h.els.instructions.textContent).toBe(defaultInstructions(7));
     const rows = h.els.board.querySelectorAll('[role="row"]');
     expect(rows).toHaveLength(6);
     for (const row of rows) expect(row.querySelectorAll('[role="gridcell"]')).toHaveLength(6);
@@ -231,8 +241,18 @@ describe('overlay DOM (5.2, 5.3, 5.4, 5.9, 5.10)', () => {
     const buttons = [...h.root.querySelectorAll('button')].map((b) => b.textContent);
     expect(buttons).toEqual(['Reset', 'Hint']);
     expect(h.els.status.getAttribute('aria-live')).toBe('polite');
-    expect(h.els.status.textContent).toBe('1 of 7 candles lit');
+    expect(h.els.status.textContent).toBe('1 of 7 candles \u00b7 1 of 36 squares');
     expect(h.els.polyline.getAttribute('points')).toBe(`${end(h).col + 0.5},${end(h).row + 0.5}`);
+  });
+
+  it('shows a valid custom instructions param exactly as written, with no <N> replacement (5.11)', () => {
+    const text = 'Finish on candle <N>, then breathe.';
+    const h = make({ params: { size: 5, candles: 3, instructions: text } });
+    expect(h.els.instructions.textContent).toBe(text);
+    ritual.apply(h.env, { instructions: 'Candle N is last.' }, 1, h);
+    expect(h.els.instructions.textContent).toBe('Candle N is last.');
+    ritual.apply(h.env, {}, 1, h);
+    expect(h.els.instructions.textContent).toBe(defaultInstructions(3));
   });
 
   it('keeps every background colour at or below 64 per channel', () => {
@@ -401,7 +421,7 @@ describe('apply: opacity, pointer-events and params (5.2, 5.5, 5.6, 5.7, 6.10)',
         }, `${name}=${String(value)}`).not.toThrow();
         expect(params).toEqual(before);
         expect(h.els.heading.textContent).toBe('Light the candles to banish the ghost');
-        expect(h.els.instructions.textContent).toBe('Draw one path through every square, passing the candles in order.');
+        expect(h.els.instructions.textContent).toBe(defaultInstructions(5));
         expect(h.board.size).toBe(5);
         expect(h.board.candles).toHaveLength(5);
         expect(h.sound).toBe(false);
@@ -434,6 +454,18 @@ describe('move rule (6.2, 6.4 to 6.9, 7.1)', () => {
     expect(h.lit).toBe(2);
     expect(h.complete).toBe(false);
     expect(h.path.length).toBeLessThan(25);
+  });
+
+  it('candle N lit early shows the stuck message, and the count text again once candle N is backed off (5.12, 5.13)', () => {
+    const h = replay(SCRIPTS[5]);
+    expect(h.els.status.textContent).toBe('Candle 2 must be last. Back up and fill the empty squares.');
+    while (h.lit === 2) {
+      stepKey(h, h.path[h.path.length - 2]);
+      if (h.lit === 2) expect(h.els.status.textContent).toBe('Candle 2 must be last. Back up and fill the empty squares.');
+    }
+    expect(h.lit).toBe(1);
+    expect(h.els.status.textContent).toBe(`1 of 2 candles \u00b7 ${h.path.length} of 25 squares`);
+    expect(Number(h.els.veil.style.opacity)).toBe(veilFor(25, h.path.length));
   });
 
   it.each(SCRIPTS.map((s) => [s.name, s]))('%s: keyboard and drag accept exactly the legal targets', (_name, s) => {
@@ -524,7 +556,6 @@ describe('move rule (6.2, 6.4 to 6.9, 7.1)', () => {
 describe('render follows the Player_Path (5.4, 5.8, 6.1, 6.3)', () => {
   function checkRender(h, label) {
     const { board, path } = h;
-    const n = board.candles.length;
     const lit = litOf(board, path);
     expect(h.lit, label).toBe(lit);
     for (const k of board.candles) {
@@ -537,8 +568,9 @@ describe('render follows the Player_Path (5.4, 5.8, 6.1, 6.3)', () => {
       const on = path.some((p) => same(p, c));
       expect(cellEl(h, c).getAttribute('data-on-path'), label).toBe(on ? 'true' : null);
     }
-    expect(h.els.status.textContent, label).toBe(`${lit} of ${n} candles lit`);
-    expect(Number(h.els.veil.style.opacity), label).toBe(veilFor(n, lit));
+    const total = board.size * board.size;
+    expect(h.els.status.textContent, label).toBe(statusFor(board, path));
+    expect(Number(h.els.veil.style.opacity), label).toBe(veilFor(total, path.length));
   }
 
   it.each([
@@ -550,7 +582,8 @@ describe('render follows the Player_Path (5.4, 5.8, 6.1, 6.3)', () => {
     const sol = h.board.solution;
     expect(h.board.candles).toHaveLength(n);
     expect(h.path).toEqual([h.board.candles[0].cell]);
-    expect(h.els.status.textContent).toBe(`1 of ${n} candles lit`);
+    const total = h.board.size * h.board.size;
+    expect(h.els.status.textContent).toBe(`1 of ${n} candles \u00b7 1 of ${total} squares`);
     expect(h.els.veil.style.opacity).toBe('0.85');
     checkRender(h, 'creation');
     for (let k = 1; k <= 4; k += 1) {
@@ -570,8 +603,22 @@ describe('render follows the Player_Path (5.4, 5.8, 6.1, 6.3)', () => {
       checkRender(h, `move to ${k}`);
     }
     expect(h.complete).toBe(true);
-    expect(h.els.status.textContent).toBe(`${n} of ${n} candles lit`);
+    expect(h.els.status.textContent).toBe(`${n} of ${n} candles \u00b7 ${total} of ${total} squares`);
     expect(h.els.veil.style.opacity).toBe('0');
+  });
+
+  it.each([3, 5, 7])('veil is 0.85 at creation, strictly decreases as squares fill, and is 0 only at completion (size %i)', (size) => {
+    const h = make({ params: { size }, seed: size });
+    const veils = [Number(h.els.veil.style.opacity)];
+    expect(veils[0]).toBe(0.85);
+    while (!h.complete) {
+      hint(h);
+      veils.push(Number(h.els.veil.style.opacity));
+    }
+    expect(veils).toHaveLength(size * size);
+    for (let k = 1; k < veils.length; k += 1) expect(veils[k], `filled ${k + 1}`).toBeLessThan(veils[k - 1]);
+    expect(veils.slice(0, -1).every((v) => v > 0)).toBe(true);
+    expect(veils[veils.length - 1]).toBe(0);
   });
 });
 
@@ -653,7 +700,7 @@ describe('completion and the Exorcised_Action (7.1 to 7.6, 7.9)', () => {
     const h = make({ reduced });
     ROUTES[route](h);
     expect(h.complete).toBe(true);
-    expect(h.els.status.textContent).toBe('5 of 5 candles lit');
+    expect(h.els.status.textContent).toBe('5 of 5 candles \u00b7 25 of 25 squares');
     if (reduced) {
       expect(actions).toEqual(['exorcised']); // before the completing handler returned
     } else {
@@ -715,7 +762,7 @@ describe('completion and the Exorcised_Action (7.1 to 7.6, 7.9)', () => {
       expect(error).toHaveBeenCalled();
       expect(String(error.mock.calls[0][0]).startsWith('[poltergeist]')).toBe(true);
       expect(document.contains(h.host)).toBe(true);
-      expect(h.els.status.textContent).toBe('5 of 5 candles lit');
+      expect(h.els.status.textContent).toBe('5 of 5 candles \u00b7 25 of 25 squares');
       error.mockRestore();
     }
   });
