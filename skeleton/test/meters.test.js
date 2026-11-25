@@ -320,7 +320,7 @@ describe('meters: timeAway', () => {
     const { e, m } = make({ timeOnSite: 12, scrollDistance: 300 });
     e.setVisible(false); e.advance(8000); m.update();
     const before = m.values();
-    for (const name of ['timeOnSite', 'scrollDistance', 'timeSinceActive', 'bogus', undefined]) {
+    for (const name of ['scrollDistance', 'timeSinceActive', 'bogus', undefined]) {
       expect(m.reset(name)).toBe(false);
     }
     expect(m.values()).toEqual(before);
@@ -459,5 +459,36 @@ describe('meters: timeAway reference model (Property 1)', () => {
       ),
       { numRuns: 100 },
     );
+  });
+});
+
+// --- Haunt Kit: timeOnSite is resettable ---
+
+describe('meters: reset timeOnSite', () => {
+  // Haunt Kit invariant 13: Only timeAway and timeOnSite are resettable
+  it('reset("timeOnSite") returns true and sets timeOnSite to 0', () => {
+    const e = fakeEnv();
+    const m = createMeters({ window: e.win, document: e.doc, now: e.now, initial: { timeOnSite: 12 } });
+    e.advance(5000); m.update(true);
+    expect(m.values().timeOnSite).toBeCloseTo(17);
+    expect(m.reset('timeOnSite')).toBe(true);
+    expect(m.values().timeOnSite).toBe(0);
+    // counts up again from 0
+    e.advance(2000); m.update(true);
+    expect(m.values().timeOnSite).toBeCloseTo(2);
+  });
+
+  // Haunt Kit invariant 13: Only timeAway and timeOnSite are resettable
+  it('reset of scrollDistance, timeSinceActive, unknown names and undefined returns false and changes nothing', () => {
+    for (const name of ['scrollDistance', 'timeSinceActive', 'bogus', undefined]) {
+      const e = fakeEnv();
+      const m = createMeters({ window: e.win, document: e.doc, now: e.now, initial: { timeOnSite: 30, scrollDistance: 400 } });
+      e.advance(4000); m.update(true);
+      e.scrollTo(250);
+      e.setVisible(false); e.advance(6000); m.update(true);
+      const before = m.values();
+      expect(m.reset(name)).toBe(false);
+      expect(m.values()).toEqual(before);
+    }
   });
 });

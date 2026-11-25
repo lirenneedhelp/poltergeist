@@ -122,6 +122,25 @@
         "chatSessionId": "sess_c1f7e2b9-0da3-4939-8de7-8307cce2d04c",
         "timestamp": 1795591841595
       }
+    ],
+    "4.2 Update `skeleton/test/meters.test.js`": [
+      {
+        "executionId": "daad021f-7c8a-4d7c-960f-fc32812d0b9d",
+        "chatSessionId": "sess_1f8dce53-c475-435b-af14-086e9d8db006",
+        "timestamp": 1795592035835
+      },
+      {
+        "executionId": "daad021f-7c8a-4d7c-960f-fc32812d0b9d",
+        "chatSessionId": "sess_1f8dce53-c475-435b-af14-086e9d8db006",
+        "timestamp": 1795592077760
+      }
+    ],
+    "4. Make `timeOnSite` resettable": [
+      {
+        "executionId": "daad021f-7c8a-4d7c-960f-fc32812d0b9d",
+        "chatSessionId": "sess_1f8dce53-c475-435b-af14-086e9d8db006",
+        "timestamp": 1795592077830
+      }
     ]
   }
 }

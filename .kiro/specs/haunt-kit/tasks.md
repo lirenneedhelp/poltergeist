@@ -68,12 +68,12 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Invariant 3: `checkPath` false for empty path, skipped cell, repeated cell, non-Adjacent step, wrong first cell, wrong last cell, candles out of order, a non-array and bad cell coordinates; no throw; inputs unchanged
     - _Requirements: 4.8, 4.9, 4.11_
 
-- [ ] 4. Make `timeOnSite` resettable
+- [x] 4. Make `timeOnSite` resettable
   - [x] 4.1 Extend `meters.reset` in `skeleton/meters.js`
     - Accept `timeOnSite` (set to 0, return true); keep `timeAway` as is; return false and change nothing for `scrollDistance`, `timeSinceActive` and unknown names
     - _Requirements: 10.8, 16.8_
 
-  - [ ] 4.2 Update `skeleton/test/meters.test.js`
+  - [x] 4.2 Update `skeleton/test/meters.test.js`
     - Edit only the assertion in "reset of any other meter changes nothing and returns false": remove `'timeOnSite'` from the names that must return false
     - Add examples (invariant 13): `reset('timeOnSite')` returns true and `values().timeOnSite` is 0; `scrollDistance`, `timeSinceActive`, `bogus` and `undefined` return false with `values()` deep-equal to before
     - _Requirements: 10.8, 16.2, 16.8_
