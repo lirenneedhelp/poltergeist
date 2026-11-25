@@ -572,6 +572,49 @@
         "chatSessionId": "sess_d3fca72b-7378-441e-b979-a0babdf51013",
         "timestamp": 1795626134464
       }
+    ],
+    "8.1 Implement the Generic_Validator `scripts/validate-app-package.mjs`": [
+      {
+        "executionId": "a276cf49-efab-4d84-b395-25a9fd6e1676",
+        "chatSessionId": "sess_58ac3493-affc-4a4f-818a-b62b7ec3e78e",
+        "timestamp": 1795627226866
+      },
+      {
+        "executionId": "a276cf49-efab-4d84-b395-25a9fd6e1676",
+        "chatSessionId": "sess_58ac3493-affc-4a4f-818a-b62b7ec3e78e",
+        "timestamp": 1795627424054
+      }
+    ],
+    "8.2 Write the Generated_App templates in `scripts/templates/haunt/`": [
+      {
+        "executionId": "ef243ea7-9287-44c5-b492-a2dc7194af21",
+        "chatSessionId": "sess_3c807151-1222-4c0f-b211-01ea54aa0d42",
+        "timestamp": 1795627452972
+      },
+      {
+        "executionId": "ef243ea7-9287-44c5-b492-a2dc7194af21",
+        "chatSessionId": "sess_3c807151-1222-4c0f-b211-01ea54aa0d42",
+        "timestamp": 1795627847907
+      }
+    ],
+    "8.3 Implement the Scaffolder `scripts/new-haunt.mjs`": [
+      {
+        "executionId": "4ca0d939-cfa4-45d5-b784-a355d1c0cd84",
+        "chatSessionId": "sess_6d3de72d-b537-48a7-9a4e-41f46bc77231",
+        "timestamp": 1795627912555
+      },
+      {
+        "executionId": "4ca0d939-cfa4-45d5-b784-a355d1c0cd84",
+        "chatSessionId": "sess_6d3de72d-b537-48a7-9a4e-41f46bc77231",
+        "timestamp": 1795628411704
+      }
+    ],
+    "8. Scaffolder generation": [
+      {
+        "executionId": "4ca0d939-cfa4-45d5-b784-a355d1c0cd84",
+        "chatSessionId": "sess_6d3de72d-b537-48a7-9a4e-41f46bc77231",
+        "timestamp": 1795628411785
+      }
     ]
   }
 }

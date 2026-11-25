@@ -1,0 +1,110 @@
+/* __HAUNT_NAME__ popup: small static layout. No animation or transitions. */
+:root {
+  color-scheme: light dark;
+  --fg: #1d1d1f;
+  --bg: #ffffff;
+  --muted: #5f6368;
+  --border: #d0d0d5;
+  --focus: #1a5fd0;
+  --ok: #1e6b34;
+  --warn: #8a5300;
+  --error: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #ececf0;
+    --bg: #1f1f23;
+    --muted: #a8a8b0;
+    --border: #44444c;
+    --focus: #8ab4f8;
+    --ok: #81c995;
+    --warn: #f3c46b;
+    --error: #f2b8b5;
+  }
+}
+
+* {
+  transition: none;
+  animation: none;
+}
+
+body {
+  margin: 0;
+  min-width: 260px;
+  font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+main {
+  padding: 12px 14px 14px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.status {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 4px;
+}
+
+.status[data-state="loading"] {
+  border-left-color: var(--muted);
+  color: var(--muted);
+}
+
+.status[data-state="active"],
+.status[data-state="demo"] {
+  border-left-color: var(--ok);
+}
+
+.status[data-state="paused"] {
+  border-left-color: var(--warn);
+}
+
+.status[data-state="error"] {
+  border-left-color: var(--error);
+  color: var(--error);
+}
+
+.controls {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
+.control input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.control input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.control:has(input:disabled) {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.control input:disabled {
+  cursor: not-allowed;
+}

@@ -183,19 +183,19 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - In the doomscroll-extension Playwright project with Demo_Mode on: wait for the Ritual_Host after Block blocks pointers, make trusted Hint clicks until the status reads `5 of 5 candles · 25 of 25 squares` (playtest amendment, task 13.4), expect no `[data-poltergeist]` element within 2 s of the last click and the Fog element back within 5 s
     - _Requirements: 10.10_
 
-- [ ] 8. Scaffolder generation
-  - [ ] 8.1 Implement the Generic_Validator `scripts/validate-app-package.mjs`
+- [x] 8. Scaffolder generation
+  - [x] 8.1 Implement the Generic_Validator `scripts/validate-app-package.mjs`
     - `validatePackage(repoRoot, app)` with the manifest, `rules.json` and code checks of design section 4.4, using `resolveGraph`, `expandWar` and `scanSource`; one error line per failed rule starting with the app-relative path; the missing-`dir` error; never writes
     - _Requirements: 12.5, 12.6, 12.10, 13.4_
 
-  - [ ] 8.2 Write the Generated_App templates in `scripts/templates/haunt/`
+  - [x] 8.2 Write the Generated_App templates in `scripts/templates/haunt/`
     - `content.js.tpl` (classic script, `hauntCreateDemoProfile`, message listener with sender check, `content-state` read with safe defaults, `getURL` loading, pause stop and restart from 0, Demo_Mode read at load, no DOM selectors)
     - `background.js.tpl` (`createBackground(chromeApi)`, keys prefixed with the Haunt_Name in `storage.session` and `storage.local`, extension-page sender checks, safe defaults on storage errors)
     - `popup.html.tpl`, `popup.js.tpl`, `popup.css.tpl` (Pause and Demo toggles, status line, `textContent` only, no inline script)
     - `test/package.test.js.tpl` and `test/background.test.js.tpl` starter tests per design section 4.3
     - _Requirements: 12.4, 12.7, 12.8, 12.9, 12.10, 12.11, 12.14_
 
-  - [ ] 8.3 Implement the Scaffolder `scripts/new-haunt.mjs`
+  - [x] 8.3 Implement the Scaffolder `scripts/new-haunt.mjs`
     - Export `parseArgs`, `isAllowedHost`, `nextAppNumber`, `renderTemplate`, `scaffold` and `main`; all input checks before any write (name pattern, `--root` contents, 1 to 20 `--hosts` with scheme `http`, `https` or `*`, no existing registry key or `build:<name>`/`check:<name>` script, no existing target folder)
     - Build `manifest.json` and `rules.json` from data (reachable modules via `resolveGraph`; Fog and Rot starter rules on `timeOnSite`), render the templates, append the registry entry as one line, add `build:<name>` and `check:<name>` to `package.json`, then run the build and Package_Check in a child process
     - Snapshot registry and `package.json` bytes first; on any failure after the folder exists, delete only the planned folder, restore both files byte-for-byte, print `new-haunt: <step> failed: <reason>` (naming the file for write failures) and exit 1; print the created folder and exit 0 on success
