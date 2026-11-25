@@ -5,13 +5,16 @@
 // createElementNS, all text is set with textContent, and nothing is loaded:
 // candles, wax, flame and smoke are CSS gradients keyed on data attributes.
 //
-// Input handling (tryMove, pointer drag, arrow keys, Reset, Hint), completion
-// and the Banishing_Ending, and the Web Audio chime are added by later tasks;
-// their hooks are marked below. undo already clears everything they create.
+// Input: every path change goes through tryMove (pointer drag, arrow keys) or
+// the Reset and Hint buttons, and ends in update(). A path that checkPath
+// accepts calls complete(): with motion the ghost fades for 1200 ms and a
+// one-shot timer then reports env.onAction('exorcised'); under Reduced_Motion
+// the action is reported in the completing handler. With `sound: true` the
+// first time candle N lights plays one generated Web Audio chime. undo clears
+// the ending timer and animation and closes the chime's audio context, so an
+// undone ritual never reports the action and leaves no audio running.
 
 import { clamp01, teardown, handleState, LIVE, numberIn } from './util.js';
-// checkPath decides completion after a move or Hint (tasks 5.5 and 5.6).
-// eslint-disable-next-line no-unused-vars
 import { generateBoard, checkPath } from '../ritual/candle-path.js';
 
 export const description =
@@ -156,11 +159,200 @@ function render(handle) {
   els.veil.style.opacity = round3((VEIL_MAX * (n - lit)) / (n - 1));
 }
 
-/** Recompute Lit_Count and render; every accepted path change ends here (task 5.5). */
+/** Recompute Lit_Count and render; every accepted path change ends here. */
 function update(handle) {
   handle.lit = countLit(handle);
   render(handle);
-  // Task 5.7 hook: start the chime the first time lit reaches N when handle.sound is true.
+  if (handle.sound === true && !handle.chimed && handle.lit === handle.board.candles.length) {
+    startChime(handle);
+  }
+}
+
+// ---- Web Audio chime (design section 2.7) ----
+
+const CHIME_S = 0.9; // the oscillator stops at most 1 s after it starts (8.1)
+
+/**
+ * Play one generated chime. Runs once per handle: `chimed` is set first, so a
+ * failure or a later re-light never retries (8.2). No audio file is loaded
+ * (8.4). Every failure is logged and swallowed so completion proceeds (8.5).
+ */
+function startChime(handle) {
+  handle.chimed = true;
+  const win = handle.env.window;
+  const AC = win ? win.AudioContext || win.webkitAudioContext : undefined;
+  if (typeof AC !== 'function') {
+    console.error('[poltergeist] ritual sound: Web Audio API unavailable');
+    return;
+  }
+  let ctx = null;
+  try {
+    ctx = new AC();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const t = ctx.currentTime;
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, t);
+    osc.frequency.linearRampToValueAtTime(990, t + 0.25);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + CHIME_S);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    handle.audio = { ctx, osc }; // set before start so a throwing start is closed by stopChime
+    osc.start(t);
+    osc.stop(t + CHIME_S);
+  } catch (err) {
+    console.error('[poltergeist] ritual sound:', err);
+    // a context was made but the chime failed: close it now so nothing is left open
+    if (handle.audio) stopChime(handle);
+    else if (ctx) {
+      try {
+        const closing = ctx.close();
+        if (closing && typeof closing.catch === 'function') closing.catch(() => {});
+      } catch {
+        // closing is best effort
+      }
+    }
+  }
+}
+
+// ---- Completion and Banishing_Ending (design section 2.6) ----
+
+const ENDING_MS = 1200;
+const GHOST_FRAMES = [
+  { opacity: 1, transform: 'translateY(0px)', filter: 'blur(0px)' },
+  { opacity: 0, transform: 'translateY(-32px)', filter: 'blur(6px)' },
+];
+
+/**
+ * Report the Exorcised_Action. A missing or throwing env.onAction is logged and
+ * swallowed, so the completed Board stays shown. Callers set handle.exorcised
+ * first and call this as their last statement: the app may undo the ritual
+ * from inside the callback (design decision 6).
+ */
+function fireExorcised(handle) {
+  const { env } = handle;
+  if (typeof env.onAction !== 'function') {
+    console.error('[poltergeist] ritual: env.onAction is not a function');
+    return;
+  }
+  try {
+    env.onAction('exorcised');
+  } catch (err) {
+    console.error('[poltergeist] ritual onAction:', err);
+  }
+}
+
+/** One-shot ending timer: the timer, not the animation, decides when the action fires. */
+function onEndingDone(handle) {
+  handle.endingTimer = null;
+  if (handleState(handle) !== LIVE || handle.exorcised) return;
+  handle.endingAnim = null;
+  handle.els.ghost.style.display = 'none';
+  handle.exorcised = true;
+  fireExorcised(handle);
+}
+
+/**
+ * Called when a move or Hint leaves a path that checkPath accepts. Reachable
+ * only from a LIVE handle (every handler runs the input guard first), so a
+ * fading ritual never completes (7.9). From here on tryMove, Reset and Hint
+ * change nothing (7.1).
+ */
+function complete(handle) {
+  if (handle.complete || handleState(handle) !== LIVE) return;
+  handle.complete = true;
+  endDrag(handle);
+  render(handle);
+  if (handle.env.reducedMotion) {
+    // No ending under Reduced_Motion: the action comes in the completing handler (7.3).
+    handle.exorcised = true;
+    fireExorcised(handle);
+    return;
+  }
+  const ghost = handle.els.ghost;
+  ghost.style.display = '';
+  if (typeof ghost.animate === 'function') {
+    try {
+      handle.endingAnim = ghost.animate(GHOST_FRAMES, { duration: ENDING_MS, easing: 'ease-in', fill: 'forwards' });
+    } catch {
+      handle.endingAnim = null; // the ghost stays shown; the timer still fires the action
+    }
+  }
+  handle.endingTimer = handle.env.setTimeout(() => onEndingDone(handle), ENDING_MS);
+}
+
+// ---- Moves (design section 2.4) ----
+
+const ARROWS = {
+  ArrowUp: [-1, 0],
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1],
+};
+
+const inGrid = (cell, size) =>
+  Number.isInteger(cell.row) && Number.isInteger(cell.col) &&
+  cell.row >= 0 && cell.row < size && cell.col >= 0 && cell.col < size;
+
+const adjacent = (a, b) => Math.abs(a.row - b.row) + Math.abs(a.col - b.col) === 1;
+
+/**
+ * One move from the Path_End to `cell`. Returns true when the path changed.
+ * A rejected move touches nothing, so status and veil stay as they were.
+ */
+function tryMove(handle, cell) {
+  if (handle.complete || !cell) return false;
+  const { board, path } = handle;
+  const n = board.candles.length;
+  const end = path[path.length - 1];
+  // Retract onto the previous cell (6.4); impossible from the single-cell path (6.5).
+  if (path.length >= 2 && sameCell(cell, path[path.length - 2])) {
+    path.pop();
+    update(handle);
+    return true;
+  }
+  if (handle.lit >= n) return false; // only retract while candle N is lit (6.7)
+  if (!inGrid(cell, board.size) || !adjacent(cell, end)) return false;
+  if (path.some((c) => sameCell(c, cell))) return false;
+  const k = candleAt(handle, cell);
+  if (k && k !== handle.lit + 1) return false;
+  path.push(copyCell(cell));
+  update(handle);
+  if (path.length === board.size * board.size && checkPath(board, path)) complete(handle);
+  return true;
+}
+
+/** The Board cell `target` is, or null for anything else (row, gap, board itself). */
+function cellOf(handle, target) {
+  if (!target || typeof target.getAttribute !== 'function') return null;
+  const row = Number(target.getAttribute('data-row'));
+  const col = Number(target.getAttribute('data-col'));
+  const cells = handle.els.cells;
+  if (!Number.isInteger(row) || !Number.isInteger(col) || !cells[row] || cells[row][col] !== target) return null;
+  return { row, col };
+}
+
+function startDrag(handle, event) {
+  endDrag(handle); // a missed release never leaves a second pair of window listeners
+  const pointerId = event.pointerId;
+  handle.drag = { pointerId };
+  // Touch gives the pressed cell implicit capture; release it so later events
+  // target the cell under the finger.
+  const target = event.target;
+  try {
+    if (typeof target.hasPointerCapture === 'function' && target.hasPointerCapture(pointerId)) {
+      target.releasePointerCapture(pointerId);
+    }
+  } catch {
+    // capture is best effort
+  }
+  const win = handle.env.window;
+  if (win && typeof win.addEventListener === 'function') {
+    win.addEventListener('pointerup', handle.on.pointerup);
+    win.addEventListener('pointercancel', handle.on.pointerup);
+  }
 }
 
 // ---- Teardown helpers (safe no-ops until tasks 5.5 to 5.7 set their state) ----
@@ -234,7 +426,7 @@ function buildGhost(doc) {
   const ghost = svg(doc, 'svg', 'ghost');
   ghost.setAttribute('viewBox', '0 0 120 140');
   ghost.setAttribute('aria-hidden', 'true');
-  ghost.style.display = 'none'; // shown only during the Banishing_Ending (task 5.6)
+  ghost.style.display = 'none'; // shown only during the Banishing_Ending
   const body = svg(doc, 'path');
   body.setAttribute(
     'd',
@@ -286,26 +478,59 @@ function buildTrail(doc, size) {
 /** Input handlers, exposed on handle.on for tests. Each runs the guard first. */
 function makeHandlers(handle) {
   return {
-    // Task 5.5: drag from the Path_End, one tryMove per entered cell.
+    // Drag starts only with the primary button on the Path_End (6.8).
     pointerdown: (event) => {
       if (!accepts(handle, event)) return;
+      if (event.button !== 0 || event.isPrimary === false) return;
+      const cell = cellOf(handle, event.target);
+      if (!cell || !sameCell(cell, handle.path[handle.path.length - 1])) return;
+      startDrag(handle, event);
     },
+    // Each cell the dragging pointer enters is one move; no interpolation.
     pointerover: (event) => {
       if (!accepts(handle, event)) return;
+      if (!handle.drag || event.pointerId !== handle.drag.pointerId) return;
+      const cell = cellOf(handle, event.target);
+      if (cell) tryMove(handle, cell);
     },
+    // Registered on env.window for both pointerup and pointercancel.
     pointerup: (event) => {
       if (!accepts(handle, event)) return;
+      if (!handle.drag || event.pointerId !== handle.drag.pointerId) return;
+      endDrag(handle);
     },
-    // Task 5.5: arrow keys move from the Path_End.
+    // Arrow keys on the focused Board (6.9); every other key is left alone.
     keydown: (event) => {
       if (!accepts(handle, event)) return;
+      const delta = Object.prototype.hasOwnProperty.call(ARROWS, event.key) ? ARROWS[event.key] : null;
+      if (!delta) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const end = handle.path[handle.path.length - 1];
+      tryMove(handle, { row: end.row + delta[0], col: end.col + delta[1] });
     },
-    // Task 5.5: Reset and Hint per design section 2.4.
+    // Reset (6.11): back to candle 1 on the same Board.
     reset: (event) => {
       if (!accepts(handle, event)) return;
+      if (handle.complete) return;
+      handle.path = [copyCell(handle.board.candles[0].cell)];
+      endDrag(handle);
+      update(handle);
     },
+    // Hint (6.12): the matching solution prefix plus one more cell.
     hint: (event) => {
       if (!accepts(handle, event)) return;
+      if (handle.complete) return;
+      const { board, path } = handle;
+      const total = board.size * board.size;
+      let k = 0;
+      while (k < path.length && k < total && sameCell(path[k], board.solution[k])) k += 1;
+      k = Math.max(1, k);
+      if (k === total) return;
+      handle.path = board.solution.slice(0, k + 1).map(copyCell);
+      endDrag(handle);
+      update(handle);
+      if (checkPath(board, handle.path)) complete(handle);
     },
   };
 }

@@ -232,6 +232,42 @@
         "chatSessionId": "sess_1923fdc4-0f8c-419e-8fb1-494fba0c8adf",
         "timestamp": 1795593447369
       }
+    ],
+    "5.5 Implement path drawing in `ritual.js`": [
+      {
+        "executionId": "78e8e638-a1f1-44b9-bf62-995fca006191",
+        "chatSessionId": "sess_2d343ddc-9fd4-4dd0-aee5-7906307ac894",
+        "timestamp": 1795593515887
+      },
+      {
+        "executionId": "78e8e638-a1f1-44b9-bf62-995fca006191",
+        "chatSessionId": "sess_2d343ddc-9fd4-4dd0-aee5-7906307ac894",
+        "timestamp": 1795593731528
+      }
+    ],
+    "5.6 Implement completion and the Banishing_Ending in `ritual.js`": [
+      {
+        "executionId": "7b41e041-ac6d-468e-9894-19ad5ab09e4b",
+        "chatSessionId": "sess_73fefa3e-cefc-4668-b22c-6423d6bff0bb",
+        "timestamp": 1795593786793
+      },
+      {
+        "executionId": "7b41e041-ac6d-468e-9894-19ad5ab09e4b",
+        "chatSessionId": "sess_73fefa3e-cefc-4668-b22c-6423d6bff0bb",
+        "timestamp": 1795593911706
+      }
+    ],
+    "5.7 Implement the optional Web Audio chime in `ritual.js`": [
+      {
+        "executionId": "aa08d080-d0a9-4ce0-b353-f6e581c598c7",
+        "chatSessionId": "sess_47d5f7e4-4422-4099-8caf-da60b3eda630",
+        "timestamp": 1795593966021
+      },
+      {
+        "executionId": "aa08d080-d0a9-4ce0-b353-f6e581c598c7",
+        "chatSessionId": "sess_47d5f7e4-4422-4099-8caf-da60b3eda630",
+        "timestamp": 1795594060921
+      }
     ]
   }
 }

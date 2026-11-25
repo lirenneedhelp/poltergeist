@@ -103,19 +103,19 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Add the `ritual` line to the README `## Effects` list with text equal to its `description` export
     - _Requirements: 11.1, 15.5_
 
-  - [ ] 5.5 Implement path drawing in `ritual.js`
+  - [x] 5.5 Implement path drawing in `ritual.js`
     - Input guard on every handler (`isTrusted === true` and handle LIVE); handlers exposed on `handle.on` for tests
     - `tryMove` with retract, the candle-N-lit rule, grid, adjacency, on-path and next-candle checks; `update` recomputes Lit_Count and renders before the handler returns
     - Pointer drag from the Path_End only (primary button, pointer capture release, `pointerover` moves, `pointerup`/`pointercancel` on `env.window`); arrow keys on the focused Board with `preventDefault` and `stopPropagation` on every arrow key and no other key; Reset and Hint per design section 2.4
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 6.11, 6.12, 6.13, 6.14_
 
-  - [ ] 5.6 Implement completion and the Banishing_Ending in `ritual.js`
+  - [x] 5.6 Implement completion and the Banishing_Ending in `ritual.js`
     - `complete` when `checkPath` is true after a move or Hint: status `N of N candles lit`, no further path changes
     - Motion allowed: ghost SVG fade with `animate` when available and a one-shot 1200 ms timer that sets `exorcised` and calls `fireExorcised` last; Reduced_Motion: set `exorcised` and call `fireExorcised` in the same handler with no animation
     - `fireExorcised` logs `[poltergeist] ritual …` with `console.error` when `env.onAction` is missing or throws, keeping the Board shown; at most one action per handle; `begin` and `finish` clear the ending timer and cancel the animation so undo during the ending makes no action; no `chrome.*`, `window.close`, `location` or `beforeunload`/`unload`
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9_
 
-  - [ ] 5.7 Implement the optional Web Audio chime in `ritual.js`
+  - [x] 5.7 Implement the optional Web Audio chime in `ritual.js`
     - `startChime` once per handle when candle N first lights and `sound === true`; `chimed` set first; generated oscillator sound stopping at most 1 s after start; errors and a missing API logged with `[poltergeist]` without blocking completion
     - `stopChime` in `begin` and `finish` stops the oscillator and closes the context before `undo` returns, swallowing failures
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6_
