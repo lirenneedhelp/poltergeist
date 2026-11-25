@@ -53,15 +53,15 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Assert the README `## Effects` lines map every registered effect name to its `description` export and list no unregistered effect
     - _Requirements: 15.5_
 
-- [ ] 3. Candle Path generator
-  - [ ] 3.1 Implement `skeleton/ritual/candle-path.js`
+- [x] 3. Candle Path generator
+  - [x] 3.1 Implement `skeleton/ritual/candle-path.js`
     - Pure module with no imports, no DOM and no `chrome.*`; export `generateBoard({ size, candles, random })` and `checkPath(board, path)`
     - Option resolution (size 3 to 7 else 5; candles 2 to min(9, size²) against the resolved size else 5; `random` a function else `Math.random`; clamped `randomInt`)
     - Serpentine start plus `30 × size²` backbite moves; candle 1 on `solution[0]`, candle N on the last cell, middle candles on distinct sorted indices; fresh cell copies; never mutate options
     - `checkPath` returns true only for a full, repeat-free, Adjacent path meeting candles 1..N in order, with explicit end checks; never throws or mutates
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.10, 4.11_
 
-  - [ ] 3.2 Write `skeleton/test/candle-path.test.js`
+  - [x] 3.2 Write `skeleton/test/candle-path.test.js`
     - Five-line mulberry32 PRNG and fixed `SEEDS = [1, 2, 3, 7, 42, 99, 1234, 2024, 31337, 65535]`
     - Invariant 1: for each seed and each size 3 to 7, and each listed invalid option, the Board has the resolved size and candle count, a valid `solution`, candles in `solution` order, `checkPath(board, board.solution)` true, and an unmodified options object
     - Invariant 2: same seed gives deep-equal Boards; at least two different `solution` orders at size 5

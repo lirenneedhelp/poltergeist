@@ -141,6 +141,37 @@
         "chatSessionId": "sess_1f8dce53-c475-435b-af14-086e9d8db006",
         "timestamp": 1795592077830
       }
+    ],
+    "3.1 Implement `skeleton/ritual/candle-path.js`": [
+      {
+        "executionId": "da0fb32d-ce6d-49d4-9f07-9ed1ba979b66",
+        "chatSessionId": "sess_f5df1a2e-7ad8-473f-b547-c43716dac41e",
+        "timestamp": 1795592189685
+      },
+      {
+        "executionId": "da0fb32d-ce6d-49d4-9f07-9ed1ba979b66",
+        "chatSessionId": "sess_f5df1a2e-7ad8-473f-b547-c43716dac41e",
+        "timestamp": 1795592274712
+      }
+    ],
+    "3.2 Write `skeleton/test/candle-path.test.js`": [
+      {
+        "executionId": "ff686cec-23fb-434d-959c-ee7e24baad6d",
+        "chatSessionId": "sess_5a9a22e9-d5d2-441c-bb1d-cea49e5bf5ae",
+        "timestamp": 1795592368356
+      },
+      {
+        "executionId": "ff686cec-23fb-434d-959c-ee7e24baad6d",
+        "chatSessionId": "sess_5a9a22e9-d5d2-441c-bb1d-cea49e5bf5ae",
+        "timestamp": 1795592492409
+      }
+    ],
+    "3. Candle Path generator": [
+      {
+        "executionId": "ff686cec-23fb-434d-959c-ee7e24baad6d",
+        "chatSessionId": "sess_5a9a22e9-d5d2-441c-bb1d-cea49e5bf5ae",
+        "timestamp": 1795592492851
+      }
     ]
   }
 }
