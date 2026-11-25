@@ -39,8 +39,74 @@ afterEach(() => {
 });
 
 describe('registry', () => {
-  it('has exactly the five built-in effects', () => {
-    expect(Object.keys(builtinEffects).sort()).toEqual([...NAMES, 'tombstone'].sort());
+  it('has exactly the six built-in effects', () => {
+    expect(Object.keys(builtinEffects).sort()).toEqual([...NAMES, 'tombstone', 'ritual'].sort());
+  });
+});
+
+// Haunt Kit invariant 10: Undo reaches the Restored_State
+describe('ritual: apply then undo', () => {
+  const ritual = builtinEffects.ritual;
+  const hostCount = () => document.querySelectorAll('div[data-poltergeist="ritual"]').length;
+
+  it.each([false, true])('instant undo restores the page (reducedMotion=%s)', (reduced) => {
+    const env = makeEnv(reduced);
+    const before = snap();
+    let h;
+    for (const i of INTENSITIES) h = ritual.apply(env, {}, i, h);
+    expect(hostCount()).toBe(1);
+    ritual.undo(h, { durationMs: 0 });
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+    expect(() => ritual.undo(h, { durationMs: 0 })).not.toThrow();
+    expect(snap()).toEqual(before);
+  });
+
+  it('undo with durationMs 300 keeps the host until 300 ms, then restores the page', () => {
+    const env = makeEnv();
+    const before = snap();
+    let h;
+    for (const i of INTENSITIES) h = ritual.apply(env, {}, i, h);
+    ritual.undo(h, { durationMs: 300 });
+    vi.advanceTimersByTime(299);
+    expect(hostCount()).toBe(1);
+    vi.advanceTimersByTime(1);
+    expect(snap()).toEqual(before);
+    expect(hostCount()).toBe(0);
+  });
+});
+
+// Haunt Kit invariant 11: Reduced_Motion means no motion
+describe('ritual: reduced motion', () => {
+  const ritual = builtinEffects.ritual;
+  let animate;
+  beforeEach(() => {
+    animate = vi.fn(() => ({ cancel() {}, finish() {} }));
+    Element.prototype.animate = animate;
+  });
+  afterEach(() => {
+    delete Element.prototype.animate;
+  });
+
+  it('starts no animation or transition and has no @keyframes', () => {
+    const env = makeEnv(true);
+    let h;
+    for (const i of INTENSITIES) h = ritual.apply(env, {}, i, h);
+    const nodes = [h.host, ...h.root.querySelectorAll('*')];
+    expect(animate).not.toHaveBeenCalled();
+    for (const node of nodes) {
+      expect(node.style.animation || '').toBe('');
+      expect(node.style.transition || '').toBe('');
+      expect(['', 'none']).toContain(getComputedStyle(node).animationName ?? '');
+    }
+    const css = h.root.querySelector('style').textContent;
+    expect(css).not.toMatch(/@keyframes/i);
+    expect(css).not.toMatch(/\banimation\b|\btransition\b/i);
+    ritual.undo(h, { durationMs: 300 });
+    expect(h.host.style.transition || '').toBe('');
+    expect(h.host.style.opacity).toBe('0');
+    ritual.undo(h, { durationMs: 0 });
+    expect(animate).not.toHaveBeenCalled();
   });
 });
 

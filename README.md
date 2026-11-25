@@ -11,3 +11,4 @@ The shared code lives in `skeleton/`. Each app (`app1-doomscroll/`, `app2-tab-gr
 - `rot`: Characters in visible text decay into glyphs of dust; more of them as intensity grows.
 - `block`: A full-page overlay that darkens with intensity and blocks interaction once intensity reaches blockAt.
 - `tombstone`: A full-page tombstone naming the page and how long it was left, with one action button; blocks interaction once intensity reaches blockAt.
+- `ritual`: A full-page candle puzzle: draw one path through every square, passing the numbered candles in order. Finishing it reports the "exorcised" action; blocks interaction once intensity reaches blockAt.

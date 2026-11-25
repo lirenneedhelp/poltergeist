@@ -42,7 +42,9 @@
         "skeleton/effects/flicker.js",
         "skeleton/effects/rot.js",
         "skeleton/effects/block.js",
-        "skeleton/effects/tombstone.js"
+        "skeleton/effects/tombstone.js",
+        "skeleton/effects/ritual.js",
+        "skeleton/ritual/candle-path.js"
       ],
       "matches": [
         "http://*/*",

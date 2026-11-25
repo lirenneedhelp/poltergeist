@@ -321,3 +321,31 @@ them. Kiro pointed out that scaling buried rows by the current demo setting
 would mislabel old entries, so only live durations are scaled (Req 3.14).
 **Evidence:** commit 2a1332e; tests 810 → 850. Break-it checks: dropping
 demo scaling failed 4 tests; a wrong scale failed 3.
+
+## 2026-11-25: haunt-kit Task 5.1 (ritual effect, created through the Effect_Hook)
+**Kiro feature:** spec task; `PostFileCreate` agent hook (`.kiro/hooks/new-effect.json`)
+**What happened:** Kiro created `skeleton/effects/ritual.js` with its file-create
+tool. The Effect_Hook fired once on that create (event `PostFileCreate`,
+`file_path` `skeleton\effects\ritual.js`) and its prompt asked for the five
+steps: register the effect, document its params in the schema, add
+restoration and reduced-motion tests, run `npm run build:skeletons`, and add
+the README line. Kiro checked the file exports `apply` and then did all five:
+- `skeleton/effects/index.js`: `ritual` registered (task 5.2 content).
+- `skeleton/rule-schema.json`: `definitions["params-ritual"]` with type, range,
+  default and a description for all seven params; `effect.properties.type`
+  unchanged (task 5.2 content).
+- `skeleton/test/restoration.test.js`: registry test now expects six effects;
+  new ritual apply-then-undo tests (reduced motion off and on, `durationMs`
+  300) and a reduced-motion test (task 5.3 content).
+- `npm run build:skeletons`: both app copies got `effects/ritual.js`, the
+  updated `index.js` and `rule-schema.json`. The command exits 1 because both
+  Package_Validators report `skeleton/effects/ritual.js` and
+  `skeleton/ritual/candle-path.js` missing from `web_accessible_resources`.
+  That is expected until task 7.2; no manifest was edited (task 5.4 content).
+- `README.md`: `ritual` line equal to its `description` export (task 5.4 content).
+**First version of the ritual:** params, host with open shadow root and no
+light-DOM children, static stylesheet, veil, Board grid, trail, status line,
+Reset and Hint buttons, render, one-time focus, and undo through `teardown`.
+Path drawing, the ending and the chime are stubs for tasks 5.5 to 5.7.
+**Evidence:** `npx vitest --run skeleton/test` 414 passed; with the docs,
+authoring and rules-hook tests, 472 passed.

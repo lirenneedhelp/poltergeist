@@ -79,25 +79,25 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - _Requirements: 10.8, 16.2, 16.8_
 
 - [ ] 5. Ritual effect, created through the Effect_Hook
-  - [ ] 5.1 Create `skeleton/effects/ritual.js` as a new file in Kiro so the Effect_Hook fires
+  - [x] 5.1 Create `skeleton/effects/ritual.js` as a new file in Kiro so the Effect_Hook fires
     - Create the file with Kiro's file-create tool (not from a terminal or git), so the `PostFileCreate` Effect_Hook runs; record in `KIRO_FILES.md` that the hook prompt ran and what it changed, or that it did not fire and the five steps were done by hand
     - First version: `description`, param resolution table of design section 2.2, `apply` (intensity clamp, opacity `round3(maxOpacity × i)`, `pointer-events` by `blockAt`, one-time focus of the Board, heading and instructions update on a live handle), the Ritual_Host with open shadow root and zero light-DOM children, the static stylesheet, Ritual_Veil, Board grid, trail, status line with `aria-live="polite"`, Reset and Hint buttons, and `render` (candle `data-lit` and `aria-label`, status text, veil opacity `round3(0.85 × (N − Lit_Count) / (N − 1))`)
     - `undo` through `util.js` `teardown` with `begin` and `finish` per design section 2.8 (instant for 0, absent or invalid durations; linear fade with motion; instant opacity 0 under Reduced_Motion; repeat calls per `teardown`), removing every listener and the host
     - Use only `createElement`/`createElementNS` and `textContent`; no resource loads, no nodes under `head` or `body`, background channels at most 64, no "zip" anywhere
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 5.10, 6.1, 6.3, 6.10, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6_
 
-  - [ ] 5.2 Hook-driven step 1 and 2: register the effect and document its params
+  - [x] 5.2 Hook-driven step 1 and 2: register the effect and document its params
     - Add `import * as ritual from './ritual.js'` and `ritual` to `builtinEffects` in `skeleton/effects/index.js`
     - Add `definitions["params-ritual"]` to `skeleton/rule-schema.json` with a `description` for the effect and, for `heading`, `instructions`, `size`, `candles`, `sound`, `maxOpacity` and `blockAt`, the type, range keywords, `default` and a `description` stating default and range in words; keep `effect.properties.type` equal to `{ "type": "string" }`
     - _Requirements: 5.1, 11.3_
 
-  - [ ] 5.3 Hook-driven step 3: restoration and reduced-motion tests
+  - [x] 5.3 Hook-driven step 3: restoration and reduced-motion tests
     - In `skeleton/test/restoration.test.js`, edit only "has exactly the five built-in effects": expected keys become `[...NAMES, 'tombstone', 'ritual']` and the title says "six"
     - Add a `ritual` describe block: apply-then-undo with Reduced_Motion false, Reduced_Motion true, and `undo` with `durationMs` 300; each asserts the Restored_State and that no `div[data-poltergeist="ritual"]` remains
     - Add a reduced-motion test: no `animate()` call, no inline `animation` or `transition`, no `@keyframes` in the shadow stylesheet, computed `animation-name` `none`
     - _Requirements: 7.8, 9.7, 16.2_
 
-  - [ ] 5.4 Hook-driven steps 4 and 5: rebuild copies and update the README
+  - [x] 5.4 Hook-driven steps 4 and 5: rebuild copies and update the README
     - Run `npm run build:skeletons` so every Generated_Skeleton gets `skeleton/effects/ritual.js` and `skeleton/ritual/candle-path.js`; never edit a Generated_Skeleton by hand
     - The app Package_Validators will report the two new modules missing from `web_accessible_resources`; this is expected and fixed in task 7.2, so do not edit any manifest here
     - Add the `ritual` line to the README `## Effects` list with text equal to its `description` export
@@ -150,7 +150,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Add the fifth `EXPECTED_RULES` entry in `scripts/validate-doomscroll-package.mjs` and the `trigger must be timeOnSite 1500 with no rampTo` message when `rampTo` is undefined
     - _Requirements: 10.1, 10.2, 10.9_
 
-  - [ ] 7.2 Add the two resource strings to both manifests
+  - [x] 7.2 Add the two resource strings to both manifests
     - Add `skeleton/effects/ritual.js` and `skeleton/ritual/candle-path.js` to `web_accessible_resources[0].resources` in `app1-doomscroll/manifest.json` and `app2-tab-graveyard/manifest.json`; change nothing else in either manifest and leave the rest of Graveyard's list as it is
     - _Requirements: 10.7, 11.2, 16.4_
 

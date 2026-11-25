@@ -60,6 +60,59 @@
           }
         }
       }
+    },
+    "params-ritual": {
+      "type": "object",
+      "description": "Params of the ritual effect: a full-page candle puzzle. Draw one path through every square, passing the numbered candles in order. Finishing it reports the \"exorcised\" action; blocks interaction once intensity reaches blockAt. Documentation only: the validator does not read this definition. Any value of the wrong type or outside its range uses the default.",
+      "properties": {
+        "heading": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "default": "Light the candles to banish the ghost",
+          "description": "Heading text, 1 to 200 characters. Default \"Light the candles to banish the ghost\". Other values use the default."
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "default": "Draw one path through every square, passing the candles in order.",
+          "description": "Instruction text, 1 to 300 characters. Default \"Draw one path through every square, passing the candles in order.\". Other values use the default."
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 7,
+          "default": 5,
+          "description": "Board size in squares per side. Integer from 3 to 7. Default 5. Other values use the default."
+        },
+        "candles": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 9,
+          "default": 5,
+          "description": "Number of candles. Integer from 2 to 9, and at most size x size. Default 5. Other values use the default."
+        },
+        "sound": {
+          "type": "boolean",
+          "default": false,
+          "description": "Play a short generated chime when the last candle lights. Only the boolean true turns it on. Default false."
+        },
+        "maxOpacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.96,
+          "description": "Overlay opacity at intensity 1. Number from 0 to 1. Default 0.96. Other values use the default."
+        },
+        "blockAt": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1,
+          "description": "Intensity at which the overlay blocks pointer input and takes focus. Number from 0 to 1. Default 1. Other values use the default."
+        }
+      }
     }
   }
 }

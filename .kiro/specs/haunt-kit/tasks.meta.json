@@ -172,6 +172,66 @@
         "chatSessionId": "sess_5a9a22e9-d5d2-441c-bb1d-cea49e5bf5ae",
         "timestamp": 1795592492851
       }
+    ],
+    "5.1 Create `skeleton/effects/ritual.js` as a new file in Kiro so the Effect_Hook fires": [
+      {
+        "executionId": "5411ad1a-fc6c-44c1-9675-f43d05c3c90d",
+        "chatSessionId": "sess_a2bd6663-d6e1-424e-9b64-9f0d21b32b45",
+        "timestamp": 1795592650521
+      },
+      {
+        "executionId": "5411ad1a-fc6c-44c1-9675-f43d05c3c90d",
+        "chatSessionId": "sess_a2bd6663-d6e1-424e-9b64-9f0d21b32b45",
+        "timestamp": 1795592968384
+      }
+    ],
+    "5.2 Hook-driven step 1 and 2: register the effect and document its params": [
+      {
+        "executionId": "6c3a3a0a-d713-4bd5-8c3e-497b55aedfb7",
+        "chatSessionId": "sess_e6795c18-b00e-412a-b932-d0f3d72c98e1",
+        "timestamp": 1795593033996
+      },
+      {
+        "executionId": "6c3a3a0a-d713-4bd5-8c3e-497b55aedfb7",
+        "chatSessionId": "sess_e6795c18-b00e-412a-b932-d0f3d72c98e1",
+        "timestamp": 1795593092885
+      }
+    ],
+    "5.3 Hook-driven step 3: restoration and reduced-motion tests": [
+      {
+        "executionId": "87a8c7c0-43ca-4745-a5ba-7e9699738cf8",
+        "chatSessionId": "sess_d8795ec2-0528-481e-a51e-13473a417f83",
+        "timestamp": 1795593127406
+      },
+      {
+        "executionId": "87a8c7c0-43ca-4745-a5ba-7e9699738cf8",
+        "chatSessionId": "sess_d8795ec2-0528-481e-a51e-13473a417f83",
+        "timestamp": 1795593183720
+      }
+    ],
+    "5.4 Hook-driven steps 4 and 5: rebuild copies and update the README": [
+      {
+        "executionId": "9979dbcc-1313-4aa0-9117-440b0f09690c",
+        "chatSessionId": "sess_1923fdc4-0f8c-419e-8fb1-494fba0c8adf",
+        "timestamp": 1795593228841
+      },
+      {
+        "executionId": "9979dbcc-1313-4aa0-9117-440b0f09690c",
+        "chatSessionId": "sess_1923fdc4-0f8c-419e-8fb1-494fba0c8adf",
+        "timestamp": 1795593279802
+      }
+    ],
+    "7.2 Add the two resource strings to both manifests": [
+      {
+        "executionId": "7ee021ba-322e-45cd-9ea4-1b414a88392e",
+        "chatSessionId": "sess_1923fdc4-0f8c-419e-8fb1-494fba0c8adf",
+        "timestamp": 1795593337950
+      },
+      {
+        "executionId": "7ee021ba-322e-45cd-9ea4-1b414a88392e",
+        "chatSessionId": "sess_1923fdc4-0f8c-419e-8fb1-494fba0c8adf",
+        "timestamp": 1795593447369
+      }
     ]
   }
 }
