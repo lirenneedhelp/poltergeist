@@ -391,3 +391,9 @@ added to the spec after I pointed out the hackathon requires a URL).
 **Deploy note:** the first run succeeded; the next two failed in GitHub's
 artifact service ("Fetching artifact metadata failed"), including one with
 an identical workflow, so the failure was on GitHub's side.
+
+## 2026-11-26: haunt-kit Task 9.3 (generated app in Chrome)
+Ran `npm run new-haunt focus-guard -- --hosts "https://www.reddit.com/*"`,
+loaded app3-focus-guard unpacked in Chrome <version>, turned Demo mode on,
+opened reddit.com: fog appeared after ~<N> s; Pause cleared it. Removed the
+generated app afterwards so the repo keeps two apps.
