@@ -655,6 +655,37 @@
         "executionId": "77ced515-dcf0-4895-8445-870592a2f6b5",
         "chatSessionId": "sess_ba90cef9-18b2-413b-a1cf-bb8b53ae42cc",
         "timestamp": 1795687416324
+      },
+      {
+        "executionId": "77ced515-dcf0-4895-8445-870592a2f6b5",
+        "chatSessionId": "sess_ba90cef9-18b2-413b-a1cf-bb8b53ae42cc",
+        "timestamp": 1795687576412
+      }
+    ],
+    "9. Scaffolder wiring and tests": [
+      {
+        "executionId": "77ced515-dcf0-4895-8445-870592a2f6b5",
+        "chatSessionId": "sess_ba90cef9-18b2-413b-a1cf-bb8b53ae42cc",
+        "timestamp": 1795687576468
+      }
+    ],
+    "11.2 Extend `test/docs.test.js`": [
+      {
+        "executionId": "6f9a9afb-9731-4dfa-b5bf-7eefac5e92fe",
+        "chatSessionId": "sess_fdf4c475-27b9-4b01-b5db-887026c59b71",
+        "timestamp": 1795697426494
+      },
+      {
+        "executionId": "6f9a9afb-9731-4dfa-b5bf-7eefac5e92fe",
+        "chatSessionId": "sess_fdf4c475-27b9-4b01-b5db-887026c59b71",
+        "timestamp": 1795697597927
+      }
+    ],
+    "11. README guides": [
+      {
+        "executionId": "6f9a9afb-9731-4dfa-b5bf-7eefac5e92fe",
+        "chatSessionId": "sess_fdf4c475-27b9-4b01-b5db-887026c59b71",
+        "timestamp": 1795697597994
       }
     ]
   }

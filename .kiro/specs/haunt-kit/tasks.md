@@ -201,7 +201,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Snapshot registry and `package.json` bytes first; on any failure after the folder exists, delete only the planned folder, restore both files byte-for-byte, print `new-haunt: <step> failed: <reason>` (naming the file for write failures) and exit 1; print the created folder and exit 0 on success
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.12, 12.13, 13.1, 13.2, 13.5_
 
-- [ ] 9. Scaffolder wiring and tests
+- [x] 9. Scaffolder wiring and tests
   - [x] 9.1 Wire `npm test` and the `new-haunt` script
     - In `package.json` set `"pretest": "npm run check:skeletons"` and add `"new-haunt": "node scripts/new-haunt.mjs"`; keep `"test"` and every existing script name unchanged
     - In `app2-tab-graveyard/test/package.test.js` "runs check:graveyard from pretest and leaves the test script unchanged", change only the `scripts.pretest` expectation to `npm run check:skeletons`; leave the `scripts.test` expectation and the rest of the file unchanged
@@ -214,7 +214,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - jsdom run of the generated `popup.js` with a `chrome` mock and VM run of the generated `content.js` (pause stop and restart, Demo_Mode division, storage failure defaults)
     - _Requirements: 12.1, 12.2, 12.3, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14, 13.1, 13.2, 13.4, 13.5, 13.6, 13.7, 13.8_
 
-  - [-] 9.3 Run the manual Chrome check for a Generated_App and record it
+  - [x] 9.3 Run the manual Chrome check for a Generated_App and record it
     - Generate an app with `--root` into a temporary copy, load it unpacked in Chrome, turn Demo_Mode on, open a page matching its hosts and check that Fog appears within 7 s; record the date, Chrome version and result in `KIRO_FILES.md`
     - _Requirements: 13.9_
 
@@ -256,13 +256,13 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Change no other file
     - _Requirements: 14.1_
 
-- [ ] 11. README guides
-  - [ ] 11.1 Add the two README guides
+- [x] 11. README guides
+  - [x] 11.1 Add the two README guides
     - `## Build your own haunt in 10 minutes` with the five numbered steps of Requirement 15.1, each command in a code block, including `npm run new-haunt <name> -- --hosts <pattern,...>` and `npm run playground`
     - `## Write your own ritual` with the six Ritual_Contract bullets using the steering doc's sentences, the statement that the app decides what happens after `exorcised`, one `js` "typed vow" example of at most 40 lines, and suggested rituals (typed vow, breathing timer, riddle) with one sentence each
     - _Requirements: 15.1, 15.2, 15.3, 15.4_
 
-  - [ ] 11.2 Extend `test/docs.test.js`
+  - [x] 11.2 Extend `test/docs.test.js`
     - Heading texts and step order of the build guide with the `--` separator; ritual-contract bullets equal the steering doc items (invariant 21, README part); the code block is at most 40 lines, exports `apply`, `undo` and `description`, checks `isTrusted`, calls `env.onAction('exorcised')` once and has no `innerHTML` or `chrome.`; at least the three named ritual suggestions; the effect list still matches the registry
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
