@@ -266,7 +266,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - Heading texts and step order of the build guide with the `--` separator; ritual-contract bullets equal the steering doc items (invariant 21, README part); the code block is at most 40 lines, exports `apply`, `undo` and `description`, checks `isTrusted`, calls `env.onAction('exorcised')` once and has no `innerHTML` or `chrome.`; at least the three named ritual suggestions; the effect list still matches the registry
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5_
 
-- [ ] 12. Final checkpoint - Ensure all tests pass
+- [x] 12. Final checkpoint - Ensure all tests pass
   - Run `npm test` and `npm run test:browser`; both exit 0 with no existing test skipped or deleted
   - Run `git diff --exit-code <base> --` on `skeleton/engine.js`, `skeleton/match.js` and `skeleton/effects/{fog,flicker,rot,block,tombstone}.js`, and on Graveyard's `rules.json`, `background.js`, `content.js`, popup files and `test/browser/`; confirm Graveyard's manifest diff is only the two resource strings and the edited assertions are exactly the six named in design section 7
   - Ensure all tests pass, ask the user if questions arise.
