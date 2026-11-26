@@ -400,3 +400,31 @@ seconds and Pause cleared it, with no edits to the generated app.
 a dot grid on camera; the scaffolder now sets noise 0 and mist 0.5.
 Also: commit 70250d3's message lists tasks 9.1–9.3, but only task 8 is in
 it; 9.1 was lost to a cleanup `git checkout` and redone in 9966430.
+
+## 2026-11-26: haunt-kit Task 9.3 (automated Chrome check, Req 13.9)
+**How it was checked:** in automated Chrome with the extension loaded
+unpacked. Nobody did this by hand. Playwright 1.65.1 opened a persistent
+context with `--load-extension`, as the doomscroll-extension project does.
+**Setup:** a temporary repository copy (scripts/, skeleton/, both apps,
+package.json, node_modules junction) under `%TEMP%`, then
+`node scripts/new-haunt.mjs wisp --root <copy>` created `app3-wisp` with
+the default host `https://example.com/*`. The real repository was not used,
+and the generated app was not edited.
+**Chrome:** Chromium 159.0.8154.6 (Playwright's bundled build, headed).
+**Steps:** clicked the Demo toggle in the app's `popup.html`. Storage then
+held `wisp.demoMode: true` and the popup said "Demo mode is on". Then
+opened live https://example.com/ in a new tab.
+**Result: pass.** `[data-poltergeist="fog"]` appeared 2.5 s after
+navigation started. The limit is 7 s (threshold 120 / 60 + 5). The
+extension loaded with no manifest errors, and no page, console or worker
+errors were logged. A screenshot shows the faint early mist.
+
+## 2026-11-26: GitHub Pages deploy fixed
+**Problem:** after the first successful deploy, every run failed at Deploy
+with "No artifacts named github-pages were found", including a run with an
+identical workflow and one with GitHub's template action versions.
+**Fix:** split the workflow into a `build` job (checkout, configure-pages,
+upload-pages-artifact) and a `deploy` job that `needs: build`, so the
+artifact is fully registered before deploy-pages looks it up. Added
+workflow_dispatch for manual re-runs.
+**Result:** both jobs green; the live Playground is current.
