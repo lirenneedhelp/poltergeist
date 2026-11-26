@@ -202,12 +202,12 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.12, 12.13, 13.1, 13.2, 13.5_
 
 - [ ] 9. Scaffolder wiring and tests
-  - [ ] 9.1 Wire `npm test` and the `new-haunt` script
+  - [x] 9.1 Wire `npm test` and the `new-haunt` script
     - In `package.json` set `"pretest": "npm run check:skeletons"` and add `"new-haunt": "node scripts/new-haunt.mjs"`; keep `"test"` and every existing script name unchanged
     - In `app2-tab-graveyard/test/package.test.js` "runs check:graveyard from pretest and leaves the test script unchanged", change only the `scripts.pretest` expectation to `npm run check:skeletons`; leave the `scripts.test` expectation and the rest of the file unchanged
     - _Requirements: 13.3, 16.2, 16.5_
 
-  - [ ] 9.2 Write `test/scaffolder.test.js`
+  - [x] 9.2 Write `test/scaffolder.test.js`
     - Temporary repository copies with a `node_modules` junction, `--root`, `spawnSync`, about 120 s timeout; real-repository snapshot (size, mtime, hash; excluding `node_modules/`, `.git/`, `test-results/`) equal before and after
     - Invariant 19: successful runs with default hosts and three custom hosts, with and without existing `app<N>-*` folders, give `app<N>-<name>`, one appended registry entry with existing entries byte-identical, the two npm scripts, a passing Package_Check and passing starter tests; failing runs (invalid name, existing registry key, existing target folder, 0 or 21 hosts, `<all_urls>`, missing root, a failure forced after the first file write) exit non-zero and leave the root byte-identical
     - Invariant 18 (Generic part): each manifest field of Requirement 12.5, a `match` differing from the hosts, a removed Fog or Rot rule, `eval` in `background.js`, an inline script in `popup.html` and `querySelector` in `content.js` each produce an error naming the file

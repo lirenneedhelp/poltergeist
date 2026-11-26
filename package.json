@@ -9,10 +9,11 @@
     "check:graveyard": "node scripts/sync-skeleton.mjs --check --app graveyard",
     "build:skeletons": "node scripts/sync-skeleton.mjs",
     "check:skeletons": "node scripts/sync-skeleton.mjs --check",
-    "pretest": "npm run check:graveyard",
+    "pretest": "npm run check:skeletons",
     "test": "npm run check:doomscroll && vitest --run",
     "test:browser": "playwright test",
-    "playground": "node scripts/serve-playground.mjs"
+    "playground": "node scripts/serve-playground.mjs",
+    "new-haunt": "node scripts/new-haunt.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

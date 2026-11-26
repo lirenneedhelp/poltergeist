@@ -95,7 +95,7 @@ describe('real graveyard package', () => {
 
   it('runs check:graveyard from pretest and leaves the test script unchanged', async () => {
     const pkg = await readJson(path.join(REPO_ROOT, 'package.json'));
-    expect(pkg.scripts.pretest).toBe('npm run check:graveyard');
+    expect(pkg.scripts.pretest).toBe('npm run check:skeletons');
     expect(pkg.scripts['check:graveyard']).toBe('node scripts/sync-skeleton.mjs --check --app graveyard');
     expect(pkg.scripts['build:graveyard']).toBe('node scripts/sync-skeleton.mjs --app graveyard');
     expect(pkg.scripts.test).toBe('npm run check:doomscroll && vitest --run');
