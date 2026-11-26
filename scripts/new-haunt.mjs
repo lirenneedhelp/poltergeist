@@ -135,7 +135,7 @@ export function buildRules(name, hosts) {
         enabled: true,
         match: [...hosts],
         trigger: { meter: 'timeOnSite', threshold: 120, rampTo: 300 },
-        effect: { type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8 } },
+        effect: { type: 'fog', params: { maxBlur: 5, maxGrayscale: 0.8, noise: 0, mist: 0.5 } },
         undo: { mode: 'fade', durationMs: 400 },
       },
       {
