@@ -214,7 +214,7 @@ Graveyard is touched in two places only: the two `web_accessible_resources` stri
     - jsdom run of the generated `popup.js` with a `chrome` mock and VM run of the generated `content.js` (pause stop and restart, Demo_Mode division, storage failure defaults)
     - _Requirements: 12.1, 12.2, 12.3, 12.5, 12.6, 12.7, 12.8, 12.9, 12.10, 12.11, 12.12, 12.13, 12.14, 13.1, 13.2, 13.4, 13.5, 13.6, 13.7, 13.8_
 
-  - [ ] 9.3 Run the manual Chrome check for a Generated_App and record it
+  - [-] 9.3 Run the manual Chrome check for a Generated_App and record it
     - Generate an app with `--root` into a temporary copy, load it unpacked in Chrome, turn Demo_Mode on, open a page matching its hosts and check that Fog appears within 7 s; record the date, Chrome version and result in `KIRO_FILES.md`
     - _Requirements: 13.9_
 

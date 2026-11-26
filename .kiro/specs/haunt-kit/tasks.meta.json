@@ -649,6 +649,13 @@
         "chatSessionId": "sess_452546a3-6d51-4bd9-b6e3-02a6089c74d4",
         "timestamp": 1795629337587
       }
+    ],
+    "9.3 Run the manual Chrome check for a Generated_App and record it": [
+      {
+        "executionId": "77ced515-dcf0-4895-8445-870592a2f6b5",
+        "chatSessionId": "sess_ba90cef9-18b2-413b-a1cf-bb8b53ae42cc",
+        "timestamp": 1795687416324
+      }
     ]
   }
 }

@@ -393,7 +393,10 @@ artifact service ("Fetching artifact metadata failed"), including one with
 an identical workflow, so the failure was on GitHub's side.
 
 ## 2026-11-26: haunt-kit Task 9.3 (generated app in Chrome)
-Ran `npm run new-haunt focus-guard -- --hosts "https://www.reddit.com/*"`,
-loaded app3-focus-guard unpacked in Chrome <version>, turned Demo mode on,
-opened reddit.com: fog appeared after ~<N> s; Pause cleared it. Removed the
-generated app afterwards so the repo keeps two apps.
+Generated `focus-guard` for https://www.reddit.com/*, loaded it unpacked
+in Chrome <version>, turned Demo mode on: Reddit fogged within a few
+seconds and Pause cleared it, with no edits to the generated app.
+**Caught:** the starter fog used the skeleton's default grain, which shows
+a dot grid on camera; the scaffolder now sets noise 0 and mist 0.5.
+Also: commit 70250d3's message lists tasks 9.1–9.3, but only task 8 is in
+it; 9.1 was lost to a cleanup `git checkout` and redone in 9966430.
